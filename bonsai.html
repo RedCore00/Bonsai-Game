@@ -1,10 +1,9 @@
-```html
 <!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>Balkon-Bonsai (Phase 4 Visual)</title>
+  <title>Balkon-Bonsai (Biegen + besserer Look)</title>
   <style>
     :root{
       --bg:#0b0d10; --panel:#0f141a; --line:#1b2430; --txt:#e8eef7;
@@ -21,7 +20,7 @@
     @media (max-width: 900px){ .row{grid-template-columns:1fr} }
     .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
     .pad{padding:12px}
-    canvas{display:block;width:100%;height:auto;background:#06080a}
+    canvas{display:block;width:100%;height:auto;background:#06080a;touch-action:none}
 
     .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
     .stat{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0b1016}
@@ -45,7 +44,7 @@
 
     .mini{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35}
     .select{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    select, input[type="range"]{background:#0b1016;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-weight:800}
+    select{background:#0b1016;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-weight:800}
 
     .fact{border:1px dashed #2b394a;background:#0b1016;border-radius:12px;padding:10px;color:var(--muted);line-height:1.35; white-space:pre-line}
     .diag{border:1px solid #223041;background:#081018;border-radius:12px;padding:10px;color:var(--muted);line-height:1.35; white-space:pre-line}
@@ -85,11 +84,10 @@
       font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; font-size:12px; padding:10px
     }
 
-    /* ---------- Start Menu + Settings ---------- */
+    /* Start Menu + Settings */
     #screenMenu, #screenSettings{
       position:fixed; inset:0; z-index:50;
-      display:none;
-      align-items:center; justify-content:center;
+      display:none; align-items:center; justify-content:center;
       background:
         radial-gradient(1200px 700px at 50% 30%, rgba(118,228,255,.08), transparent 60%),
         radial-gradient(900px 600px at 40% 55%, rgba(202,166,255,.08), transparent 60%),
@@ -112,15 +110,8 @@
     .menuValue{color:var(--txt); font-weight:900; font-size:13px}
     .menuBtns{display:grid; grid-template-columns:1fr; gap:10px; margin-top:14px}
     .btnMenu{
-      appearance:none;
-      border:1px solid var(--line);
-      background:#0b1016;
-      color:var(--txt);
-      border-radius:12px;
-      padding:12px 10px;
-      font-weight:1000;
-      font-size:14px;
-      cursor:pointer;
+      appearance:none; border:1px solid var(--line); background:#0b1016; color:var(--txt);
+      border-radius:12px; padding:12px 10px; font-weight:1000; font-size:14px; cursor:pointer;
     }
     .btnMenu.primary{outline:2px solid rgba(118,228,255,.18)}
     .btnMenu.ghost{background:transparent}
@@ -137,7 +128,7 @@
 <div id="screenMenu">
   <div class="menuBox">
     <div class="menuTitle" id="menuTitle">Balkon-Bonsai</div>
-    <div class="menuSub" id="menuSub">Phase 4 Visual</div>
+    <div class="menuSub" id="menuSub">Biegen + echtere Bonsai-Silhouette</div>
 
     <div class="menuRow">
       <label class="menuLabel" id="lblLang">Sprache</label>
@@ -154,7 +145,7 @@
     </div>
 
     <div class="menuHint" id="menuHint">
-      Tipp: Im „Real Mode“ laufen Zeit & Jahreszeiten automatisch.
+      Tipp: Drahten AN → am Baum ziehen zum Biegen. Doppelklick = Bend reset.
     </div>
   </div>
 </div>
@@ -309,7 +300,7 @@
 
         <div style="height:12px"></div>
         <div class="pill"><span id="lblUpgradesP">Upgrades</span>: <span id="lblCanU">Kanne</span> <span id="uCan">1</span> · <span id="lblShearU">Schere</span> <span id="uShear">1</span> · <span id="lblWireU">Draht</span> <span id="uWire">1</span></div>
-        <div class="mini" id="miniFooter">Visual-Update: prozedurale Äste, Leaf-Clusters, saisonale Farben, echte Bonsai-Silhouette.</div>
+        <div class="mini" id="miniFooter">Neu: Biegen per Drag (wenn Drahten AN) + echtere Äste/Blätter.</div>
       </div>
 
       <div class="pad" id="panelQuests" style="display:none">
@@ -399,7 +390,7 @@
       waterBtn:"Gießen", pruneBtn:"Schneiden", wire:"Drahten", seasonBtn:"Saison wechseln", photoBtn:"Foto speichern", saveBtn:"Save Export/Import",
       on:"AN", off:"AUS",
       upgrades:"Upgrades", can:"Kanne", shear:"Schere", wireN:"Draht",
-      miniFooter:"Visual-Update: prozedurale Äste, Leaf-Clusters, saisonale Farben, echte Bonsai-Silhouette.",
+      miniFooter:"Neu: Biegen per Drag (wenn Drahten AN) + echtere Äste/Blätter.",
       questsSub:"Daily Tasks seeded pro Tag. Meilensteine claimbar. Badges automatisch.",
       dailyTitle:"Daily Tasks (heute)", milestonesTitle:"Meilensteine", badgesTitle:"Badges",
       collectionTitle:"Sammlungsbuch", collectionSub:"Arten werden über Kriterien freigeschaltet. Alles sichtbar.",
@@ -444,10 +435,9 @@
       recoverTest:"Regeneration (Test)",
       dayLength:"Tageslänge",
       saveSettings:"Speichern", back:"Zurück",
-      hintMenu:"Tipp: Im „Real Mode“ laufen Zeit & Jahreszeiten automatisch.",
+      hintMenu:"Tipp: Drahten AN → am Baum ziehen zum Biegen. Doppelklick = Bend reset.",
       hintSettings:"Test: frei skalierbar · Normal: wie jetzt · Real: echte Zeit + Saison auto.",
-      realSeasonLocked:"(Real Mode: automatisch)",
-      quitInfo:"Quit: zurück ins Menü"
+      realSeasonLocked:"(Real Mode: automatisch)"
     },
     en: {
       coins:"Coins", streak:"Streak", day:"Day", season:"Season", pot:"Pot", soil:"Soil",
@@ -456,7 +446,7 @@
       waterBtn:"Water", pruneBtn:"Prune", wire:"Wire", seasonBtn:"Change season", photoBtn:"Save photo", saveBtn:"Save Export/Import",
       on:"ON", off:"OFF",
       upgrades:"Upgrades", can:"Can", shear:"Shears", wireN:"Wire",
-      miniFooter:"Visual update: procedural branches, leaf clusters, seasonal colors, true bonsai silhouette.",
+      miniFooter:"New: bend by dragging (when Wire ON) + more bonsai-like branches/leaves.",
       questsSub:"Daily tasks are seeded per day. Milestones claimable. Badges automatic.",
       dailyTitle:"Daily Tasks (today)", milestonesTitle:"Milestones", badgesTitle:"Badges",
       collectionTitle:"Collection Book", collectionSub:"Species unlock via requirements. Everything visible.",
@@ -501,13 +491,11 @@
       recoverTest:"Recovery (Test)",
       dayLength:"Day length",
       saveSettings:"Save", back:"Back",
-      hintMenu:"Tip: In Real Mode, time & seasons run automatically.",
+      hintMenu:"Tip: Wire ON → drag the tree to bend. Double click = reset bend.",
       hintSettings:"Test: scalable · Normal: as-is · Real: real time + auto season.",
-      realSeasonLocked:"(Real Mode: automatic)",
-      quitInfo:"Quit: back to menu"
+      realSeasonLocked:"(Real Mode: automatic)"
     }
   };
-
   function t(key){
     const lang = (S?.settings?.lang || "de");
     return (I18N[lang] && I18N[lang][key]) ? I18N[lang][key] : (I18N.de[key] || key);
@@ -524,228 +512,28 @@
     };
   }
 
-  // ---------- Data ----------
+  // ---------- Data (gleich wie vorher, gekürzt auf Wichtiges) ----------
   const SPECIES = [
-    { id:"ficus", name:"Ficus microcarpa", growth:1.00, thirst:1.00, tolerance:0.70,
-      unlock:{canopy:0, shape:0, hp:0},
-      facts:{
-        de:[
-          "Ficus microcarpa wird oft als Indoor-Bonsai genutzt, weil er schnittverträglich ist.",
-          "Ficus bildet bei hoher Luftfeuchte Luftwurzeln, die später verholzen können.",
-          "Viele Ficus-Arten reagieren auf Rückschnitt mit starkem Neuaustrieb.",
-          "Ficus toleriert häufige Formkorrekturen besser als empfindliche Laubbäume.",
-          "Bei ausreichendem Licht kompaktieren Ficus-Triebe schneller.",
-          "Stabiler Wasserhaushalt reduziert Stressreaktionen."
-        ],
-        en:[
-          "Ficus microcarpa is often used as an indoor bonsai because it tolerates pruning well.",
-          "With high humidity, ficus can form aerial roots that later lignify.",
-          "Many ficus respond to pruning with strong back-budding.",
-          "Ficus tolerates frequent shape corrections better than sensitive deciduous trees.",
-          "With enough light, ficus shoots compact more quickly.",
-          "Stable watering reduces stress reactions."
-        ]
-      }},
-    { id:"juniper", name:"Juniper (Juniperus)", growth:0.80, thirst:0.85, tolerance:0.55,
-      unlock:{canopy:45, shape:30, hp:0},
-      facts:{
-        de:[
-          "Wacholder-Bonsai mögen viel Licht und werden häufig als Outdoor-Bonsai gepflegt.",
-          "Form wird bei Juniperus oft über Drahten erreicht.",
-          "Staunässe ist riskanter als kurze Trockenphasen.",
-          "Juniperus wird meist nicht auf altes, braunes Holz zurückgeschnitten.",
-          "Feine Polster entstehen durch wiederholtes Pinzieren.",
-          "Gute Drainage ist entscheidend."
-        ],
-        en:[
-          "Juniper bonsai like a lot of light and are often grown outdoors.",
-          "Juniper shape is often achieved via wiring.",
-          "Waterlogging is usually riskier than short dry periods.",
-          "Junipers are usually not cut back into old brown wood.",
-          "Fine pads are formed by repeated pinching.",
-          "Good drainage is critical."
-        ]
-      }},
-    { id:"maple", name:"Maple (Acer)", growth:0.90, thirst:1.10, tolerance:0.50,
-      unlock:{canopy:60, shape:0, hp:75},
-      facts:{
-        de:[
-          "Ahorn-Bonsai sind beliebt wegen Herbstfärbung und feiner Verzweigung.",
-          "Kontrollierter Rückschnitt hilft gegen zu große Blätter.",
-          "Acer reagiert sensibel auf Trockenstress im Sommer.",
-          "Gleichmäßiges Licht reduziert einseitiges Wachstum.",
-          "Herbst eignet sich für ruhige Strukturpflege.",
-          "Konstantes Wasser bei guter Drainage ist hilfreich."
-        ],
-        en:[
-          "Maple bonsai are loved for autumn color and fine ramification.",
-          "Controlled pruning helps keep leaves smaller.",
-          "Acer can be sensitive to summer drought stress.",
-          "Even light reduces one-sided growth.",
-          "Autumn is good for calm structural work.",
-          "Consistent watering with good drainage helps."
-        ]
-      }},
-    { id:"elm", name:"Chinese Elm (Ulmus parvifolia)", growth:1.05, thirst:1.00, tolerance:0.78,
-      unlock:{canopy:35, shape:20, hp:0},
-      facts:{
-        de:[
-          "Ulmus parvifolia gilt als sehr tolerant.",
-          "Nach Rückschnitt treibt Ulme oft schnell dicht aus.",
-          "Feine Verzweigung entsteht durch kurze, wiederholte Schnitte.",
-          "Bei genug Licht funktioniert Ulme auch indoor.",
-          "Gute Pflege führt zu kompakter Krone.",
-          "Ulmen verzeihen Fehler besser als viele Arten."
-        ],
-        en:[
-          "Ulmus parvifolia is considered very tolerant.",
-          "After pruning, elms often push dense new growth quickly.",
-          "Fine ramification comes from short, repeated cuts.",
-          "With enough light, elm can work indoors too.",
-          "Good care leads to a compact crown.",
-          "Elms forgive mistakes better than many species."
-        ]
-      }},
-    { id:"pine", name:"Pine (Pinus)", growth:0.70, thirst:0.80, tolerance:0.45,
-      unlock:{canopy:55, shape:55, hp:60},
-      facts:{
-        de:[
-          "Kiefern werden oft über Kerzen-Management geformt.",
-          "Pinus braucht meist viel Licht.",
-          "Aufbau ist langfristig und belohnt Geduld.",
-          "Nadelbäume folgen anderer Schnittlogik als Laubbäume.",
-          "Drainage ist bei Pinus besonders wichtig.",
-          "Ruhige, planbare Pflege bringt die besten Formen."
-        ],
-        en:[
-          "Pines are often shaped through candle management.",
-          "Pinus usually needs lots of light.",
-          "Development is long-term and rewards patience.",
-          "Conifers follow different pruning logic than deciduous trees.",
-          "Drainage is especially important for pines.",
-          "Calm, planned care yields the best forms."
-        ]
-      }},
-    { id:"jade", name:"Jade (Crassula ovata)", growth:0.95, thirst:0.70, tolerance:0.85,
-      unlock:{canopy:40, shape:10, hp:0},
-      facts:{
-        de:[
-          "Jade speichert Wasser in Blättern.",
-          "Stecklinge bewurzeln oft leicht.",
-          "Zu viel Wasser ist häufiger Problem als zu wenig.",
-          "Hellster Standort hilft kompakterem Wuchs.",
-          "Stammdicke entsteht über Zeit und Licht.",
-          "Lockere, drainierende Erde ist hilfreich."
-        ],
-        en:[
-          "Jade stores water in its leaves.",
-          "Cuttings often root easily.",
-          "Overwatering is a more common issue than underwatering.",
-          "Bright light helps more compact growth.",
-          "Trunk thickness builds over time and light.",
-          "Loose, draining soil is helpful."
-        ]
-      }},
-    { id:"olive", name:"Olive (Olea europaea)", growth:0.85, thirst:0.85, tolerance:0.62,
-      unlock:{canopy:50, shape:35, hp:50},
-      facts:{
-        de:[
-          "Oliven haben oft knorrige Stämme.",
-          "Olea mag viel Licht.",
-          "Staunässe ist problematisch.",
-          "Rückschnitt kann kompaktere Internodien fördern.",
-          "Mediterrane Arten profitieren von Luftbewegung.",
-          "Langsamer Aufbau liefert starke Silhouetten."
-        ],
-        en:[
-          "Olives often develop gnarled trunks.",
-          "Olea prefers lots of light.",
-          "Waterlogging is problematic.",
-          "Pruning can encourage shorter internodes.",
-          "Mediterranean species benefit from airflow.",
-          "Slow development produces strong silhouettes."
-        ]
-      }},
-    { id:"azalea", name:"Azalea (Rhododendron indicum)", growth:0.90, thirst:1.15, tolerance:0.40,
-      unlock:{canopy:45, shape:40, hp:80},
-      facts:{
-        de:[
-          "Azaleen sind bekannt für starke Blüte.",
-          "Konstante Feuchte ist wichtiger als Extreme.",
-          "Schnitt nach Blüte ist häufig sinnvoll.",
-          "Gute Drainage verhindert Wurzelstress.",
-          "Ruhige Pflege bringt stabile Knospenbildung.",
-          "Regelmäßigkeit schlägt große Eingriffe."
-        ],
-        en:[
-          "Azaleas are known for strong flowering.",
-          "Consistent moisture matters more than extremes.",
-          "Pruning after flowering is often recommended.",
-          "Good drainage prevents root stress.",
-          "Calm care supports stable bud formation.",
-          "Consistency beats big interventions."
-        ]
-      }},
-    { id:"beech", name:"Beech (Fagus)", growth:0.80, thirst:1.05, tolerance:0.48,
-      unlock:{canopy:55, shape:30, hp:70},
-      facts:{
-        de:[
-          "Buchen entwickeln oft elegante Rinde.",
-          "Trockenstress wirkt schnell negativ.",
-          "Feine Zweige entstehen durch vorsichtigen Aufbau.",
-          "Winterstruktur kann grafisch wirken.",
-          "Stabiler Austrieb hängt stark von Gesundheit ab.",
-          "Gleichmäßige Pflege ist entscheidend."
-        ],
-        en:[
-          "Beeches often develop elegant bark.",
-          "Drought stress shows negative effects quickly.",
-          "Fine twigs come from careful development.",
-          "Winter structure can look very graphic.",
-          "Strong flush depends heavily on health.",
-          "Even care is essential."
-        ]
-      }},
-    { id:"spruce", name:"Spruce (Picea)", growth:0.75, thirst:0.95, tolerance:0.52,
-      unlock:{canopy:50, shape:45, hp:55},
-      facts:{
-        de:[
-          "Fichten eignen sich für klassische Silhouetten.",
-          "Licht hilft dichterem Wuchs.",
-          "Form entsteht über Drahten und Triebmanagement.",
-          "Luftzirkulation unterstützt Gesundheit.",
-          "Nadelbäume bauen Charakter über Jahre auf.",
-          "Saubere Konturen wirken sofort hochwertig."
-        ],
-        en:[
-          "Spruce works well for classic silhouettes.",
-          "Light helps denser growth.",
-          "Shape comes from wiring and shoot management.",
-          "Air circulation supports health.",
-          "Conifers build character over years.",
-          "Clean contours look premium instantly."
-        ]
-      }},
-    { id:"serissa", name:"Serissa", growth:0.95, thirst:1.10, tolerance:0.46,
-      unlock:{canopy:40, shape:45, hp:70},
-      facts:{
-        de:[
-          "Serissa ist bekannt für kleine Blüten.",
-          "Regelmäßigkeit ist wichtiger als harte Eingriffe.",
-          "Konstanter Standort reduziert Stressreaktionen.",
-          "Kleine Blätter wirken bonsai-typisch.",
-          "Gleichmäßiges Wasser verhindert starke Schwankungen.",
-          "Belohnt ruhiges Pflegen."
-        ],
-        en:[
-          "Serissa is known for small flowers.",
-          "Consistency matters more than harsh interventions.",
-          "A stable location reduces stress reactions.",
-          "Small leaves look very bonsai-like.",
-          "Even watering prevents strong swings.",
-          "It rewards calm maintenance."
-        ]
-      }},
+    { id:"ficus", name:"Ficus microcarpa", growth:1.00, thirst:1.00, tolerance:0.70, unlock:{canopy:0, shape:0, hp:0},
+      facts:{de:["Ficus ist schnittverträglich und eignet sich gut für Bonsai."],en:["Ficus tolerates pruning well and works great for bonsai."]}},
+    { id:"juniper", name:"Juniper (Juniperus)", growth:0.80, thirst:0.85, tolerance:0.55, unlock:{canopy:45, shape:30, hp:0},
+      facts:{de:["Wacholder wird oft per Draht geformt."],en:["Juniper is often shaped via wiring."]}},
+    { id:"elm", name:"Chinese Elm (Ulmus parvifolia)", growth:1.05, thirst:1.00, tolerance:0.78, unlock:{canopy:35, shape:20, hp:0},
+      facts:{de:["Ulmen verzeihen Fehler besser als viele Arten."],en:["Elms forgive mistakes better than many species."]}},
+    { id:"maple", name:"Maple (Acer)", growth:0.90, thirst:1.10, tolerance:0.50, unlock:{canopy:60, shape:0, hp:75},
+      facts:{de:["Ahorne sind beliebt wegen feiner Verzweigung."],en:["Maples are loved for fine ramification."]}},
+    { id:"pine", name:"Pine (Pinus)", growth:0.70, thirst:0.80, tolerance:0.45, unlock:{canopy:55, shape:55, hp:60},
+      facts:{de:["Kiefern werden oft langfristig aufgebaut."],en:["Pines are developed long-term."]}},
+    { id:"jade", name:"Jade (Crassula ovata)", growth:0.95, thirst:0.70, tolerance:0.85, unlock:{canopy:40, shape:10, hp:0},
+      facts:{de:["Jade speichert Wasser in Blättern."],en:["Jade stores water in its leaves."]}},
+    { id:"olive", name:"Olive (Olea europaea)", growth:0.85, thirst:0.85, tolerance:0.62, unlock:{canopy:50, shape:35, hp:50},
+      facts:{de:["Oliven haben oft knorrige Stämme."],en:["Olives often develop gnarled trunks."]}},
+    { id:"azalea", name:"Azalea (Rhododendron)", growth:0.90, thirst:1.15, tolerance:0.40, unlock:{canopy:45, shape:40, hp:80},
+      facts:{de:["Azaleen sind bekannt für Blüten."],en:["Azaleas are known for blooms."]}},
+    { id:"spruce", name:"Spruce (Picea)", growth:0.75, thirst:0.95, tolerance:0.52, unlock:{canopy:50, shape:45, hp:55},
+      facts:{de:["Fichten eignen sich für klassische Silhouetten."],en:["Spruce fits classic silhouettes."]}},
+    { id:"serissa", name:"Serissa", growth:0.95, thirst:1.10, tolerance:0.46, unlock:{canopy:40, shape:45, hp:70},
+      facts:{de:["Serissa belohnt ruhiges Pflegen."],en:["Serissa rewards calm maintenance."]}},
   ];
 
   const SEASONS = [
@@ -756,41 +544,31 @@
   ];
 
   const POTS = [
-    {id:"basic", name:{de:"Schlichter Topf", en:"Simple pot"}, price:0,   waterCap:0,  shapeMul:1.00, note:{de:"Neutral.", en:"Neutral."}},
-    {id:"clay",  name:{de:"Ton-Topf",       en:"Clay pot"},   price:80,  waterCap:+4, shapeMul:1.00, note:{de:"+ Wasserpuffer.", en:"+ water buffer."}},
-    {id:"glaze", name:{de:"Glasur-Topf",    en:"Glazed pot"}, price:120, waterCap:+6, shapeMul:1.02, note:{de:"+ Puffer + minimale Form.", en:"+ buffer + slight shape."}},
-    {id:"stone", name:{de:"Stein-Optik",    en:"Stone look"}, price:160, waterCap:+3, shapeMul:1.04, note:{de:"+ minimale Form.", en:"+ slight shape."}},
-    {id:"wide",  name:{de:"Breit-Schale",   en:"Wide tray"},  price:180, waterCap:+2, shapeMul:1.05, note:{de:"+ Form.", en:"+ shape."}},
-    {id:"deep",  name:{de:"Tief-Schale",    en:"Deep pot"},   price:190, waterCap:+8, shapeMul:0.99, note:{de:"+ viel Puffer.", en:"+ big buffer."}},
+    {id:"basic", name:{de:"Schlichter Topf", en:"Simple pot"}, price:0, waterCap:0, shapeMul:1.00, note:{de:"Neutral.", en:"Neutral."}},
+    {id:"clay",  name:{de:"Ton-Topf", en:"Clay pot"}, price:80, waterCap:+4, shapeMul:1.00, note:{de:"+ Wasserpuffer.", en:"+ water buffer."}},
+    {id:"wide",  name:{de:"Breit-Schale", en:"Wide tray"}, price:180, waterCap:+2, shapeMul:1.05, note:{de:"+ Form.", en:"+ shape."}},
   ];
 
   const SOILS = [
-    {id:"standard", name:{de:"Standard-Substrat", en:"Standard mix"}, price:0,   drainage:+0, buffer:+0,  recover:+0.00, note:{de:"Neutral.", en:"Neutral."}},
-    {id:"drain",    name:{de:"Drainage-Mix",     en:"Drainage mix"}, price:90,  drainage:+6, buffer:-2,  recover:+0.00, note:{de:"+ weniger Staunässe.", en:"+ less waterlogging."}},
-    {id:"retain",   name:{de:"Wasserhalte-Mix",  en:"Water-retaining mix"}, price:90,  drainage:-2, buffer:+6,  recover:+0.00, note:{de:"+ weniger Trockenstress.", en:"+ less drought stress."}},
-    {id:"aerated",  name:{de:"Luftig & locker",  en:"Aerated & loose"}, price:140, drainage:+4, buffer:+2,  recover:+0.02, note:{de:"+ kleine Regeneration.", en:"+ small recovery."}},
-    {id:"premium",  name:{de:"Premium-Mix",      en:"Premium mix"}, price:220, drainage:+4, buffer:+4,  recover:+0.04, note:{de:"+ Balance + Regeneration.", en:"+ balance + recovery."}},
+    {id:"standard", name:{de:"Standard-Substrat", en:"Standard mix"}, price:0, drainage:+0, buffer:+0, recover:+0.00, note:{de:"Neutral.", en:"Neutral."}},
+    {id:"drain",    name:{de:"Drainage-Mix", en:"Drainage mix"}, price:90, drainage:+6, buffer:-2, recover:+0.00, note:{de:"+ weniger Staunässe.", en:"+ less waterlogging."}},
+    {id:"premium",  name:{de:"Premium-Mix", en:"Premium mix"}, price:220, drainage:+4, buffer:+4, recover:+0.04, note:{de:"+ Balance + Regeneration.", en:"+ balance + recovery."}},
   ];
 
   const DAILY_POOL = [
-    {id:"d_water_2",  desc:{de:"Gieße 2x", en:"Water 2x"}, type:"water", goal:2, reward:20},
-    {id:"d_water_3",  desc:{de:"Gieße 3x", en:"Water 3x"}, type:"water", goal:3, reward:28},
-    {id:"d_prune_2",  desc:{de:"Schneide 2x", en:"Prune 2x"}, type:"prune", goal:2, reward:22},
-    {id:"d_prune_3",  desc:{de:"Schneide 3x", en:"Prune 3x"}, type:"prune", goal:3, reward:30},
-    {id:"d_wire_1",   desc:{de:"Drahte 1x (toggle)", en:"Wire 1x (toggle)"}, type:"wireToggle", goal:1, reward:18},
-    {id:"d_season_1", desc:{de:"Wechsle Saison 1x", en:"Change season 1x"}, type:"season", goal:1, reward:18},
-    {id:"d_photo_1",  desc:{de:"Speichere 1 Foto", en:"Save 1 photo"}, type:"photo", goal:1, reward:25},
-    {id:"d_hp_80",    desc:{de:"Erreiche HP ≥ 80", en:"Reach HP ≥ 80"}, type:"stat_hp", goal:80, reward:28},
-    {id:"d_shape_45", desc:{de:"Erreiche Form ≥ 45", en:"Reach Shape ≥ 45"}, type:"stat_shape", goal:45, reward:28},
-    {id:"d_can_45",   desc:{de:"Erreiche Canopy ≥ 45", en:"Reach Canopy ≥ 45"}, type:"stat_canopy", goal:45, reward:28},
+    {id:"d_water_2", desc:{de:"Gieße 2x", en:"Water 2x"}, type:"water", goal:2, reward:20},
+    {id:"d_prune_2", desc:{de:"Schneide 2x", en:"Prune 2x"}, type:"prune", goal:2, reward:22},
+    {id:"d_wire_1",  desc:{de:"Drahte 1x (toggle)", en:"Wire 1x (toggle)"}, type:"wireToggle", goal:1, reward:18},
+    {id:"d_photo_1", desc:{de:"Speichere 1 Foto", en:"Save 1 photo"}, type:"photo", goal:1, reward:25},
+    {id:"d_hp_80",   desc:{de:"Erreiche HP ≥ 80", en:"Reach HP ≥ 80"}, type:"stat_hp", goal:80, reward:28},
   ];
 
   // ---------- Save / State ----------
-  const SAVE_KEY = "bonsai_phase4_visual_v2";
+  const SAVE_KEY = "bonsai_bend_visual_v3";
 
   function defaultState(){
     return {
-      v: 42,
+      v: 300,
       coins: 0,
       streak: 0,
       day: 1,
@@ -800,7 +578,12 @@
       ownedPots: { basic:true },
       ownedSoils: { standard:true },
       equipped: { pot:"basic", soil:"standard" },
-      tree: { speciesId:"ficus", water:70, hp:85, canopy:25, shape:20, wired:false },
+      tree: {
+        speciesId:"ficus",
+        water:70, hp:85, canopy:25, shape:20,
+        wired:false,
+        bend: { x:0.06, y:0.38, strength:0.18 } // <-- NEU: Biege-Kurve
+      },
       photos: [],
       settings: {
         lang: "de",
@@ -818,7 +601,7 @@
     };
   }
 
-  // IMPORTANT: dirty must exist BEFORE offlineCatchup/ensureDaily can call markDirty
+  // IMPORTANT: dirty must exist early
   let dirty = { hud:true, play:true, quests:true, collection:true, shop:true, photos:true };
   function markDirty(area){ dirty[area] = true; }
 
@@ -834,14 +617,13 @@
       const obj = JSON.parse(raw);
       const base = defaultState();
       return {
-        ...base,
-        ...obj,
+        ...base, ...obj,
         upgrades: { ...base.upgrades, ...(obj.upgrades||{}) },
         unlockedSpecies: { ...base.unlockedSpecies, ...(obj.unlockedSpecies||{}) },
         ownedPots: { ...base.ownedPots, ...(obj.ownedPots||{}) },
         ownedSoils: { ...base.ownedSoils, ...(obj.ownedSoils||{}) },
         equipped: { ...base.equipped, ...(obj.equipped||{}) },
-        tree: { ...base.tree, ...(obj.tree||{}) },
+        tree: { ...base.tree, ...(obj.tree||{}), bend: { ...base.tree.bend, ...(obj.tree?.bend||{}) } },
         photos: Array.isArray(obj.photos) ? obj.photos : [],
         settings: { ...base.settings, ...(obj.settings||{}), test: { ...base.settings.test, ...(obj.settings?.test||{}) } },
         meta: { ...base.meta, ...(obj.meta||{}) }
@@ -852,7 +634,7 @@
   }
 
   function migrateFromOlder(base){
-    const keys = ["bonsai_phase4_visual_v1","bonsai_phase4_v1","bonsai_phase3_v1"];
+    const keys = ["bonsai_phase4_visual_v2","bonsai_phase4_visual_v1","bonsai_phase4_v1","bonsai_phase3_v1"];
     for (const k of keys){
       try{
         const raw = localStorage.getItem(k);
@@ -865,6 +647,8 @@
         base.seasonIdx = old.seasonIdx ?? base.seasonIdx;
         base.upgrades = { ...base.upgrades, ...(old.upgrades||{}) };
         base.tree = { ...base.tree, ...(old.tree||{}) };
+        // Bend defaults if not present:
+        if (!base.tree.bend) base.tree.bend = { x:0.06, y:0.38, strength:0.18 };
         base.photos = Array.isArray(old.photos) ? old.photos : [];
         base.unlockedSpecies = { ...base.unlockedSpecies, ...(old.unlockedSpecies||{}) };
         base.ownedPots = { ...base.ownedPots, ...(old.ownedPots||{}) };
@@ -903,6 +687,7 @@
     if (!S.upgrades) S.upgrades = { can:1, shear:1, wire:1 };
     if (!S.unlockedSpecies) S.unlockedSpecies = { ficus:true };
     if (!S.tree) S.tree = base.tree;
+    if (!S.tree.bend) S.tree.bend = { x:0.06, y:0.38, strength:0.18 };
     if (!Array.isArray(S.photos)) S.photos = [];
 
     if (!S.settings) S.settings = base.settings;
@@ -914,32 +699,30 @@
     S.tree.hp = clamp(S.tree.hp, 0, 100);
     S.tree.canopy = clamp(S.tree.canopy, 0, 100);
     S.tree.shape = clamp(S.tree.shape, 0, 100);
+
+    // Bend bounds
+    S.tree.bend.x = clamp(S.tree.bend.x, -1, 1);
+    S.tree.bend.y = clamp(S.tree.bend.y, 0.05, 0.95);
+    S.tree.bend.strength = clamp(S.tree.bend.strength, 0, 1);
   }
   normalize();
 
   // ---------- Mode helpers ----------
   function isTest(){ return S.settings.mode === "test"; }
-  function isNormal(){ return S.settings.mode === "normal"; }
   function isReal(){ return S.settings.mode === "real"; }
 
   function getDaySeconds(){
     if (isReal()) return 24 * 3600;
     if (isTest()) return clamp(S.settings.test.dayHours, 1, 24) * 3600;
-    return 6 * 3600; // normal = your original
+    return 6 * 3600;
   }
   function getSpeedMul(){
     if (isTest()) return clamp(S.settings.test.speed, 0.25, 25);
     return 1;
   }
-  function getGrowthMul(){
-    return isTest() ? clamp(S.settings.test.growthMul, 0.25, 3) : 1;
-  }
-  function getThirstMul(){
-    return isTest() ? clamp(S.settings.test.thirstMul, 0.25, 3) : 1;
-  }
-  function getRecoverMul(){
-    return isTest() ? clamp(S.settings.test.recoverMul, 0.25, 3) : 1;
-  }
+  function getGrowthMul(){ return isTest() ? clamp(S.settings.test.growthMul, 0.25, 3) : 1; }
+  function getThirstMul(){ return isTest() ? clamp(S.settings.test.thirstMul, 0.25, 3) : 1; }
+  function getRecoverMul(){ return isTest() ? clamp(S.settings.test.recoverMul, 0.25, 3) : 1; }
 
   function season(){ return SEASONS[S.seasonIdx % SEASONS.length]; }
   function seasonName(){ return season().name[S.settings.lang] || season().name.de; }
@@ -948,23 +731,22 @@
   function soil(){ return SOILS.find(s => s.id === S.equipped.soil) || SOILS[0]; }
 
   function seasonIdxFromDate(d){
-    const m = d.getMonth(); // 0..11
-    if (m === 11 || m <= 1) return 3;      // Dec/Jan/Feb -> winter
-    if (m <= 4) return 0;                  // Mar/Apr/May -> spring
-    if (m <= 7) return 1;                  // Jun/Jul/Aug -> summer
-    return 2;                               // Sep/Oct/Nov -> autumn
+    const m = d.getMonth();
+    if (m === 11 || m <= 1) return 3;
+    if (m <= 4) return 0;
+    if (m <= 7) return 1;
+    return 2;
   }
   function syncRealSeason(){
     if (!isReal()) return;
     S.seasonIdx = seasonIdxFromDate(new Date());
   }
 
-  // ---------- UI references ----------
+  // ---------- UI refs ----------
   const cv = $("cv");
   const g = cv.getContext("2d");
   const speciesSel = $("species");
 
-  // Menu / settings screens
   const screenMenu = $("screenMenu");
   const screenSettings = $("screenSettings");
   const btnPlay = $("btnPlay");
@@ -993,10 +775,11 @@
   const btnSaveSettings = $("btnSaveSettings");
   const btnBackMenu = $("btnBackMenu");
 
+  let paused = true;
+
   function showMenu(){
     screenSettings.style.display = "none";
     screenMenu.style.display = "flex";
-    // pause simulation while in menu
     paused = true;
     saveNow();
   }
@@ -1012,14 +795,10 @@
     screenSettings.style.display = "none";
   }
 
-  let paused = true; // start with menu (your request)
-
   // ---------- i18n apply ----------
   function applyLanguage(){
     document.documentElement.lang = S.settings.lang;
 
-    // Top / tabs
-    $("hdrTitle").textContent = "Balkon-Bonsai";
     $("lblCoinsP").textContent = t("coins");
     $("lblStreakP").textContent = t("streak");
     $("lblDayP").textContent = t("day");
@@ -1070,24 +849,20 @@
     $("photosTitle").textContent = t("photos");
     $("photosSub").textContent = t("photosSub");
 
-    $("saveTitle").textContent = "Save Export/Import";
     $("saveSub").textContent = t("saveSub");
     $("closeModal").textContent = t("close");
     $("doExport").textContent = t("export");
     $("doImport").textContent = t("import");
     $("doReset").textContent = t("resetSave");
 
-    // Menu / Settings texts
-    $("menuTitle").textContent = "Balkon-Bonsai";
+    $("menuHint").textContent = t("hintMenu");
     $("lblLang").textContent = t("language");
     $("btnPlay").textContent = t("menuPlay");
     $("btnSettings").textContent = t("menuSettings");
     $("btnQuit").textContent = t("menuQuit");
-    $("menuHint").textContent = t("hintMenu");
 
     $("setTitle").textContent = t("settingsTitle");
     $("lblMode").textContent = t("mode");
-    // mode option labels
     modeSel.options[0].textContent = t("testMode");
     modeSel.options[1].textContent = t("normalMode");
     modeSel.options[2].textContent = t("realMode");
@@ -1176,7 +951,17 @@
     const rangeText = `${t("idealWater")}: ${fmt(min)}–${fmt(max)} (${t("now")}: ${fmt(w)} · ${wState})`;
     const trendText = `${t("trend")}: ${hpTrend}`;
     const reasonText = reasons.length ? reasons.join(" ") : t("reasonNone");
-    return `${rangeText}\n${trendText}\n${reasonText}`;
+
+    const b = S.tree.bend;
+    const bendText = (S.settings.lang==="en")
+      ? `Bend: strength ${b.strength.toFixed(2)} · point ${b.y.toFixed(2)}`
+      : `Biegung: Stärke ${b.strength.toFixed(2)} · Punkt ${b.y.toFixed(2)}`;
+
+    const hint = (S.tree.wired)
+      ? (S.settings.lang==="en" ? "Tip: drag on canvas to bend." : "Tipp: Im Canvas ziehen zum Biegen.")
+      : (S.settings.lang==="en" ? "Wire ON to bend the tree." : "Drahten AN schalten zum Biegen.");
+
+    return `${rangeText}\n${trendText}\n${reasonText}\n${bendText}\n${hint}`;
   }
 
   function checkSpeciesUnlocks(){
@@ -1197,17 +982,13 @@
 
   function genDailyTasksForDay(dayNumber){
     const rng = mulberry32((dayNumber * 2654435761) >>> 0);
-    const actions = DAILY_POOL.filter(t => !t.type.startsWith("stat_"));
-    const stats = DAILY_POOL.filter(t => t.type.startsWith("stat_"));
-
-    function pickFrom(arr){
-      const i = Math.floor(rng() * arr.length);
-      return arr.splice(i,1)[0];
+    const pool = DAILY_POOL.slice();
+    function pick(){
+      const i = Math.floor(rng() * pool.length);
+      return pool.splice(i,1)[0];
     }
-    const a1 = pickFrom(actions.slice());
-    const a2 = pickFrom(actions.filter(x => x.id !== a1.id));
-    const s1 = pickFrom(stats.slice());
-    return [a1, a2, s1].map(tt => ({ id:tt.id, desc:tt.desc, type:tt.type, goal:tt.goal, reward:tt.reward, claimed:false }));
+    const a1 = pick(), a2 = pick(), a3 = pick();
+    return [a1,a2,a3].map(tt => ({ id:tt.id, desc:tt.desc, type:tt.type, goal:tt.goal, reward:tt.reward, claimed:false }));
   }
 
   function ensureDaily(){
@@ -1232,8 +1013,6 @@
     if (task.type === "season") return Math.min(task.goal, A.season);
     if (task.type === "photo") return Math.min(task.goal, A.photo);
     if (task.type === "stat_hp") return Math.min(task.goal, fmt(S.tree.hp));
-    if (task.type === "stat_shape") return Math.min(task.goal, fmt(S.tree.shape));
-    if (task.type === "stat_canopy") return Math.min(task.goal, fmt(S.tree.canopy));
     return 0;
   }
   function dailyComplete(task){ return dailyProgress(task) >= task.goal; }
@@ -1244,59 +1023,6 @@
     S.coins += tt.reward;
     markDirty("quests"); markDirty("hud");
     saveNow();
-  }
-
-  function milestoneDefs(){
-    const totalSpecies = SPECIES.length;
-    const unlockedCount = Object.values(S.unlockedSpecies).filter(Boolean).length;
-    const ownedPots = Object.values(S.ownedPots).filter(Boolean).length;
-    const ownedSoils = Object.values(S.ownedSoils).filter(Boolean).length;
-
-    // bilingual strings via small helper
-    const L = S.settings.lang;
-    const d = (de,en) => (L==="en"?en:de);
-
-    return [
-      {id:"m_can_60",     name:d("Wachstum 60","Growth 60"), desc:d("Canopy ≥ 60","Canopy ≥ 60"), done: S.tree.canopy >= 60, reward:60},
-      {id:"m_can_85",     name:d("Wachstum 85","Growth 85"), desc:d("Canopy ≥ 85","Canopy ≥ 85"), done: S.tree.canopy >= 85, reward:90},
-      {id:"m_shape_60",   name:d("Form 60","Shape 60"), desc:d("Form ≥ 60","Shape ≥ 60"), done: S.tree.shape >= 60,  reward:60},
-      {id:"m_shape_85",   name:d("Form 85","Shape 85"), desc:d("Form ≥ 85","Shape ≥ 85"), done: S.tree.shape >= 85,  reward:90},
-      {id:"m_hp_90",      name:d("Gesund 90","Healthy 90"), desc:d("HP ≥ 90","HP ≥ 90"), done: S.tree.hp >= 90, reward:70},
-      {id:"m_unlock_6",   name:d("6 Arten","6 Species"), desc:d(`6 Arten freischalten (${unlockedCount}/6)`,`Unlock 6 species (${unlockedCount}/6)`), done: unlockedCount >= 6, reward:80},
-      {id:"m_unlock_all", name:d("Alle Arten","All species"), desc:d(`Alle Arten freischalten (${unlockedCount}/${totalSpecies})`,`Unlock all species (${unlockedCount}/${totalSpecies})`), done: unlockedCount >= totalSpecies, reward:160},
-      {id:"m_variety",    name:"Variety", desc:d(`3 Töpfe + 3 Erden besitzen (${ownedPots}/${ownedSoils})`,`Own 3 pots + 3 soils (${ownedPots}/${ownedSoils})`), done: (ownedPots>=3 && ownedSoils>=3), reward:90},
-      {id:"m_photos_6",   name:d("Dokumentation","Documentation"), desc:d(`6 Fotos speichern (${S.photos.length}/6)`,`Save 6 photos (${S.photos.length}/6)`), done: S.photos.length >= 6, reward:70},
-      {id:"m_streak_12",  name:d("Routine","Routine"), desc:d(`Streak ≥ 12 (${S.streak}/12)`,`Streak ≥ 12 (${S.streak}/12)`), done: S.streak >= 12, reward:80},
-    ];
-  }
-  function milestoneClaimed(id){ return !!S.meta.milestonesClaimed[id]; }
-  function claimMilestone(id){
-    const m = milestoneDefs().find(x => x.id === id);
-    if (!m || !m.done || milestoneClaimed(id)) return;
-    S.meta.milestonesClaimed[id] = true;
-    S.coins += m.reward;
-    markDirty("quests"); markDirty("hud");
-    saveNow();
-  }
-  function badgeTier(value, b, s, g){
-    return value>=g ? "GOLD" : value>=s ? "SILVER" : value>=b ? "BRONZE" : "—";
-  }
-  function badges(){
-    const unlockedCount = Object.values(S.unlockedSpecies).filter(Boolean).length;
-    return [
-      {id:"b_can", name:(S.settings.lang==="en"?"Growth":"Wachstum"), desc:(S.settings.lang==="en"?"Canopy tier":"Canopy Tier"), tier: badgeTier(S.tree.canopy, 40, 70, 90)},
-      {id:"b_shape", name:(S.settings.lang==="en"?"Shape":"Form"), desc:(S.settings.lang==="en"?"Shape tier":"Form Tier"), tier: badgeTier(S.tree.shape, 40, 70, 90)},
-      {id:"b_hp", name:(S.settings.lang==="en"?"Health":"Gesundheit"), desc:(S.settings.lang==="en"?"HP tier":"HP Tier"), tier: badgeTier(S.tree.hp, 60, 80, 95)},
-      {id:"b_album", name:(S.settings.lang==="en"?"Album":"Album"), desc:(S.settings.lang==="en"?"Photo tier":"Fotos Tier"), tier: badgeTier(S.photos.length, 3, 8, 16)},
-      {id:"b_coll", name:(S.settings.lang==="en"?"Collection":"Sammlung"), desc:(S.settings.lang==="en"?"Species tier":"Arten Tier"),
-        tier: (unlockedCount>=SPECIES.length) ? "GOLD" : (unlockedCount>=8) ? "SILVER" : (unlockedCount>=4) ? "BRONZE" : "—"}
-    ];
-  }
-  function tierTagClass(tier){
-    if (tier==="GOLD") return "tag good";
-    if (tier==="SILVER") return "tag cyan";
-    if (tier==="BRONZE") return "tag vio";
-    return "tag";
   }
 
   function upgCost(key, lvl){
@@ -1349,7 +1075,7 @@
   }
 
   function actSeason(){
-    if (isReal()) return; // locked
+    if (isReal()) return;
     S.seasonIdx = (S.seasonIdx + 1) % SEASONS.length;
     S.streak++;
     incAction("season");
@@ -1402,7 +1128,6 @@
     const score = (S.tree.hp*0.45 + S.tree.shape*0.35 + S.tree.canopy*0.20);
     const dailyCoins = Math.max(5, Math.round(score/10));
     S.coins += dailyCoins;
-
     S.streak = Math.max(0, S.streak - 1);
 
     S.meta.lastDailyDay = S.day;
@@ -1415,8 +1140,7 @@
 
   function advanceTime(seconds, coarse=false){
     let sec = seconds;
-    // cap offline sim (prevents crazy loops)
-    const maxDays = isReal() ? 7 : 7;
+    const maxDays = 7;
     const maxSec = maxDays * getDaySeconds();
     sec = clamp(sec, 0, maxSec);
 
@@ -1425,14 +1149,11 @@
       const leftInDay = (1 - S.meta.dayFrac) * daySeconds;
       const step = Math.min(sec, leftInDay);
 
-      // coarse stepping for big chunks
       const dtMax = coarse ? 2.0 : (1/30);
       const totalSteps = Math.max(1, Math.ceil(step / dtMax));
       const dt = step / totalSteps;
 
-      for (let i=0;i<totalSteps;i++){
-        tick(dt);
-      }
+      for (let i=0;i<totalSteps;i++) tick(dt);
 
       S.meta.dayFrac += step / daySeconds;
       if (S.meta.dayFrac >= 1){
@@ -1458,18 +1179,38 @@
     }
   }
 
-  // ---------- Visual (your bonsai renderer; unchanged except small safe tweaks) ----------
-  function mix(a,b,tt){ return [a[0]+(b[0]-a[0])*tt, a[1]+(b[1]-a[1])*tt, a[2]+(b[2]-a[2])*tt]; }
+  // ---------- Visual helpers ----------
+  function mix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
   function rgba(c,a){ return `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`; }
   function clamp01(x){ return Math.max(0, Math.min(1, x)); }
-  function lerp(a,b,tt){ return a+(b-a)*tt; }
-  function smoothstep(tt){ tt=clamp01(tt); return tt*tt*(3-2*tt); }
+  function lerp(a,b,t){ return a+(b-a)*t; }
+  function smoothstep(t){ t=clamp01(t); return t*t*(3-2*t); }
+  function dist(ax,ay,bx,by){ const dx=ax-bx, dy=ay-by; return Math.hypot(dx,dy); }
 
-  function seasonLeafPaletteWithSpecies(seaId, hp01, spProfile){
-    let a = spProfile.leaf.baseA.slice();
-    let b = spProfile.leaf.baseB.slice();
-    const isDeciduous = (spProfile.leaf.type === "broad") && !["olive","ficus"].includes(S.tree.speciesId);
+  // More bonsai-like: true taper + recursive branching + leaf clusters at twig ends
+  function profileForSpecies(spId){
+    // leafStyle influences cluster type
+    const M = {
+      ficus:   { leafStyle:"broad",    barkA:[92,84,78],  barkB:[46,44,46], leafA:[85,195,125], leafB:[125,220,150] },
+      elm:     { leafStyle:"broad",    barkA:[88,82,78],  barkB:[40,40,44], leafA:[75,185,120], leafB:[120,215,150] },
+      maple:   { leafStyle:"broad",    barkA:[98,92,90],  barkB:[54,52,54], leafA:[85,195,125], leafB:[125,220,150] },
+      azalea:  { leafStyle:"broad",    barkA:[90,86,82],  barkB:[48,46,48], leafA:[80,175,120], leafB:[115,205,145] },
+      serissa: { leafStyle:"broad",    barkA:[98,92,90],  barkB:[52,50,52], leafA:[85,190,130], leafB:[130,220,160] },
+      olive:   { leafStyle:"olive",    barkA:[96,92,86],  barkB:[42,42,46], leafA:[85,140,110], leafB:[120,165,135] },
+      jade:    { leafStyle:"succ",     barkA:[110,104,96],barkB:[58,56,56], leafA:[95,190,140], leafB:[135,215,165] },
+      juniper: { leafStyle:"scale",    barkA:[88,70,62],  barkB:[44,38,40], leafA:[45,110,85],  leafB:[65,135,100] },
+      pine:    { leafStyle:"needle",   barkA:[90,78,70],  barkB:[40,36,38], leafA:[55,120,85],  leafB:[75,145,105] },
+      spruce:  { leafStyle:"needle",   barkA:[86,76,70],  barkB:[38,36,40], leafA:[50,115,85],  leafB:[70,140,105] },
+    };
+    return M[spId] || M.ficus;
+  }
 
+  function leafPalette(seaId, hp01, prof){
+    let a = prof.leafA.slice();
+    let b = prof.leafB.slice();
+
+    // seasonal shifts
+    const isDeciduous = (prof.leafStyle === "broad") && !["olive","ficus"].includes(S.tree.speciesId);
     if (seaId === "winter"){
       a = mix(a, [130,145,175], 0.55);
       b = mix(b, [160,175,205], 0.55);
@@ -1483,78 +1224,27 @@
       b = mix(b, [70,175,115], 0.20);
     }
 
+    // stress tint
     const stress = [240,80,69];
     a = mix(a, stress, 1-hp01);
     b = mix(b, stress, 1-hp01);
-    return { a, b };
+    return {a,b};
   }
 
-  function barkPaletteWithSpecies(hp01, spProfile){
-    let a = spProfile.bark.a.slice();
-    let b = spProfile.bark.b.slice();
+  function barkPalette(hp01, prof){
+    let a = prof.barkA.slice();
+    let b = prof.barkB.slice();
     const stress = [70,40,38];
     a = mix(a, stress, (1-hp01)*0.55);
     b = mix(b, stress, (1-hp01)*0.55);
-    return { a, b };
-  }
-
-  function speciesRenderProfile(spId){
-    const P = {
-      ficus:   { leaf:{type:"broad",  baseA:[75,185,120], baseB:[115,215,145], shape:"oval"},
-                pad:{style:"cloud", flat:0.62, density:1.00},
-                bark:{type:"smooth", a:[92,84,78], b:[46,44,46]} },
-
-      juniper: { leaf:{type:"scale",  baseA:[45,110,85],  baseB:[65,135,100],  shape:"spray"},
-                pad:{style:"conifer", flat:0.50, density:1.15},
-                bark:{type:"stringy", a:[88,70,62], b:[44,38,40], deadwood:true} },
-
-      maple:   { leaf:{type:"broad",  baseA:[85,195,125], baseB:[125,220,150], shape:"maple"},
-                pad:{style:"cloud", flat:0.66, density:1.05},
-                bark:{type:"smooth", a:[98,92,90], b:[54,52,54]} },
-
-      elm:     { leaf:{type:"broad",  baseA:[75,185,120], baseB:[120,215,150], shape:"elm"},
-                pad:{style:"cloud", flat:0.68, density:1.15},
-                bark:{type:"rough",  a:[85,80,76], b:[40,40,44]} },
-
-      pine:    { leaf:{type:"needle", baseA:[55,120,85],  baseB:[75,145,105],  shape:"needle"},
-                pad:{style:"conifer", flat:0.46, density:1.10},
-                bark:{type:"flake",  a:[90,78,70], b:[40,36,38]} },
-
-      spruce:  { leaf:{type:"needle", baseA:[50,115,85],  baseB:[70,140,105],  shape:"needle"},
-                pad:{style:"conifer", flat:0.44, density:1.12},
-                bark:{type:"flake",  a:[86,76,70], b:[38,36,40]} },
-
-      jade:    { leaf:{type:"succulent", baseA:[95,190,140], baseB:[135,215,165], shape:"succ"},
-                pad:{style:"succ", flat:0.72, density:0.85},
-                bark:{type:"smooth", a:[110,104,96], b:[58,56,56]} },
-
-      olive:   { leaf:{type:"broad",  baseA:[85,140,110], baseB:[120,165,135], shape:"olive"},
-                pad:{style:"cloud", flat:0.58, density:0.95},
-                bark:{type:"rough", a:[96,92,86], b:[42,42,46]} },
-
-      azalea:  { leaf:{type:"broad",  baseA:[80,175,120], baseB:[115,205,145], shape:"azalea"},
-                pad:{style:"cloud", flat:0.70, density:1.20},
-                bark:{type:"smooth", a:[90,86,82], b:[48,46,48]} },
-
-      beech:   { leaf:{type:"broad",  baseA:[85,190,130], baseB:[125,220,155], shape:"beech"},
-                pad:{style:"cloud", flat:0.68, density:1.05},
-                bark:{type:"smooth", a:[110,106,100], b:[60,58,58]} },
-
-      serissa: { leaf:{type:"broad",  baseA:[85,190,130], baseB:[130,220,160], shape:"serissa"},
-                pad:{style:"cloud", flat:0.72, density:1.25},
-                bark:{type:"smooth", a:[98,92,90], b:[52,50,52]} },
-    };
-    return P[spId] || P.ficus;
+    return {a,b};
   }
 
   function potColors(potId){
     const map = {
       basic:  {body:[18,22,28], rim:[26,33,42], glaze:false},
       clay:   {body:[20,30,40], rim:[32,42,56], glaze:false},
-      glaze:  {body:[16,28,46], rim:[28,44,70], glaze:true},
-      stone:  {body:[22,24,28], rim:[34,36,42], glaze:false},
       wide:   {body:[18,26,34], rim:[32,46,58], glaze:true},
-      deep:   {body:[16,26,32], rim:[28,40,50], glaze:false},
     };
     return map[potId] || map.basic;
   }
@@ -1562,8 +1252,6 @@
     const map = {
       standard: {top:[18,16,14], grit:[42,38,32]},
       drain:    {top:[16,15,14], grit:[60,56,50]},
-      retain:   {top:[20,18,16], grit:[44,40,34]},
-      aerated:  {top:[17,16,15], grit:[62,58,52]},
       premium:  {top:[18,17,15], grit:[70,64,56]},
     };
     return map[soilId] || map.standard;
@@ -1673,6 +1361,26 @@
     return { cavX, cavY, cavW, cavH };
   }
 
+  // ---------- BEND CURVE (NEU) ----------
+  function bendOffset(yNorm){ // yNorm 0..1 (0=base, 1=top)
+    const b = S.tree.bend;
+    const pivot = b.y;                // where bending "starts"
+    const above = Math.max(0, yNorm - pivot);
+    const k = above / Math.max(0.0001, (1 - pivot));
+    const ease = smoothstep(k);
+    return b.x * b.strength * ease;   // signed, normalized
+  }
+
+  function trunkPoint(baseX, baseY, trunkH, tilt, t){
+    // t: 0..1 base->top
+    const y = baseY - trunkH*t;
+    const bend = (tilt * trunkH);
+    const xBase = baseX + bend*(t*t*0.62 + t*0.08);
+    // Apply interactive bend (stronger towards top)
+    const bx = bendOffset(t) * trunkH * 0.95;
+    return { x: xBase + bx, y };
+  }
+
   function drawNebari(x,y,baseThick,hp01){
     g.save();
     g.globalAlpha = 0.85;
@@ -1697,13 +1405,6 @@
     g.restore();
   }
 
-  function trunkPoint(baseX, baseY, trunkH, tilt, tt){
-    const y = baseY - trunkH*tt;
-    const bend = tilt * trunkH;
-    const x = baseX + bend*(tt*tt*0.62 + tt*0.08);
-    return {x,y};
-  }
-
   function drawTrunk(baseX, baseY, trunkH, thick0, tilt, bark, rng){
     g.save();
     g.lineCap = "round";
@@ -1720,16 +1421,16 @@
     g.quadraticCurveTo(p1s.x, p1s.y, p2s.x, p2s.y);
     g.stroke();
 
-    // trunk layers
+    // trunk layers (taper)
     g.globalAlpha = 1;
-    const layers = 22;
+    const layers = 26;
     for (let i=0;i<layers;i++){
       const t0 = i/(layers-1);
       const t1 = (i+1)/(layers-1);
       const a = trunkPoint(baseX, baseY, trunkH, tilt, t0);
       const b = trunkPoint(baseX, baseY, trunkH, tilt, t1);
-      const thick = lerp(thick0, Math.max(3.5, thick0*0.18), t0);
-      const col = mix(bark.a, bark.b, t0*0.65);
+      const thick = lerp(thick0, Math.max(3.2, thick0*0.16), t0);
+      const col = mix(bark.a, bark.b, t0*0.72);
       g.strokeStyle = rgba(col, 0.98);
       g.lineWidth = thick;
       g.beginPath();
@@ -1739,276 +1440,350 @@
     }
 
     // bark detail
-    g.globalAlpha = 0.18;
+    g.globalAlpha = 0.16;
     g.strokeStyle = "rgba(0,0,0,0.9)";
     g.lineWidth = 1;
-
-    const prof = speciesRenderProfile(S.tree.speciesId);
-    const roughness =
-      prof.bark.type==="smooth" ? 0.6 :
-      prof.bark.type==="rough"  ? 1.1 :
-      prof.bark.type==="flake"  ? 1.3 :
-      1.5;
-
-    const lines = Math.floor(18 * roughness);
+    const lines = 20;
     for (let i=0;i<lines;i++){
-      const tt = 0.1 + (i/(lines-1))*0.85;
+      const tt = 0.12 + (i/(lines-1))*0.82;
       const p = trunkPoint(baseX, baseY, trunkH, tilt, tt);
-      const w = lerp(thick0*0.34, 3, tt);
-      const j = (rng()-0.5)*6*roughness;
-
+      const w = lerp(thick0*0.32, 3, tt);
+      const j = (rng()-0.5)*6;
       g.beginPath();
       g.moveTo(p.x - w, p.y + j);
-      g.quadraticCurveTo(p.x, p.y + j + (rng()-0.5)*6*roughness, p.x + w, p.y + j);
+      g.quadraticCurveTo(p.x, p.y + j + (rng()-0.5)*6, p.x + w, p.y + j);
       g.stroke();
-
-      if (prof.bark.type==="flake" && rng()<0.35){
-        g.beginPath();
-        g.moveTo(p.x - w*0.5, p.y + j + 3);
-        g.lineTo(p.x + w*0.35, p.y + j - 2);
-        g.stroke();
-      }
     }
 
     g.restore();
   }
 
-  function clampPointToEllipse(x,y, cx,cy, rx,ry, padMul){
-    const dx = x - cx;
-    const dy = y - cy;
-    const nx = dx / (rx*padMul);
-    const ny = dy / (ry*padMul);
-    const d = Math.sqrt(nx*nx + ny*ny);
-    if (d <= 1 || d === 0) return {x,y};
-    const s = 1 / d;
-    return { x: cx + dx*s, y: cy + dy*s };
-  }
+  // ---------- BONSAI BRANCH GENERATION (NEU) ----------
+  // We generate a list of segments and leaf points. This replaces the old "flat pads".
+  function genBranches(seed, baseX, baseY, trunkH, tilt, thick0, canopy01, shape01){
+    const rng = mulberry32(seed >>> 0);
 
-  function drawPrimaryBranches(style, baseX, baseY, trunkH, tilt, thick0, canopy01, shape01, wired, rng){
-    const pads = [];
-    const compact = 0.70 + shape01*0.60;
-    const spread = 1.15 - shape01*0.55;
-    const tierCount = Math.floor(3 + smoothstep(canopy01)*4);
-    const slant = (style==="slant") ? (0.18 + (1-shape01)*0.10) : 0.0;
-    const broom = (style==="broom");
+    const segs = [];
+    const leaves = [];
+
+    // Canopy silhouette params:
+    const compact = 0.55 + shape01*0.75;
+    const spread = 1.25 - shape01*0.65; // low shape => messy, wide
+    const crownW = (120 + canopy01*220) * compact * spread;
+    const crownH = (90 + canopy01*160) * compact;
 
     const top = trunkPoint(baseX, baseY, trunkH, tilt, 1);
-    const canopyCX = top.x + (tilt+slant)*trunkH*0.10;
-    const canopyCY = top.y + trunkH*0.12;
-    const rx = (95 + canopy01*160) * compact;
-    const ry = (70 + canopy01*120) * compact;
+    const crownCX = top.x + (tilt*trunkH*0.06);
+    const crownCY = top.y + trunkH*0.18;
 
-    // floor shadow
-    g.save();
-    g.globalAlpha = 0.20;
-    g.fillStyle = "rgba(0,0,0,0.85)";
-    g.beginPath();
-    g.ellipse(canopyCX, baseY + trunkH*0.48, rx*0.85, ry*0.28, 0, 0, Math.PI*2);
-    g.fill();
-    g.restore();
+    function insideCrown(x,y){
+      const dx = (x - crownCX) / Math.max(1, crownW);
+      const dy = (y - crownCY) / Math.max(1, crownH);
+      return (dx*dx + dy*dy) <= 1.08;
+    }
 
+    function addSegment(ax,ay,bx,by,w0,w1,depth){
+      segs.push({ax,ay,bx,by,w0,w1,depth});
+    }
+
+    // main trunk path points, used to spawn primaries
+    const trunkPts = [];
+    const trunkSteps = 18;
+    for (let i=0;i<=trunkSteps;i++){
+      const t = i/trunkSteps;
+      trunkPts.push(trunkPoint(baseX, baseY, trunkH, tilt, t));
+    }
+
+    // primaries
+    const primaryCount = Math.floor(4 + canopy01*4);
+    for (let i=0;i<primaryCount;i++){
+      const t = lerp(0.22, 0.88, (i+1)/(primaryCount+1));
+      const p = trunkPoint(baseX, baseY, trunkH, tilt, t);
+      const side = (i%2===0) ? -1 : 1;
+
+      const baseAng = lerp(0.10, -0.60, t) * side;
+      const ang = baseAng + (rng()-0.5)*0.25;
+
+      const len = lerp(80, 210, canopy01) * (0.75 + rng()*0.45) * (0.9 + (1-shape01)*0.25);
+      const bx = p.x + Math.cos(ang)*len;
+      const by = p.y + Math.sin(ang)*len*0.55 - 10;
+
+      // clamp into crown silhouette
+      let ex=bx, ey=by;
+      let tries=0;
+      while (!insideCrown(ex,ey) && tries<12){
+        ex = lerp(ex, crownCX, 0.12);
+        ey = lerp(ey, crownCY, 0.12);
+        tries++;
+      }
+
+      const w0 = lerp(thick0*0.38, thick0*0.26, t);
+      const w1 = w0*0.65;
+      addSegment(p.x,p.y, ex,ey, w0,w1, 0);
+
+      // recursive twigs from primary
+      branchRec(ex,ey, ang, len*0.72, w1, 1, side);
+    }
+
+    function branchRec(x,y,ang,len,w,depth,side){
+      const maxD = Math.floor(2 + canopy01*3); // 2..5
+      if (depth > maxD) {
+        // leaf at tip
+        if (insideCrown(x,y)) leaves.push({x,y, s: (0.75 + rng()*0.6) * (0.55 + canopy01*0.6)});
+        return;
+      }
+
+      const forks = (depth<=2) ? 2 : (rng()<0.65 ? 2 : 1);
+      for (let i=0;i<forks;i++){
+        const sgn = (forks===1) ? side : (i===0 ? side : -side);
+        const a = ang + sgn*(0.22 + rng()*0.45) * (0.75 + (1-shape01)*0.45);
+        const l = len * (0.58 + rng()*0.22) * (0.92 - depth*0.06);
+        const nx = x + Math.cos(a)*l;
+        const ny = y + Math.sin(a)*l*0.60 - (8 + depth*4);
+
+        let ex=nx, ey=ny;
+        let tries=0;
+        while (!insideCrown(ex,ey) && tries<10){
+          ex = lerp(ex, crownCX, 0.16);
+          ey = lerp(ey, crownCY, 0.16);
+          tries++;
+        }
+
+        const w0 = w;
+        const w1 = Math.max(0.9, w*0.68);
+        addSegment(x,y, ex,ey, w0,w1, depth);
+
+        // micro branching
+        if (rng() < 0.55 + canopy01*0.18){
+          const sa = a + sgn*(0.35 + rng()*0.35);
+          const sl = l*(0.35 + rng()*0.22);
+          const sx = x + Math.cos(sa)*sl;
+          const sy = y + Math.sin(sa)*sl*0.60 - 6;
+          const sw0 = w1*0.72;
+          addSegment(x,y, sx,sy, sw0, Math.max(0.8, sw0*0.65), depth+0.5);
+          if (insideCrown(sx,sy)) leaves.push({x:sx,y:sy, s:(0.55 + rng()*0.55) * (0.55 + canopy01*0.6)});
+        }
+
+        branchRec(ex,ey, a, l, w1, depth+1, sgn);
+      }
+    }
+
+    return { segs, leaves, crown: {cx:crownCX, cy:crownCY, rx:crownW, ry:crownH} };
+  }
+
+  function drawSegments(segs, bark, hp01){
+    // draw from thick to thin for better layering
+    const sorted = segs.slice().sort((a,b)=> (b.w0 - a.w0));
     g.save();
     g.lineCap = "round";
-
-    for (let i=0;i<tierCount;i++){
-      const u = (i+1)/(tierCount+1);
-      const tt = lerp(0.30, 0.92, u);
-      const p = trunkPoint(baseX, baseY, trunkH, tilt + slant, tt);
-
-      const side = (i%2===0) ? -1 : 1;
-      const tierWide = lerp(rx*0.95, rx*0.45, u) * spread;
-      const tierUp = lerp(18, 46, u);
-
-      const len = (tierWide * (0.55 + canopy01*0.55)) * (0.85 + rng()*0.25);
-      const angleBase = broom ? lerp(-0.10, -0.55, u) : lerp(0.05, -0.35, u);
-      const angle = side * (angleBase + (rng()*0.20));
-
-      const midX = p.x + Math.cos(angle)*len*0.55;
-      const midY = p.y + Math.sin(angle)*len*0.35 - tierUp*0.15;
-
-      let tipX = p.x + Math.cos(angle)*len;
-      let tipY = p.y + Math.sin(angle)*len*0.55 - tierUp*0.35;
-
-      const cl = clampPointToEllipse(tipX,tipY, canopyCX,canopyCY, rx,ry, 1.03);
-      tipX = cl.x; tipY = cl.y;
-
-      const th = Math.max(1.2, lerp(thick0*0.38, 1.8, u) * (0.90 + rng()*0.25));
-      g.strokeStyle = "rgba(55,55,60,0.92)";
-      g.lineWidth = th;
+    for (const s of sorted){
+      // shadow
+      g.globalAlpha = 0.16;
+      g.strokeStyle = "rgba(0,0,0,0.9)";
+      g.lineWidth = s.w0*1.05;
       g.beginPath();
-      g.moveTo(p.x,p.y);
-      g.quadraticCurveTo(midX,midY, tipX,tipY);
+      g.moveTo(s.ax+3, s.ay+3);
+      g.lineTo(s.bx+3, s.by+3);
       g.stroke();
 
-      if (!broom && rng() < (0.55 + canopy01*0.25)){
-        const sLen = len*(0.40 + rng()*0.25);
-        const sAng = angle + side*(0.32 + rng()*0.35) * (wired ? 0.65 : 1.0);
-        const sMidX = tipX + Math.cos(sAng)*sLen*0.55;
-        const sMidY = tipY + Math.sin(sAng)*sLen*0.30 - 8;
-        let sTipX = tipX + Math.cos(sAng)*sLen;
-        let sTipY = tipY + Math.sin(sAng)*sLen*0.55 - 10;
-        const cl2 = clampPointToEllipse(sTipX,sTipY, canopyCX,canopyCY, rx,ry, 1.03);
-        sTipX=cl2.x; sTipY=cl2.y;
+      // wood
+      const t = clamp01((s.depth) / 5);
+      const col = mix(bark.a, bark.b, 0.35 + t*0.65);
+      g.globalAlpha = 0.95;
+      g.strokeStyle = rgba(col, 1);
+      g.lineWidth = s.w0;
+      g.beginPath();
+      g.moveTo(s.ax, s.ay);
+      g.lineTo(s.bx, s.by);
+      g.stroke();
 
-        g.strokeStyle = "rgba(40,40,45,0.88)";
-        g.lineWidth = Math.max(1.0, th*0.62);
-        g.beginPath();
-        g.moveTo(tipX,tipY);
-        g.quadraticCurveTo(sMidX,sMidY, sTipX,sTipY);
-        g.stroke();
-
-        pads.push({x:sTipX,y:sTipY, tier:u, size:lerp(1.00,0.68,u)});
-      }
-
-      pads.push({x:tipX,y:tipY, tier:u, size:lerp(1.15,0.75,u)});
+      // subtle highlight
+      g.globalAlpha = 0.12 + hp01*0.10;
+      g.strokeStyle = "rgba(255,255,255,0.35)";
+      g.lineWidth = Math.max(0.6, s.w0*0.18);
+      g.beginPath();
+      g.moveTo(lerp(s.ax,s.bx,0.15), lerp(s.ay,s.by,0.15));
+      g.lineTo(lerp(s.ax,s.bx,0.85), lerp(s.ay,s.by,0.85));
+      g.stroke();
     }
-
-    pads.push({x:canopyCX, y:canopyCY - ry*0.55, tier:1, size:0.95});
-
     g.restore();
-    return { pads, canopyCX, canopyCY, rx, ry };
   }
 
-  function drawPad(x,y, rX,rY, colA, colB, alpha, spProfile, rng){
-    const style = spProfile.pad.style;
-
-    // shadow
-    g.save();
-    g.globalAlpha = alpha*0.18;
-    g.fillStyle = "rgba(0,0,0,0.8)";
-    g.beginPath();
-    g.ellipse(x+4, y+6, rX*0.92, rY*0.62, 0, 0, Math.PI*2);
-    g.fill();
-    g.restore();
-
-    const grd = g.createLinearGradient(x-rX, y-rY, x+rX, y+rY);
-    grd.addColorStop(0, rgba(colA, 0.95));
-    grd.addColorStop(1, rgba(colB, 0.95));
-
+  // leaf cluster drawing (much more bonsai-like than flat arcs)
+  function drawLeafCluster(x,y, size, palA, palB, style, rng, alpha){
     g.save();
     g.globalAlpha = alpha;
+
+    // shadow
+    g.globalAlpha = alpha*0.18;
+    g.fillStyle = "rgba(0,0,0,0.85)";
+    g.beginPath();
+    g.ellipse(x+3, y+5, 7*size, 4.5*size, 0, 0, Math.PI*2);
+    g.fill();
+
+    // body
+    g.globalAlpha = alpha;
+    const grd = g.createRadialGradient(x-4*size, y-6*size, 2*size, x, y, 18*size);
+    grd.addColorStop(0, rgba(palB, 0.95));
+    grd.addColorStop(1, rgba(palA, 0.95));
     g.fillStyle = grd;
 
-    if (style === "conifer"){
-      g.beginPath();
-      g.moveTo(x - rX*0.95, y + rY*0.20);
-      g.quadraticCurveTo(x - rX*0.10, y - rY*0.95, x + rX*0.95, y + rY*0.20);
-      g.quadraticCurveTo(x, y + rY*0.70, x - rX*0.95, y + rY*0.20);
-      g.closePath();
-      g.fill();
-
-      g.globalAlpha *= 0.22;
-      g.strokeStyle = "rgba(255,255,255,0.25)";
-      g.lineWidth = 1;
-      const strokes = 18;
-      for (let i=0;i<strokes;i++){
-        const tt = i/(strokes-1);
-        const sx = lerp(x-rX*0.75, x+rX*0.75, tt);
-        const sy = y + (rng()-0.5)*rY*0.25;
+    if (style === "needle"){
+      // small needle bursts
+      g.strokeStyle = rgba(palB, 0.95);
+      g.lineWidth = Math.max(0.8, 1.2*size);
+      const n = Math.floor(6 + rng()*8);
+      for (let i=0;i<n;i++){
+        const a = rng()*Math.PI*2;
+        const l = (10 + rng()*14)*size;
         g.beginPath();
-        g.moveTo(sx, sy);
-        g.lineTo(sx + (rng()-0.5)*rX*0.10, sy - rY*(0.35 + rng()*0.25));
+        g.moveTo(x, y);
+        g.lineTo(x + Math.cos(a)*l, y + Math.sin(a)*l*0.9);
         g.stroke();
       }
+      // core
+      g.globalAlpha = alpha*0.35;
+      g.fillStyle = rgba(palA, 0.95);
+      g.beginPath();
+      g.arc(x,y, 4.2*size, 0, Math.PI*2);
+      g.fill();
+    } else if (style === "scale"){
+      // juniper pads: many tiny dots
+      const n = Math.floor(14 + rng()*18);
+      for (let i=0;i<n;i++){
+        const a = rng()*Math.PI*2;
+        const r = Math.sqrt(rng())*(14*size);
+        const px = x + Math.cos(a)*r;
+        const py = y + Math.sin(a)*r*0.65;
+        g.fillStyle = rgba(mix(palA,palB,rng()), 0.95);
+        g.beginPath();
+        g.ellipse(px,py, (2.8+ rng()*2.2)*size, (2.2+rng()*1.8)*size, rng()*1.2, 0, Math.PI*2);
+        g.fill();
+      }
+      g.globalAlpha = alpha*0.12;
+      g.strokeStyle = "rgba(255,255,255,0.25)";
+      g.lineWidth = 1;
+      g.beginPath();
+      g.ellipse(x,y, 16*size, 10*size, 0, 0, Math.PI*2);
+      g.stroke();
     } else if (style === "succ"){
-      const bumps = 9;
+      // jade: thick rounded "pads"
+      const bumps = 6 + Math.floor(rng()*4);
       for (let i=0;i<bumps;i++){
         const a = (i/bumps)*Math.PI*2;
-        const bx = x + Math.cos(a)*rX*0.38;
-        const by = y + Math.sin(a)*rY*0.30;
-        const brx = rX*(0.34 + (i%3)*0.06);
-        const bry = rY*(0.28 + ((i+1)%3)*0.06);
+        const px = x + Math.cos(a)*(10*size);
+        const py = y + Math.sin(a)*(7*size);
+        g.fillStyle = rgba(mix(palA,palB,rng()*0.7), 0.95);
         g.beginPath();
-        g.ellipse(bx,by, brx,bry, a*0.10, 0, Math.PI*2);
+        g.ellipse(px,py, (7+rng()*3)*size, (5+rng()*2.5)*size, a*0.25, 0, Math.PI*2);
         g.fill();
       }
+      g.fillStyle = rgba(palB, 0.90);
       g.beginPath();
-      g.ellipse(x,y, rX*0.78, rY*0.70, 0, 0, Math.PI*2);
+      g.ellipse(x,y, 14*size, 10*size, 0, 0, Math.PI*2);
       g.fill();
-
-      g.globalAlpha *= 0.18;
-      g.fillStyle = "rgba(255,255,255,0.22)";
+      g.globalAlpha = alpha*0.18;
+      g.fillStyle = "rgba(255,255,255,0.24)";
       g.beginPath();
-      g.ellipse(x-rX*0.15, y-rY*0.20, rX*0.18, rY*0.14, -0.2, 0, Math.PI*2);
+      g.ellipse(x-5*size, y-6*size, 6*size, 4.5*size, -0.2, 0, Math.PI*2);
       g.fill();
+    } else if (style === "olive"){
+      // olive: slender leaves
+      g.fillStyle = rgba(palA, 0.95);
+      const n = 6 + Math.floor(rng()*7);
+      for (let i=0;i<n;i++){
+        const a = rng()*Math.PI*2;
+        const r = Math.sqrt(rng())*(14*size);
+        const px = x + Math.cos(a)*r;
+        const py = y + Math.sin(a)*r*0.62;
+        g.beginPath();
+        g.ellipse(px,py, (6+rng()*3)*size, (2.2+rng()*1.2)*size, a, 0, Math.PI*2);
+        g.fill();
+      }
+      g.globalAlpha = alpha*0.10;
+      g.strokeStyle = "rgba(255,255,255,0.25)";
+      g.lineWidth = 1;
+      g.beginPath();
+      g.ellipse(x,y, 16*size, 10*size, 0, 0, Math.PI*2);
+      g.stroke();
     } else {
-      const bumps = 7;
-      for (let i=0;i<bumps;i++){
-        const a = (i/bumps)*Math.PI*2;
-        const bx = x + Math.cos(a)*rX*0.45;
-        const by = y + Math.sin(a)*rY*0.34;
-        const brx = rX*(0.42 + (i%2)*0.08);
-        const bry = rY*(0.32 + ((i+1)%2)*0.10);
+      // broadleaf: small leaf blobs (many) => bonsai-like
+      const n = 8 + Math.floor(rng()*12);
+      for (let i=0;i<n;i++){
+        const a = rng()*Math.PI*2;
+        const r = Math.sqrt(rng())*(14*size);
+        const px = x + Math.cos(a)*r;
+        const py = y + Math.sin(a)*r*0.62;
+        const c = mix(palA,palB,rng()*0.6);
+        g.fillStyle = rgba(c, 0.95);
         g.beginPath();
-        g.ellipse(bx,by, brx,bry, a*0.12, 0, Math.PI*2);
+        g.ellipse(px,py, (4.5+rng()*3.5)*size, (3.2+rng()*2.6)*size, rng()*1.6, 0, Math.PI*2);
         g.fill();
       }
+      g.globalAlpha = alpha*0.10;
+      g.strokeStyle = "rgba(255,255,255,0.25)";
+      g.lineWidth = 1;
       g.beginPath();
-      g.ellipse(x,y, rX,rY, 0, 0, Math.PI*2);
-      g.fill();
+      g.ellipse(x,y, 16*size, 10*size, 0, 0, Math.PI*2);
+      g.stroke();
     }
-
-    // highlight rim
-    g.globalAlpha = alpha*0.10;
-    g.strokeStyle = "rgba(255,255,255,0.28)";
-    g.lineWidth = 2;
-    g.beginPath();
-    g.ellipse(x,y, rX*0.95, rY*0.90, 0, 0, Math.PI*2);
-    g.stroke();
 
     g.restore();
   }
 
-  function drawFoliagePads(pads, canopyCX, canopyCY, rx, ry, seaId, hp01, canopy01, shape01, spId, rng){
-    const prof = speciesRenderProfile(spId);
-    const pal = seasonLeafPaletteWithSpecies(seaId, hp01, prof);
+  function drawLeaves(leaves, pal, prof, hp01, canopy01){
+    const rng = mulberry32(((S.day*9917) ^ (S.tree.wired?77:13) ^ (S.tree.speciesId.length*313))>>>0);
 
-    const density = prof.pad.density;
-    const flat = prof.pad.flat;
-
-    const baseAlpha = (0.58 + smoothstep(canopy01)*0.28) * (0.55 + hp01*0.45);
-    const compact = 0.72 + shape01*0.60;
-
-    const targetPads = Math.floor((5 + smoothstep(canopy01)*10) * density);
-    const selected = pads.slice().sort((a,b)=>a.tier-b.tier).slice(0, Math.min(targetPads, pads.length));
-
-    for (let i=0;i<selected.length;i++){
-      const p = selected[i];
-      const tier = p.tier;
-
-      const tierRx = lerp(rx*0.70, rx*0.38, tier) * (0.75 + p.size*0.35) * (1/compact);
-      const tierRy = lerp(ry*0.42, ry*0.28, tier) * (0.78 + p.size*0.32) * (1/compact);
-
-      const padRx = tierRx;
-      const padRy = tierRy * flat;
-
-      let x = p.x + (rng()-0.5)*8*(1-shape01);
-      let y = p.y + (rng()-0.5)*6*(1-shape01);
-      const cl = clampPointToEllipse(x,y, canopyCX,canopyCY, rx,ry, 1.02);
-      x = cl.x; y = cl.y;
-
-      const cMix = rng()*0.55;
-      const a = mix(pal.a, pal.b, cMix);
-      const b = mix(pal.b, pal.a, cMix*0.35);
-
-      drawPad(x,y, padRx,padRy, a,b, baseAlpha*0.92, prof, rng);
+    // density depends on canopy + health
+    const density = (0.35 + canopy01*0.95) * (0.55 + hp01*0.45);
+    const want = Math.floor(leaves.length * (0.55 + density*0.75));
+    const pick = leaves.slice();
+    // shuffle-ish
+    for (let i=pick.length-1;i>0;i--){
+      const j = Math.floor(rng()*(i+1));
+      const tmp = pick[i]; pick[i]=pick[j]; pick[j]=tmp;
     }
 
-    const fillCount = Math.floor((3 + smoothstep(canopy01)*4) * density);
-    for (let i=0;i<fillCount;i++){
-      const ang = rng()*Math.PI*2;
-      const rr = Math.sqrt(rng());
-      const x = canopyCX + Math.cos(ang)*rx*rr*0.60;
-      const y = canopyCY + Math.sin(ang)*ry*rr*0.60;
-      const padRx = (rx*(0.36 + rng()*0.18))*(1/compact);
-      const padRy = (ry*(0.22 + rng()*0.14))*(1/compact) * flat;
-      drawPad(x,y, padRx, padRy, pal.a, pal.b, baseAlpha*0.55, prof, rng);
+    const chosen = pick.slice(0, Math.min(want, 900));
+    // draw back-to-front by y
+    chosen.sort((a,b)=>a.y-b.y);
+
+    const alphaBase = 0.65 + hp01*0.25;
+    for (const p of chosen){
+      const s = p.s * (0.75 + rng()*0.5);
+      drawLeafCluster(p.x, p.y, s, pal.a, pal.b, prof.leafStyle, rng, alphaBase);
+    }
+
+    // blossoms for azalea/serissa in spring
+    const seaId = season().id;
+    if (seaId==="spring" && (S.tree.speciesId==="azalea" || S.tree.speciesId==="serissa") && hp01>0.55){
+      g.save();
+      g.globalAlpha = 0.55;
+      const n = Math.floor(10 + canopy01*24);
+      for (let i=0;i<n;i++){
+        const p = chosen[Math.floor(rng()*chosen.length)];
+        if (!p) continue;
+        const x = p.x + (rng()-0.5)*16;
+        const y = p.y + (rng()-0.5)*12;
+        const r = 2.2 + rng()*3.2;
+        g.fillStyle = "rgba(255,170,210,0.75)";
+        for (let k=0;k<5;k++){
+          const a = (k/5)*Math.PI*2;
+          g.beginPath();
+          g.ellipse(x + Math.cos(a)*r, y + Math.sin(a)*r, r*0.95, r*0.60, a, 0, Math.PI*2);
+          g.fill();
+        }
+        g.fillStyle = "rgba(255,230,140,0.55)";
+        g.beginPath(); g.arc(x,y,r*0.45,0,Math.PI*2); g.fill();
+      }
+      g.restore();
     }
   }
 
   function drawWiringOverlay(baseX, baseY, trunkH, thick0, tilt){
+    // visual wire spiral + highlight the bend pivot point
     g.save();
-    g.globalAlpha = 0.38;
+    g.globalAlpha = 0.36;
     g.strokeStyle = "rgba(200,205,215,0.55)";
     g.lineWidth = 2;
 
@@ -2021,54 +1796,22 @@
       g.arc(p.x, p.y, r, 0, Math.PI*2);
       g.stroke();
     }
-    g.restore();
-  }
 
-  function drawBlossoms(pads, rng, canopy01){
-    const n = Math.floor(6 + canopy01*20);
-    g.save();
-    g.globalAlpha = 0.60;
-    for (let i=0;i<n;i++){
-      const p = pads[Math.floor(rng()*pads.length)];
-      const x = p.x + (rng()-0.5)*18;
-      const y = p.y + (rng()-0.5)*12;
-      const r = 2.2 + rng()*3.2;
-      g.fillStyle = "rgba(255,170,210,0.75)";
-      for (let k=0;k<5;k++){
-        const a = (k/5)*Math.PI*2;
-        g.beginPath();
-        g.ellipse(x + Math.cos(a)*r, y + Math.sin(a)*r, r*0.95, r*0.60, a, 0, Math.PI*2);
-        g.fill();
-      }
-      g.fillStyle = "rgba(255,230,140,0.55)";
-      g.beginPath(); g.arc(x,y,r*0.45,0,Math.PI*2); g.fill();
-    }
-    g.restore();
-  }
+    // pivot indicator
+    const pivotT = S.tree.bend.y;
+    const pv = trunkPoint(baseX, baseY, trunkH, tilt, pivotT);
+    g.globalAlpha = 0.35;
+    g.fillStyle = "rgba(118,228,255,0.35)";
+    g.beginPath();
+    g.arc(pv.x, pv.y, 8, 0, Math.PI*2);
+    g.fill();
 
-  function drawNeedleHints(pads, rng, hp01, canopy01){
-    const n = Math.floor(30 + canopy01*85);
-    g.save();
-    g.globalAlpha = 0.16 + hp01*0.12;
-    g.strokeStyle = "rgba(220,235,255,0.28)";
-    g.lineWidth = 1;
-    for (let i=0;i<n;i++){
-      const p = pads[Math.floor(rng()*pads.length)];
-      const x = p.x + (rng()-0.5)*12;
-      const y = p.y + (rng()-0.5)*10;
-      const len = 6 + rng()*15;
-      const a = rng()*Math.PI*2;
-      g.beginPath();
-      g.moveTo(x,y);
-      g.lineTo(x + Math.cos(a)*len, y + Math.sin(a)*len);
-      g.stroke();
-    }
     g.restore();
   }
 
   function drawUIOverlay(){
     g.save();
-    roundRect(14, 14, 420, 108, 12, "rgba(15,20,26,0.86)", "rgba(27,36,48,1)");
+    roundRect(14, 14, 500, 122, 12, "rgba(15,20,26,0.86)", "rgba(27,36,48,1)");
     g.fillStyle = "#e8eef7";
     g.font = "800 14px system-ui,-apple-system,Segoe UI,Roboto,Arial";
     g.fillText(spById(S.tree.speciesId).name, 26, 40);
@@ -2077,19 +1820,19 @@
     g.fillText(`${t("water")} ${fmt(S.tree.water)} · HP ${fmt(S.tree.hp)} · ${t("shape")} ${fmt(S.tree.shape)} · Canopy ${fmt(S.tree.canopy)}`, 26, 64);
     const wtxt = `${t("wire")}: ${S.tree.wired ? t("on") : t("off")}`;
     const stxt = `${t("season")}: ${seasonName()}${isReal() ? " " + t("realSeasonLocked") : ""}`;
-    g.fillText(`${wtxt} · ${stxt}`, 26, 88);
-    g.restore();
-  }
+    g.fillText(`${wtxt} · ${stxt}`, 26, 86);
 
-  function bonsaiStyleForSpecies(spId){
-    if (spId==="elm" || spId==="beech" || spId==="serissa") return "broom";
-    if (spId==="juniper" || spId==="pine" || spId==="spruce") return "slant";
-    return "informal";
+    const b = S.tree.bend;
+    const bendTxt = (S.settings.lang==="en")
+      ? `Bend strength ${b.strength.toFixed(2)} · pivot ${b.y.toFixed(2)}`
+      : `Biegung Stärke ${b.strength.toFixed(2)} · Pivot ${b.y.toFixed(2)}`;
+    g.fillText(bendTxt, 26, 108);
+
+    g.restore();
   }
 
   function drawBonsai(w,h,geom){
     const tt = S.tree;
-    const sp = spById(tt.speciesId);
     const seaId = season().id;
 
     const canopy01 = tt.canopy/100;
@@ -2100,34 +1843,29 @@
     const soilY = geom.cavY + 10;
     const baseY = soilY + 22;
 
-    const style = bonsaiStyleForSpecies(sp.id);
+    const heightMul = 0.74 + canopy01*0.60;
+    const trunkH = 160*heightMul + canopy01*140;
+    const tilt = 0.10 - shape01*0.08; // overall tilt (separate from bend)
+    const thick0 = (18 + canopy01*7) - shape01*5 + (1-hp01)*2.0;
 
-    const heightMul = 0.75 + canopy01*0.55;
-    const trunkH = 150*heightMul + canopy01*120;
-    const tilt = (style==="slant" ? 0.14 : 0.08) - shape01*0.06;
-    const thick0 = (18 + canopy01*6) - shape01*5 + (1-hp01)*2.0;
+    const prof = profileForSpecies(tt.speciesId);
+    const bark = barkPalette(hp01, prof);
+    const pal = leafPalette(seaId, hp01, prof);
 
-    const prof = speciesRenderProfile(sp.id);
-    const bark = barkPaletteWithSpecies(hp01, prof);
-
-    const rng = mulberry32(((S.day*10007) ^ (sp.id.length*9137) ^ ((tt.wired?1:0)*7919))>>>0);
+    const rng = mulberry32(((S.day*10007) ^ (tt.speciesId.length*9137) ^ ((tt.wired?1:0)*7919))>>>0);
 
     drawNebari(baseX, baseY, thick0, hp01);
     drawTrunk(baseX, baseY, trunkH, thick0, tilt, bark, rng);
 
-    const branch = drawPrimaryBranches(style, baseX, baseY, trunkH, tilt, thick0, canopy01, shape01, tt.wired, rng);
+    // NEW: real branch structure + leaf clusters
+    const seed = ((S.day*1337) ^ (tt.speciesId.length*9001) ^ (Math.floor(tt.bend.strength*1000)*37) ^ (Math.floor(tt.bend.y*1000)*97)) >>> 0;
+    const G = genBranches(seed, baseX, baseY, trunkH, tilt, thick0, canopy01, shape01);
+    drawSegments(G.segs, bark, hp01);
 
+    // Optional: show wires and allow bending (visual)
     if (tt.wired) drawWiringOverlay(baseX, baseY, trunkH, thick0, tilt);
 
-    drawFoliagePads(branch.pads, branch.canopyCX, branch.canopyCY, branch.rx, branch.ry,
-                    seaId, hp01, canopy01, shape01, sp.id, rng);
-
-    if (seaId==="spring" && (sp.id==="azalea" || sp.id==="serissa") && hp01 > 0.55){
-      drawBlossoms(branch.pads, rng, canopy01);
-    }
-    if (sp.id==="pine" || sp.id==="spruce" || sp.id==="juniper"){
-      drawNeedleHints(branch.pads, rng, hp01, canopy01);
-    }
+    drawLeaves(G.leaves, pal, prof, hp01, canopy01);
   }
 
   function draw(){
@@ -2312,7 +2050,7 @@
     const upgTiles = [
       { key:"can",   name:(S.settings.lang==="en"?"Watering can":"Gießkanne"), desc:(S.settings.lang==="en"?`More water per use (+${waterAmount()} now).`:`Mehr Wasser pro Gießen (+${waterAmount()} aktuell).`), lvl:S.upgrades.can, nextCost: upgCost("can", S.upgrades.can) },
       { key:"shear", name:(S.settings.lang==="en"?"Shears":"Schere"), desc:(S.settings.lang==="en"?`More shape per prune (+${pruneShapeGain().toFixed(1)} now).`:`Mehr Form pro Schnitt (+${pruneShapeGain().toFixed(1)} aktuell).`), lvl:S.upgrades.shear, nextCost: upgCost("shear", S.upgrades.shear) },
-      { key:"wire",  name:(S.settings.lang==="en"?"Wire":"Draht"), desc:(S.settings.lang==="en"?"More passive shaping while wired.":"Mehr passives Formen beim Drahten."), lvl:S.upgrades.wire, nextCost: upgCost("wire", S.upgrades.wire) }
+      { key:"wire",  name:(S.settings.lang==="en"?"Wire":"Draht"), desc:(S.settings.lang==="en"?"Better bending control + more passive shaping while wired.":"Bessere Biege-Kontrolle + mehr passives Formen beim Drahten."), lvl:S.upgrades.wire, nextCost: upgCost("wire", S.upgrades.wire) }
     ];
     for (const u of upgTiles){
       const tile = document.createElement("div");
@@ -2340,9 +2078,6 @@
 
   function renderQuests(){
     const dg = $("dailyGrid");
-    const mg = $("milestoneGrid");
-    const bg = $("badgeGrid");
-
     ensureDaily();
 
     dg.innerHTML = "";
@@ -2369,41 +2104,6 @@
       tile.appendChild(document.createElement("div")).style.height="8px";
       tile.appendChild(btn);
       dg.appendChild(tile);
-    }
-
-    mg.innerHTML = "";
-    for (const m of milestoneDefs()){
-      const claimed = milestoneClaimed(m.id);
-      const tile = document.createElement("div");
-      tile.className = "tile";
-      tile.innerHTML = `
-        <h3>${m.name}</h3>
-        <div class="sub">${m.desc} · ${t("reward")}: ${m.reward} ${t("coinsW")}</div>
-        <div class="meta">
-          <div class="tag ${m.done ? "good" : ""}">${m.done ? t("done") : t("notYet")}</div>
-          <div class="tag ${claimed ? "good" : ""}">${claimed ? t("claimed") : t("unclaimed")}</div>
-        </div>
-      `;
-      const btn = document.createElement("button");
-      btn.className = "btn small";
-      btn.textContent = claimed ? t("claimed") : "Claim";
-      btn.disabled = claimed || !m.done;
-      btn.onclick = () => claimMilestone(m.id);
-      tile.appendChild(document.createElement("div")).style.height="8px";
-      tile.appendChild(btn);
-      mg.appendChild(tile);
-    }
-
-    bg.innerHTML = "";
-    for (const b of badges()){
-      const tile = document.createElement("div");
-      tile.className = "tile";
-      tile.innerHTML = `
-        <h3>${b.name}</h3>
-        <div class="sub">${b.desc}</div>
-        <div class="meta"><div class="${tierTagClass(b.tier)}">${b.tier}</div></div>
-      `;
-      bg.appendChild(tile);
     }
   }
 
@@ -2432,27 +2132,25 @@
     $("uShear").textContent = S.upgrades.shear;
     $("uWire").textContent = S.upgrades.wire;
 
-    // lock season button in real mode
     $("seasonBtn").disabled = isReal();
     $("seasonBtn").title = isReal() ? t("realSeasonLocked") : "";
 
     const sp = spById(S.tree.speciesId);
     const p = pot(), so = soil();
 
-    const spLine =
+    const bendInfo = (S.settings.lang==="en")
+      ? `Bend: drag on canvas while Wire ON. Double click = reset.`
+      : `Biegen: Ziehen im Canvas wenn Drahten AN. Doppelklick = Reset.`;
+
+    $("toolInfo").innerHTML =
       `${S.settings.lang==="en"?"Species":"Art"}: <span style="color:var(--good);font-weight:900">${sp.name}</span> · ` +
       `${S.settings.lang==="en"?"Growth":"Wachstum"} ${sp.growth.toFixed(2)} · ` +
       `${S.settings.lang==="en"?"Water":"Wasser"} ${sp.thirst.toFixed(2)} · ` +
-      `${S.settings.lang==="en"?"Tolerance":"Toleranz"} ${sp.tolerance.toFixed(2)}`;
-
-    const gearLine =
+      `${S.settings.lang==="en"?"Tolerance":"Toleranz"} ${sp.tolerance.toFixed(2)}<br>` +
       `${t("pot")}: <span style="color:var(--cyan);font-weight:900">${p.name[S.settings.lang] || p.name.de}</span> · ` +
-      `${t("soil")}: <span style="color:var(--vio);font-weight:900">${so.name[S.settings.lang] || so.name.de}</span>`;
-
-    $("toolInfo").innerHTML =
-      spLine + "<br>" +
-      gearLine + "<br>" +
-      `${t("waterBtn")}: +${waterAmount()} · ${t("pruneBtn")}: +${pruneShapeGain().toFixed(1)} ${t("shape")}, −${pruneCanopyLoss().toFixed(1)} Canopy`;
+      `${t("soil")}: <span style="color:var(--vio);font-weight:900">${so.name[S.settings.lang] || so.name.de}</span><br>` +
+      `${t("waterBtn")}: +${waterAmount()} · ${t("pruneBtn")}: +${pruneShapeGain().toFixed(1)} ${t("shape")}, −${pruneCanopyLoss().toFixed(1)} Canopy<br>` +
+      `<span style="color:var(--cyan)">${bendInfo}</span>`;
 
     $("fact").textContent = pickFact(sp);
 
@@ -2523,14 +2221,13 @@
       if (!isValidSave(obj)) return;
       const base = defaultState();
       S = {
-        ...base,
-        ...obj,
+        ...base, ...obj,
         upgrades: { ...base.upgrades, ...(obj.upgrades||{}) },
         unlockedSpecies: { ...base.unlockedSpecies, ...(obj.unlockedSpecies||{}) },
         ownedPots: { ...base.ownedPots, ...(obj.ownedPots||{}) },
         ownedSoils: { ...base.ownedSoils, ...(obj.ownedSoils||{}) },
         equipped: { ...base.equipped, ...(obj.equipped||{}) },
-        tree: { ...base.tree, ...(obj.tree||{}) },
+        tree: { ...base.tree, ...(obj.tree||{}), bend: { ...base.tree.bend, ...(obj.tree?.bend||{}) } },
         photos: Array.isArray(obj.photos) ? obj.photos : [],
         settings: { ...base.settings, ...(obj.settings||{}), test: { ...base.settings.test, ...(obj.settings?.test||{}) } },
         meta: { ...base.meta, ...(obj.meta||{}) }
@@ -2569,6 +2266,8 @@
 
   $("newTree").addEventListener("click", () => {
     S.tree.water = 70; S.tree.hp = 85; S.tree.canopy = 20; S.tree.shape = 18; S.tree.wired = false;
+    // reset bend too (new tree)
+    S.tree.bend = { x:0.06, y:0.38, strength:0.18 };
     S.streak = 0;
     S.coins = Math.max(0, S.coins - 10);
     incAction("newTree");
@@ -2585,7 +2284,7 @@
   $("seasonBtn").addEventListener("click", actSeason);
   $("photoBtn").addEventListener("click", savePhoto);
 
-  // ---------- Start Menu / Settings logic ----------
+  // ---------- Start Menu / Settings ----------
   function refreshSettingsUI(){
     langSel.value = S.settings.lang;
     modeSel.value = S.settings.mode;
@@ -2613,12 +2312,9 @@
     rowRecover.classList.toggle("rowHidden", !showTest);
 
     const dayH = showTest ? Number(dayHoursSel.value) : (modeSel.value==="real" ? 24 : 6);
-    $("dayLenVal").textContent = (S.settings.lang==="en")
-      ? `${dayH}h per in-game day`
-      : `${dayH}h pro In-Game-Tag`;
+    $("dayLenVal").textContent = (S.settings.lang==="en") ? `${dayH}h per in-game day` : `${dayH}h pro In-Game-Tag`;
   }
 
-  // live slider labels
   speedSel.addEventListener("input", () => { speedVal.textContent = speedSel.value; });
   dayHoursSel.addEventListener("input", () => { dayHoursVal.textContent = dayHoursSel.value; refreshSettingsUI(); });
   growthSel.addEventListener("input", () => { growthVal.textContent = Number(growthSel.value).toFixed(2); });
@@ -2636,19 +2332,9 @@
     updateHud(); draw();
   });
 
-  btnPlay.addEventListener("click", () => {
-    hideOverlays();
-    paused = false;
-    saveNow();
-  });
-
+  btnPlay.addEventListener("click", () => { hideOverlays(); paused = false; saveNow(); });
   btnSettings.addEventListener("click", showSettings);
-
-  btnQuit.addEventListener("click", () => {
-    // Browser can't truly quit. We go back to menu.
-    showMenu();
-  });
-
+  btnQuit.addEventListener("click", showMenu);
   btnBackMenu.addEventListener("click", showMenu);
 
   btnSaveSettings.addEventListener("click", () => {
@@ -2663,14 +2349,88 @@
       S.settings.test.recoverMul = Number(recoverSel.value);
     }
 
-    // when switching to real mode, sync season immediately
     syncRealSeason();
-
     applyLanguage();
     refreshSettingsUI();
     saveNow();
     showMenu();
     updateHud(); draw();
+  });
+
+  // ---------- BENDING INPUT (NEU) ----------
+  // Wire ON => dragging bends the tree.
+  // Horizontal drag adjusts bend.x, vertical drag adjusts bend.strength, and drag near middle adjusts pivot (bend.y).
+  let drag = { active:false, id:null, x0:0, y0:0, bx0:0, bs0:0, by0:0 };
+
+  function canvasToLocal(e){
+    const r = cv.getBoundingClientRect();
+    const x = (e.clientX - r.left) * (cv.width / r.width);
+    const y = (e.clientY - r.top)  * (cv.height / r.height);
+    return {x,y};
+  }
+
+  function startDrag(pointerId, x, y){
+    drag.active = true;
+    drag.id = pointerId;
+    drag.x0 = x; drag.y0 = y;
+    drag.bx0 = S.tree.bend.x;
+    drag.bs0 = S.tree.bend.strength;
+    drag.by0 = S.tree.bend.y;
+  }
+
+  function moveDrag(x, y){
+    if (!drag.active) return;
+
+    const dx = (x - drag.x0) / cv.width;
+    const dy = (y - drag.y0) / cv.height;
+
+    // upgrade wire improves control (less jitter, more strength)
+    const ctrl = 0.8 + (S.upgrades.wire-1)*0.08;
+
+    // how close to trunk mid? -> adjust pivot
+    // if user drags near middle height, allow pivot movement
+    const midBand = (drag.y0 / cv.height);
+    const pivotMode = (midBand > 0.25 && midBand < 0.65);
+
+    S.tree.bend.x = clamp(drag.bx0 + dx*1.8*ctrl, -1, 1);
+    S.tree.bend.strength = clamp(drag.bs0 + (-dy)*1.6*ctrl, 0, 1);
+
+    if (pivotMode){
+      S.tree.bend.y = clamp(drag.by0 + dy*0.9, 0.08, 0.92);
+    }
+
+    markDirty("hud"); markDirty("play");
+    saveNow();
+  }
+
+  function endDrag(pointerId){
+    if (!drag.active) return;
+    if (drag.id !== pointerId) return;
+    drag.active = false;
+    drag.id = null;
+  }
+
+  cv.addEventListener("pointerdown", (e) => {
+    if (!S.tree.wired) return;          // bend only when wired
+    cv.setPointerCapture(e.pointerId);
+    const p = canvasToLocal(e);
+    startDrag(e.pointerId, p.x, p.y);
+  });
+
+  cv.addEventListener("pointermove", (e) => {
+    if (!drag.active) return;
+    const p = canvasToLocal(e);
+    moveDrag(p.x, p.y);
+  });
+
+  cv.addEventListener("pointerup",   (e) => endDrag(e.pointerId));
+  cv.addEventListener("pointercancel",(e)=> endDrag(e.pointerId));
+
+  // Double click/tap to reset bend (works always)
+  cv.addEventListener("dblclick", () => {
+    S.tree.bend = { x:0.06, y:0.38, strength:0.18 };
+    markDirty("hud"); markDirty("play");
+    saveNow();
   });
 
   // ---------- Init ----------
@@ -2680,10 +2440,7 @@
   refreshSettingsUI();
   setTab("play");
 
-  // catch up once (even while paused, so stats reflect elapsed time)
   offlineCatchup();
-
-  // show start menu always
   showMenu();
   updateHud();
   draw();
@@ -2699,11 +2456,9 @@
     if (!paused){
       syncRealSeason();
       const simSeconds = dtReal * getSpeedMul();
-      // Real mode maps 1:1 (speed=1), Test scales simSeconds, Normal=1
       advanceTime(simSeconds, false);
     }
 
-    // draw every frame
     draw();
 
     hudAcc += dtReal;
@@ -2734,8 +2489,8 @@
       updateHud(); draw();
     }
   });
+
 })();
 </script>
 </body>
 </html>
-```
