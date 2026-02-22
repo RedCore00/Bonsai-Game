@@ -1,0 +1,1319 @@
+Phase 3 (vollständig, lauffähig): Quests-Tab, Daily Tasks (3/Tag), Meilensteine (einmalig claimbar), Badges (auto), Save Export/Import (JSON), alles lokal. Single-File.
+
+Speichern als `bonsai_phase3.html`.
+
+```html
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Balkon-Bonsai (Phase 3)</title>
+  <style>
+    :root{
+      --bg:#0b0d10; --panel:#0f141a; --line:#1b2430; --txt:#e8eef7;
+      --muted:#9fb0c4; --good:#7bd389; --warn:#f6c453; --bad:#f04e45;
+      --cyan:#76e4ff; --vio:#caa6ff;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{max-width:1100px;margin:0 auto;padding:12px 12px 20px}
+    header{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    h1{font-size:18px;margin:0;font-weight:900;letter-spacing:.2px}
+    .topline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .pill{border:1px solid var(--line);background:#0b1016;border-radius:999px;padding:7px 10px;font-size:13px}
+    .row{display:grid;grid-template-columns: 1.25fr .75fr;gap:12px;margin-top:12px}
+    @media (max-width: 900px){ .row{grid-template-columns:1fr} }
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+    .pad{padding:12px}
+    canvas{display:block;width:100%;height:auto;background:#06080a}
+    .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .stat{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0b1016}
+    .stat .k{font-size:12px;color:var(--muted)}
+    .stat .v{font-size:16px;font-weight:900;margin-top:2px}
+    .bar{height:8px;border-radius:999px;background:#0a0f14;border:1px solid #121a23;overflow:hidden;margin-top:8px}
+    .bar > i{display:block;height:100%;width:50%}
+    .btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .btn{appearance:none;border:1px solid var(--line);background:#0b1016;color:var(--txt);
+         border-radius:12px;padding:12px 10px;font-weight:900;font-size:14px}
+    .btn:active{transform:translateY(1px)}
+    .btn.small{padding:10px 10px;font-size:13px}
+    .btn.ghost{background:transparent}
+    .btn:disabled{opacity:.45}
+    .mini{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35}
+    .select{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    select{background:#0b1016;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-weight:800}
+    .fact{border:1px dashed #2b394a;background:#0b1016;border-radius:12px;padding:10px;color:var(--muted);line-height:1.35}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{border:1px solid var(--line);background:#0b1016;color:var(--txt);border-radius:999px;padding:8px 12px;font-weight:900;font-size:13px}
+    .tab.active{outline:2px solid #2b394a}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    @media (max-width: 900px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+    .tile{border:1px solid var(--line);background:#0b1016;border-radius:12px;padding:10px}
+    .tile h3{margin:0;font-size:14px;font-weight:900}
+    .tile .sub{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.35}
+    .tile .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .tag{border:1px solid #223041;background:#081018;border-radius:999px;padding:5px 8px;font-size:12px;color:var(--muted);font-weight:800}
+    .tag.good{color:var(--good);border-color:#234434}
+    .tag.cyan{color:var(--cyan);border-color:#1f3e44}
+    .tag.vio{color:var(--vio);border-color:#3a2a46}
+    .tag.bad{color:var(--bad);border-color:#442326}
+    .sep{height:1px;background:var(--line);margin:10px 0}
+    .gallery{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+    @media (max-width:900px){ .gallery{grid-template-columns:repeat(3,minmax(0,1fr))} }
+    .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#06080a}
+    .shot img{width:100%;display:block}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:900px){ .row2{grid-template-columns:1fr} }
+
+    .modal{position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; padding:14px; z-index:10}
+    .modal .box{width:min(900px, 96vw); background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+    .modal .head{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--line)}
+    .modal .body{padding:12px}
+    textarea{
+      width:100%; min-height:220px; resize:vertical;
+      background:#0b1016; border:1px solid var(--line); border-radius:12px; color:var(--txt);
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; font-size:12px; padding:10px
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Balkon-Bonsai</h1>
+    <div class="topline">
+      <div class="pill">Coins: <span id="coins">0</span></div>
+      <div class="pill">Streak: <span id="streak">0</span></div>
+      <div class="pill">Tag: <span id="day">1</span> · Saison: <span id="season">Frühling</span></div>
+      <div class="pill">Topf: <span id="potName">—</span> · Erde: <span id="soilName">—</span></div>
+    </div>
+  </header>
+
+  <div class="row">
+    <div class="card">
+      <canvas id="cv" width="880" height="560"></canvas>
+      <div class="pad" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+        <div class="select">
+          <select id="species"></select>
+          <button class="btn small" id="newTree">Neuer Baum</button>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-tab="play">Play</button>
+          <button class="tab" data-tab="quests">Quests</button>
+          <button class="tab" data-tab="collection">Sammlung</button>
+          <button class="tab" data-tab="shop">Shop</button>
+          <button class="tab" data-tab="photos">Fotos</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="pad" id="panelPlay">
+        <div class="stats">
+          <div class="stat">
+            <div class="k">Wasser</div>
+            <div class="v"><span id="waterV">0</span>/100</div>
+            <div class="bar"><i id="waterB"></i></div>
+          </div>
+          <div class="stat">
+            <div class="k">Gesundheit</div>
+            <div class="v"><span id="hpV">0</span>/100</div>
+            <div class="bar"><i id="hpB"></i></div>
+          </div>
+          <div class="stat">
+            <div class="k">Wachstum (Canopy)</div>
+            <div class="v"><span id="canV">0</span>/100</div>
+            <div class="bar"><i id="canB"></i></div>
+          </div>
+          <div class="stat">
+            <div class="k">Form</div>
+            <div class="v"><span id="shapeV">0</span>/100</div>
+            <div class="bar"><i id="shapeB"></i></div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="btns">
+          <button class="btn" id="waterBtn">Gießen</button>
+          <button class="btn" id="pruneBtn">Schneiden</button>
+          <button class="btn" id="wireBtn">Drahten: <span id="wireState">AUS</span></button>
+          <button class="btn" id="seasonBtn">Saison wechseln</button>
+          <button class="btn" id="photoBtn">Foto speichern</button>
+          <button class="btn" id="saveBtn">Save Export/Import</button>
+        </div>
+
+        <div class="mini" id="toolInfo"></div>
+
+        <div style="height:12px"></div>
+        <div class="fact" id="fact"></div>
+
+        <div style="height:12px"></div>
+        <div class="pill">Upgrades: Kanne <span id="uCan">1</span> · Schere <span id="uShear">1</span> · Draht <span id="uWire">1</span></div>
+        <div class="mini">Phase 3: Daily Tasks + Meilensteine + Badges. Alles optional. Keine Paywalls.</div>
+      </div>
+
+      <div class="pad" id="panelQuests" style="display:none">
+        <div style="font-weight:900">Quests</div>
+        <div class="mini">Daily Tasks: 3 pro Tag. Meilensteine: einmalig claimen. Badges: automatisch.</div>
+        <div class="sep"></div>
+
+        <div style="font-weight:900;margin-bottom:6px">Daily Tasks (heute)</div>
+        <div class="grid" id="dailyGrid"></div>
+
+        <div class="sep"></div>
+        <div style="font-weight:900;margin-bottom:6px">Meilensteine</div>
+        <div class="grid" id="milestoneGrid"></div>
+
+        <div class="sep"></div>
+        <div style="font-weight:900;margin-bottom:6px">Badges</div>
+        <div class="grid" id="badgeGrid"></div>
+      </div>
+
+      <div class="pad" id="panelCollection" style="display:none">
+        <div style="font-weight:900">Sammlungsbuch</div>
+        <div class="mini">Arten werden über Kriterien freigeschaltet. Alles sichtbar.</div>
+        <div class="sep"></div>
+        <div class="grid" id="collectionGrid"></div>
+      </div>
+
+      <div class="pad" id="panelShop" style="display:none">
+        <div style="font-weight:900">Shop</div>
+        <div class="mini">Coins-only. Töpfe/Erden geben kleine Boni, primär Variety.</div>
+        <div class="sep"></div>
+        <div class="row2">
+          <div>
+            <div style="font-weight:900;margin-bottom:8px">Töpfe</div>
+            <div class="grid" id="potsGrid" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
+          </div>
+          <div>
+            <div style="font-weight:900;margin-bottom:8px">Erden</div>
+            <div class="grid" id="soilsGrid" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pad" id="panelPhotos" style="display:none">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+          <div style="font-weight:900">Foto-Galerie</div>
+          <div class="mini">Lokal gespeichert.</div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="gallery" id="gallery"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <div class="head">
+      <div style="font-weight:900">Save Export/Import</div>
+      <button class="btn small ghost" id="closeModal">Schließen</button>
+    </div>
+    <div class="body">
+      <div class="mini">Export: JSON kopieren. Import: JSON einfügen → Import.</div>
+      <div style="height:8px"></div>
+      <textarea id="saveText"></textarea>
+      <div style="height:10px"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn small" id="doExport">Export</button>
+        <button class="btn small" id="doImport">Import</button>
+        <button class="btn small" id="doReset">Reset Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const fmt = (n) => Math.round(n);
+
+  const SPECIES = [
+    { id:"ficus", name:"Ficus microcarpa", growth:1.00, thirst:1.00, tolerance:0.70,
+      unlock:{canopy:0, shape:0, hp:0},
+      facts:[
+        "Ficus microcarpa wird oft als Indoor-Bonsai genutzt, weil er schnittverträglich ist.",
+        "Ficus bildet bei hoher Luftfeuchte Luftwurzeln, die später verholzen können.",
+        "Viele Ficus-Arten reagieren auf Rückschnitt mit starkem Neuaustrieb.",
+        "Ficus toleriert häufige Formkorrekturen besser als empfindliche Laubbäume.",
+        "Bei ausreichendem Licht kompaktieren Ficus-Triebe schneller.",
+        "Stabiler Wasserhaushalt reduziert Stressreaktionen."
+      ]},
+    { id:"juniper", name:"Wacholder (Juniperus)", growth:0.80, thirst:0.85, tolerance:0.55,
+      unlock:{canopy:45, shape:30, hp:0},
+      facts:[
+        "Wacholder-Bonsai mögen viel Licht und werden häufig als Outdoor-Bonsai gepflegt.",
+        "Form wird bei Juniperus oft über Drahten erreicht.",
+        "Staunässe ist riskanter als kurze Trockenphasen.",
+        "Juniperus wird meist nicht auf altes, braunes Holz zurückgeschnitten.",
+        "Feine Polster entstehen durch wiederholtes Pinzieren.",
+        "Gute Drainage ist entscheidend."
+      ]},
+    { id:"maple", name:"Ahorn (Acer)", growth:0.90, thirst:1.10, tolerance:0.50,
+      unlock:{canopy:60, shape:0, hp:75},
+      facts:[
+        "Ahorn-Bonsai sind beliebt wegen Herbstfärbung und feiner Verzweigung.",
+        "Kontrollierter Rückschnitt hilft gegen zu große Blätter.",
+        "Acer reagiert sensibel auf Trockenstress im Sommer.",
+        "Gleichmäßiges Licht reduziert einseitiges Wachstum.",
+        "Herbst eignet sich für ruhige Strukturpflege.",
+        "Konstantes Wasser bei guter Drainage ist hilfreich."
+      ]},
+    { id:"elm", name:"Chinesische Ulme (Ulmus parvifolia)", growth:1.05, thirst:1.00, tolerance:0.78,
+      unlock:{canopy:35, shape:20, hp:0},
+      facts:[
+        "Ulmus parvifolia gilt als sehr tolerant.",
+        "Nach Rückschnitt treibt Ulme oft schnell dicht aus.",
+        "Feine Verzweigung entsteht durch kurze, wiederholte Schnitte.",
+        "Bei genug Licht funktioniert Ulme auch indoor.",
+        "Gute Pflege führt zu kompakter Krone.",
+        "Ulmen verzeihen Fehler besser als viele Arten."
+      ]},
+    { id:"pine", name:"Kiefer (Pinus)", growth:0.70, thirst:0.80, tolerance:0.45,
+      unlock:{canopy:55, shape:55, hp:60},
+      facts:[
+        "Kiefern werden oft über Kerzen-Management geformt.",
+        "Pinus braucht meist viel Licht.",
+        "Aufbau ist langfristig und belohnt Geduld.",
+        "Nadelbäume folgen anderer Schnittlogik als Laubbäume.",
+        "Drainage ist bei Pinus besonders wichtig.",
+        "Ruhige, planbare Pflege bringt die besten Formen."
+      ]},
+    { id:"jade", name:"Jadebaum (Crassula ovata)", growth:0.95, thirst:0.70, tolerance:0.85,
+      unlock:{canopy:40, shape:10, hp:0},
+      facts:[
+        "Jade speichert Wasser in Blättern.",
+        "Stecklinge bewurzeln oft leicht.",
+        "Zu viel Wasser ist häufiger Problem als zu wenig.",
+        "Hellster Standort hilft kompakterem Wuchs.",
+        "Stammdicke entsteht über Zeit und Licht.",
+        "Lockere, drainierende Erde ist hilfreich."
+      ]},
+    { id:"olive", name:"Olive (Olea europaea)", growth:0.85, thirst:0.85, tolerance:0.62,
+      unlock:{canopy:50, shape:35, hp:50},
+      facts:[
+        "Oliven haben oft knorrige Stämme.",
+        "Olea mag viel Licht.",
+        "Staunässe ist problematisch.",
+        "Rückschnitt kann kompaktere Internodien fördern.",
+        "Mediterrane Arten profitieren von Luftbewegung.",
+        "Langsamer Aufbau liefert starke Silhouetten."
+      ]},
+    { id:"azalea", name:"Azalee (Rhododendron indicum)", growth:0.90, thirst:1.15, tolerance:0.40,
+      unlock:{canopy:45, shape:40, hp:80},
+      facts:[
+        "Azaleen sind bekannt für starke Blüte.",
+        "Konstante Feuchte ist wichtiger als Extreme.",
+        "Schnitt nach Blüte ist häufig sinnvoll.",
+        "Gute Drainage verhindert Wurzelstress.",
+        "Ruhige Pflege bringt stabile Knospenbildung.",
+        "Regelmäßigkeit schlägt große Eingriffe."
+      ]},
+    { id:"beech", name:"Buche (Fagus)", growth:0.80, thirst:1.05, tolerance:0.48,
+      unlock:{canopy:55, shape:30, hp:70},
+      facts:[
+        "Buchen entwickeln oft elegante Rinde.",
+        "Trockenstress wirkt schnell negativ.",
+        "Feine Zweige entstehen durch vorsichtigen Aufbau.",
+        "Winterstruktur kann grafisch wirken.",
+        "Stabiler Austrieb hängt stark von Gesundheit ab.",
+        "Gleichmäßige Pflege ist entscheidend."
+      ]},
+    { id:"spruce", name:"Fichte (Picea)", growth:0.75, thirst:0.95, tolerance:0.52,
+      unlock:{canopy:50, shape:45, hp:55},
+      facts:[
+        "Fichten eignen sich für klassische Silhouetten.",
+        "Licht hilft dichterem Wuchs.",
+        "Form entsteht über Drahten und Triebmanagement.",
+        "Luftzirkulation unterstützt Gesundheit.",
+        "Nadelbäume bauen Charakter über Jahre auf.",
+        "Saubere Konturen wirken sofort hochwertig."
+      ]},
+    { id:"serissa", name:"Serissa", growth:0.95, thirst:1.10, tolerance:0.46,
+      unlock:{canopy:40, shape:45, hp:70},
+      facts:[
+        "Serissa ist bekannt für kleine Blüten.",
+        "Regelmäßigkeit ist wichtiger als harte Eingriffe.",
+        "Konstanter Standort reduziert Stressreaktionen.",
+        "Kleine Blätter wirken bonsai-typisch.",
+        "Gleichmäßiges Wasser verhindert starke Schwankungen.",
+        "Belohnt ruhiges Pflegen."
+      ]},
+  ];
+
+  const SEASONS = [
+    { id:"spring", name:"Frühling", growMul:1.25, thirstMul:1.00, shapeMul:1.00, recover:0.05 },
+    { id:"summer", name:"Sommer",   growMul:1.15, thirstMul:1.35, shapeMul:0.95, recover:0.02 },
+    { id:"autumn", name:"Herbst",   growMul:0.95, thirstMul:0.95, shapeMul:1.15, recover:0.08 },
+    { id:"winter", name:"Winter",   growMul:0.55, thirstMul:0.70, shapeMul:1.05, recover:0.14 }
+  ];
+
+  const POTS = [
+    {id:"basic", name:"Schlichter Topf", price:0,  waterCap:0,  shapeMul:1.00, note:"Neutral."},
+    {id:"clay",  name:"Ton-Topf",       price:80, waterCap:+4, shapeMul:1.00, note:"+ Wasserpuffer."},
+    {id:"glaze", name:"Glasur-Topf",    price:120,waterCap:+6, shapeMul:1.02, note:"+ Puffer + minimale Form."},
+    {id:"stone", name:"Stein-Optik",    price:160,waterCap:+3, shapeMul:1.04, note:"+ minimale Form."},
+    {id:"wide",  name:"Breit-Schale",   price:180,waterCap:+2, shapeMul:1.05, note:"+ Form."},
+    {id:"deep",  name:"Tief-Schale",    price:190,waterCap:+8, shapeMul:0.99, note:"+ viel Puffer."},
+  ];
+
+  const SOILS = [
+    {id:"standard", name:"Standard-Substrat", price:0,   drainage:+0, buffer:+0,  recover:+0.00, note:"Neutral."},
+    {id:"drain",    name:"Drainage-Mix",     price:90,  drainage:+6, buffer:-2,  recover:+0.00, note:"+ weniger Staunässe."},
+    {id:"retain",   name:"Wasserhalte-Mix",  price:90,  drainage:-2, buffer:+6,  recover:+0.00, note:"+ weniger Trockenstress."},
+    {id:"aerated",  name:"Luftig & locker",  price:140, drainage:+4, buffer:+2,  recover:+0.02, note:"+ kleine Regeneration."},
+    {id:"premium",  name:"Premium-Mix",      price:220, drainage:+4, buffer:+4,  recover:+0.04, note:"+ Balance + Regeneration."},
+  ];
+
+  const SAVE_KEY = "bonsai_phase3_v1";
+
+  const defaultState = () => ({
+    coins: 0,
+    streak: 0,
+    day: 1,
+    seasonIdx: 0,
+    upgrades: { can:1, shear:1, wire:1 },
+    unlockedSpecies: { ficus:true },
+    ownedPots: { basic:true },
+    ownedSoils: { standard:true },
+    equipped: { pot:"basic", soil:"standard" },
+    tree: { speciesId:"ficus", water: 70, hp: 85, canopy: 25, shape: 20, wired: false },
+    photos: [],
+    meta: {
+      lastDay: 1,
+      dayActions: { water:0, prune:0, wireToggle:0, season:0, photo:0, newTree:0 },
+      daily: [],
+      milestonesClaimed: {}
+    }
+  });
+
+  let S = load();
+  ensureMeta();
+
+  const speciesSel = $("species");
+  const cv = $("cv");
+  const g = cv.getContext("2d");
+
+  function ensureMeta(){
+    if (!S.meta) S.meta = defaultState().meta;
+    if (!S.meta.dayActions) S.meta.dayActions = defaultState().meta.dayActions;
+    if (!Array.isArray(S.meta.daily)) S.meta.daily = [];
+    if (!S.meta.milestonesClaimed) S.meta.milestonesClaimed = {};
+  }
+
+  function spById(id){ return SPECIES.find(s => s.id === id) || SPECIES[0]; }
+  function season(){ return SEASONS[S.seasonIdx % SEASONS.length]; }
+  function pot(){ return POTS.find(p => p.id === S.equipped.pot) || POTS[0]; }
+  function soil(){ return SOILS.find(s => s.id === S.equipped.soil) || SOILS[0]; }
+
+  function rebuildSpeciesOptions(){
+    speciesSel.innerHTML = "";
+    const unlockedIds = Object.keys(S.unlockedSpecies).filter(k => S.unlockedSpecies[k]);
+    for (const sp of SPECIES){
+      if (!unlockedIds.includes(sp.id)) continue;
+      const o = document.createElement("option");
+      o.value = sp.id;
+      o.textContent = sp.name;
+      speciesSel.appendChild(o);
+    }
+    if (!S.unlockedSpecies[S.tree.speciesId]) S.tree.speciesId = "ficus";
+    speciesSel.value = S.tree.speciesId;
+  }
+
+  function bar(el, v){
+    const pct = clamp(v, 0, 100);
+    el.style.width = pct + "%";
+    if (pct >= 66) el.style.background = "var(--good)";
+    else if (pct >= 33) el.style.background = "var(--warn)";
+    else el.style.background = "var(--bad)";
+  }
+
+  function waterAmount(){ return 18 + (S.upgrades.can - 1) * 7; }
+  function pruneShapeGain(){ return 8 + (S.upgrades.shear - 1) * 3.5; }
+  function pruneCanopyLoss(){ return 6 - Math.min(3, (S.upgrades.shear - 1) * 0.8); }
+
+  let lastFact = { id:"", idx:0 };
+  function pickFact(sp){
+    if (lastFact.id !== sp.id){
+      lastFact.id = sp.id;
+      lastFact.idx = Math.floor(Math.random() * sp.facts.length);
+    } else if (Math.random() < 0.06){
+      lastFact.idx = (lastFact.idx + 1) % sp.facts.length;
+    }
+    return "Fun Fact: " + sp.facts[lastFact.idx];
+  }
+
+  function incAction(k){
+    S.meta.dayActions[k] = (S.meta.dayActions[k] || 0) + 1;
+  }
+
+  function checkSpeciesUnlocks(){
+    for (const sp of SPECIES){
+      if (S.unlockedSpecies[sp.id]) continue;
+      const u = sp.unlock;
+      const ok = (S.tree.canopy >= u.canopy) && (S.tree.shape >= u.shape) && (S.tree.hp >= u.hp);
+      if (ok){
+        S.unlockedSpecies[sp.id] = true;
+        S.coins += 40;
+      }
+    }
+  }
+
+  function tryAutoUpgrade(){
+    const cap = 6;
+    const cost = (lvl) => 70 + (lvl-1)*60;
+    if (S.upgrades.can < cap && S.coins >= cost(S.upgrades.can)){ S.coins -= cost(S.upgrades.can); S.upgrades.can++; }
+    if (S.upgrades.shear < cap && S.coins >= cost(S.upgrades.shear)){ S.coins -= cost(S.upgrades.shear); S.upgrades.shear++; }
+    if (S.upgrades.wire < cap && S.coins >= cost(S.upgrades.wire)){ S.coins -= cost(S.upgrades.wire); S.upgrades.wire++; }
+  }
+
+  // ---------- Daily Tasks ----------
+  const DAILY_POOL = [
+    {id:"d_water_2",  desc:"Gieße 2x", type:"water", goal:2, reward:20},
+    {id:"d_water_3",  desc:"Gieße 3x", type:"water", goal:3, reward:28},
+    {id:"d_prune_2",  desc:"Schneide 2x", type:"prune", goal:2, reward:22},
+    {id:"d_prune_3",  desc:"Schneide 3x", type:"prune", goal:3, reward:30},
+    {id:"d_wire_1",   desc:"Drahte 1x (toggle)", type:"wireToggle", goal:1, reward:18},
+    {id:"d_season_1", desc:"Wechsle Saison 1x", type:"season", goal:1, reward:18},
+    {id:"d_photo_1",  desc:"Speichere 1 Foto", type:"photo", goal:1, reward:25},
+    {id:"d_hp_80",    desc:"Erreiche HP ≥ 80", type:"stat_hp", goal:80, reward:28},
+    {id:"d_shape_45", desc:"Erreiche Form ≥ 45", type:"stat_shape", goal:45, reward:28},
+    {id:"d_can_45",   desc:"Erreiche Canopy ≥ 45", type:"stat_canopy", goal:45, reward:28},
+  ];
+
+  function resetDayActions(){
+    S.meta.dayActions = { water:0, prune:0, wireToggle:0, season:0, photo:0, newTree:0 };
+  }
+
+  function genDailyTasks(){
+    // pick 2 action + 1 stat, unique
+    const actions = DAILY_POOL.filter(t => !t.type.startsWith("stat_"));
+    const stats = DAILY_POOL.filter(t => t.type.startsWith("stat_"));
+
+    function pick(arr){
+      const i = Math.floor(Math.random() * arr.length);
+      return arr.splice(i,1)[0];
+    }
+
+    const a1 = pick(actions.slice());
+    const a2 = pick(actions.filter(x => x.id !== a1.id));
+    const s1 = pick(stats.slice());
+
+    S.meta.daily = [a1, a2, s1].map(t => ({
+      id: t.id, desc: t.desc, type: t.type, goal: t.goal, reward: t.reward, claimed:false
+    }));
+    resetDayActions();
+  }
+
+  function dailyProgress(task){
+    const A = S.meta.dayActions;
+    if (task.type === "water") return Math.min(task.goal, A.water);
+    if (task.type === "prune") return Math.min(task.goal, A.prune);
+    if (task.type === "wireToggle") return Math.min(task.goal, A.wireToggle);
+    if (task.type === "season") return Math.min(task.goal, A.season);
+    if (task.type === "photo") return Math.min(task.goal, A.photo);
+    if (task.type === "stat_hp") return Math.min(task.goal, fmt(S.tree.hp));
+    if (task.type === "stat_shape") return Math.min(task.goal, fmt(S.tree.shape));
+    if (task.type === "stat_canopy") return Math.min(task.goal, fmt(S.tree.canopy));
+    return 0;
+  }
+
+  function dailyComplete(task){
+    return dailyProgress(task) >= task.goal;
+  }
+
+  function claimDaily(taskId){
+    const t = S.meta.daily.find(x => x.id === taskId);
+    if (!t) return;
+    if (t.claimed) return;
+    if (!dailyComplete(t)) return;
+    t.claimed = true;
+    S.coins += t.reward;
+    save();
+    updateHud();
+  }
+
+  // ---------- Milestones (once) ----------
+  function milestoneDefs(){
+    const totalSpecies = SPECIES.length;
+    const unlockedCount = Object.values(S.unlockedSpecies).filter(Boolean).length;
+    const ownedPots = Object.values(S.ownedPots).filter(Boolean).length;
+    const ownedSoils = Object.values(S.ownedSoils).filter(Boolean).length;
+
+    return [
+      {id:"m_can_60",     name:"Wachstum 60",   desc:"Canopy ≥ 60", done: S.tree.canopy >= 60, reward:60},
+      {id:"m_can_85",     name:"Wachstum 85",   desc:"Canopy ≥ 85", done: S.tree.canopy >= 85, reward:90},
+      {id:"m_shape_60",   name:"Form 60",       desc:"Form ≥ 60",   done: S.tree.shape >= 60,  reward:60},
+      {id:"m_shape_85",   name:"Form 85",       desc:"Form ≥ 85",   done: S.tree.shape >= 85,  reward:90},
+      {id:"m_hp_90",      name:"Gesund 90",     desc:"HP ≥ 90",     done: S.tree.hp >= 90,     reward:70},
+      {id:"m_unlock_6",   name:"6 Arten",       desc:`6 Arten freischalten (${unlockedCount}/6)`, done: unlockedCount >= 6, reward:80},
+      {id:"m_unlock_all", name:"Alle Arten",    desc:`Alle Arten freischalten (${unlockedCount}/${totalSpecies})`, done: unlockedCount >= totalSpecies, reward:160},
+      {id:"m_variety",    name:"Variety",       desc:`3 Töpfe + 3 Erden besitzen (${ownedPots}/${ownedSoils})`, done: (ownedPots>=3 && ownedSoils>=3), reward:90},
+      {id:"m_photos_6",   name:"Dokumentation", desc:`6 Fotos speichern (${S.photos.length}/6)`, done: S.photos.length >= 6, reward:70},
+      {id:"m_streak_12",  name:"Routine",       desc:`Streak ≥ 12 (${S.streak}/12)`, done: S.streak >= 12, reward:80},
+    ];
+  }
+
+  function milestoneClaimed(id){ return !!S.meta.milestonesClaimed[id]; }
+  function claimMilestone(id){
+    const m = milestoneDefs().find(x => x.id === id);
+    if (!m) return;
+    if (!m.done) return;
+    if (milestoneClaimed(id)) return;
+    S.meta.milestonesClaimed[id] = true;
+    S.coins += m.reward;
+    save();
+    updateHud();
+  }
+
+  // ---------- Badges (auto) ----------
+  function badgeTier(value, b, s, g){
+    return value>=g ? "GOLD" : value>=s ? "SILVER" : value>=b ? "BRONZE" : "—";
+  }
+
+  function badges(){
+    const unlockedCount = Object.values(S.unlockedSpecies).filter(Boolean).length;
+    return [
+      {id:"b_can", name:"Wachstum", desc:"Canopy Tier", tier: badgeTier(S.tree.canopy, 40, 70, 90)},
+      {id:"b_shape", name:"Form", desc:"Form Tier", tier: badgeTier(S.tree.shape, 40, 70, 90)},
+      {id:"b_hp", name:"Gesundheit", desc:"HP Tier", tier: badgeTier(S.tree.hp, 60, 80, 95)},
+      {id:"b_album", name:"Album", desc:"Fotos Tier", tier: badgeTier(S.photos.length, 3, 8, 16)},
+      {id:"b_coll", name:"Sammlung", desc:"Arten Tier",
+        tier: (unlockedCount>=SPECIES.length) ? "GOLD" : (unlockedCount>=8) ? "SILVER" : (unlockedCount>=4) ? "BRONZE" : "—"}
+    ];
+  }
+
+  // ---------- Actions ----------
+  function rewardSmall(){
+    S.coins += 2;
+    checkSpeciesUnlocks();
+    tryAutoUpgrade();
+    save();
+    updateHud();
+  }
+
+  function actWater(){
+    S.tree.water = clamp(S.tree.water + waterAmount(), 0, 100);
+    S.streak++;
+    incAction("water");
+    rewardSmall();
+  }
+
+  function actPrune(){
+    S.tree.shape = clamp(S.tree.shape + pruneShapeGain(), 0, 100);
+    S.tree.canopy = clamp(S.tree.canopy - pruneCanopyLoss(), 0, 100);
+    if (S.tree.canopy < 10) S.tree.hp = clamp(S.tree.hp - 2.5, 0, 100);
+    S.streak++;
+    incAction("prune");
+    rewardSmall();
+  }
+
+  function actWireToggle(){
+    S.tree.wired = !S.tree.wired;
+    S.streak++;
+    incAction("wireToggle");
+    rewardSmall();
+  }
+
+  function actSeason(){
+    S.seasonIdx = (S.seasonIdx + 1) % SEASONS.length;
+    S.streak++;
+    incAction("season");
+    rewardSmall();
+  }
+
+  // ---------- Simulation ----------
+  function tick(dt){
+    const sp = spById(S.tree.speciesId);
+    const sea = season();
+    const p = pot();
+    const so = soil();
+
+    // water drain
+    const waterDrain = (0.9 * sp.thirst * sea.thirstMul) * dt;
+    S.tree.water = clamp(S.tree.water - waterDrain, 0, 100);
+
+    // modifiers
+    const buffer = (p.waterCap * 0.6) + so.buffer; // low-water forgiveness
+    const drainage = so.drainage;                  // high-water forgiveness
+
+    const idealMin = 35 + (1-sp.tolerance)*20 - buffer;
+    const idealMax = 80 - (1-sp.tolerance)*10 + drainage;
+
+    let hpDelta = 0;
+    if (S.tree.water < idealMin) hpDelta -= (0.95 + (idealMin - S.tree.water)*0.03) * dt;
+    if (S.tree.water > idealMax) hpDelta -= (0.35 + (S.tree.water - idealMax)*0.01) * dt;
+
+    hpDelta += (sea.recover + so.recover) * dt * 10;
+
+    if (S.tree.wired) hpDelta -= (0.20 + 0.05*(sp.thirst)) * dt;
+
+    S.tree.hp = clamp(S.tree.hp + hpDelta, 0, 100);
+
+    // growth
+    const hpMul = 0.35 + (S.tree.hp/100)*0.95;
+    const waterMul = 0.25 + (S.tree.water/100)*0.90;
+    const grow = (0.55 * sp.growth * sea.growMul * hpMul * waterMul) * dt;
+
+    if (S.tree.hp > 15) S.tree.canopy = clamp(S.tree.canopy + grow, 0, 100);
+    else S.tree.canopy = clamp(S.tree.canopy - 0.18*dt, 0, 100);
+
+    // shape passive
+    let shapeGain = (0.08 * sea.shapeMul) * dt;
+    shapeGain *= p.shapeMul;
+    if (S.tree.wired) shapeGain += (0.22 + 0.05*(S.upgrades.wire-1)) * sea.shapeMul * dt;
+    if (S.tree.canopy > 75) shapeGain -= 0.08 * dt;
+    S.tree.shape = clamp(S.tree.shape + shapeGain, 0, 100);
+
+    checkSpeciesUnlocks();
+  }
+
+  // Day pacing: 20s = 1 day
+  let dayClock = 0;
+  function dayAdvance(){
+    S.day += 1;
+    const score = (S.tree.hp*0.45 + S.tree.shape*0.35 + S.tree.canopy*0.20);
+    const dailyCoins = Math.max(5, Math.round(score/10));
+    S.coins += dailyCoins;
+
+    // relaxed decay
+    S.streak = Math.max(0, S.streak - 1);
+
+    genDailyTasks();
+    checkSpeciesUnlocks();
+    tryAutoUpgrade();
+    save();
+    updateHud();
+  }
+
+  // ---------- Render ----------
+  function roundRect(ctx,x,y,w,h,r,fill){
+    const rr = Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y);
+    ctx.arcTo(x+w,y,x+w,y+h,rr);
+    ctx.arcTo(x+w,y+h,x,y+h,rr);
+    ctx.arcTo(x,y+h,x,y,rr);
+    ctx.arcTo(x,y,x+w,y,rr);
+    ctx.closePath();
+    if (fill) ctx.fill(); else ctx.stroke();
+  }
+
+  function mixColor(a,b,t){
+    return [
+      Math.round(a[0] + (b[0]-a[0])*t),
+      Math.round(a[1] + (b[1]-a[1])*t),
+      Math.round(a[2] + (b[2]-a[2])*t),
+    ];
+  }
+
+  function drawBlob(ctx, x,y,r, n){
+    ctx.beginPath();
+    for (let i=0;i<n;i++){
+      const a = (i/n)*Math.PI*2;
+      const rr = r*(0.78 + 0.26*Math.sin(a*2.7 + (S.day*0.15)));
+      const px = x + Math.cos(a)*rr;
+      const py = y + Math.sin(a)*rr*0.85;
+      if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function potColor(potId){
+    switch(potId){
+      case "clay": return "#15202a";
+      case "glaze": return "#0f1b2a";
+      case "stone": return "#141820";
+      case "wide": return "#101a22";
+      case "deep": return "#0f1a20";
+      default: return "#0f141a";
+    }
+  }
+
+  function draw(){
+    const w = cv.width, h = cv.height;
+    g.clearRect(0,0,w,h);
+
+    const grd = g.createLinearGradient(0,0,0,h);
+    grd.addColorStop(0, "#06080a");
+    grd.addColorStop(1, "#050609");
+    g.fillStyle = grd;
+    g.fillRect(0,0,w,h);
+
+    // floor
+    g.fillStyle = "#0a0f14";
+    g.fillRect(0, h*0.72, w, h*0.28);
+    g.strokeStyle = "#1b2430";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(0, h*0.72);
+    g.lineTo(w, h*0.72);
+    g.stroke();
+
+    // season tint
+    const sea = season().id;
+    g.globalAlpha = 0.10;
+    g.fillStyle =
+      sea==="spring" ? "#7bd389" :
+      sea==="summer" ? "#f6c453" :
+      sea==="autumn" ? "#f08c45" :
+      "#8aa7ff";
+    g.fillRect(0,0,w,h);
+    g.globalAlpha = 1;
+
+    // pot
+    const p = pot();
+    const potW = 290, potH = 98;
+    const potX = w*0.5 - potW/2;
+    const potY = h*0.72 - potH/2;
+
+    g.fillStyle = potColor(p.id);
+    roundRect(g, potX, potY, potW, potH, 16, true);
+    g.strokeStyle = "#1b2430";
+    g.lineWidth = 2;
+    roundRect(g, potX, potY, potW, potH, 16, false);
+
+    g.fillStyle = "#080c10";
+    roundRect(g, potX+14, potY+18, potW-28, potH-34, 14, true);
+
+    // tree
+    const t = S.tree;
+    const canopy = t.canopy/100;
+    const shape = t.shape/100;
+    const hp = t.hp/100;
+
+    const trunkX = w*0.5;
+    const trunkY = potY+20;
+    const trunkH = 140 + canopy*185;
+    const bend = (0.4 - shape*0.35) * (t.wired ? 0.75 : 1.0);
+
+    g.strokeStyle = "#2a2f37";
+    g.lineWidth = 16 - shape*5;
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(trunkX, trunkY);
+    g.quadraticCurveTo(trunkX + bend*120, trunkY - trunkH*0.45, trunkX + bend*70, trunkY - trunkH);
+    g.stroke();
+
+    const topX = trunkX + bend*70;
+    const topY = trunkY - trunkH;
+
+    g.lineWidth = 9 - shape*4;
+    g.beginPath();
+    g.moveTo(topX, topY);
+    g.quadraticCurveTo(topX - 90, topY + 35, topX - 160, topY - 10);
+    g.moveTo(topX, topY);
+    g.quadraticCurveTo(topX + 70, topY + 25, topX + 150, topY - 20);
+    g.stroke();
+
+    const leafAlpha = 0.35 + canopy*0.55;
+    const leafColor = mixColor([50,170,110],[240,80,69], 1-hp);
+    g.fillStyle = `rgba(${leafColor[0]},${leafColor[1]},${leafColor[2]},${leafAlpha})`;
+
+    const blobR = 55 + canopy*102;
+    const tight = 0.65 + shape*0.55;
+    const spread = blobR*(1.10 - shape*0.55);
+
+    drawBlob(g, topX-40, topY+10, spread*tight, 6);
+    drawBlob(g, topX+40, topY+5,  spread*tight, 6);
+    drawBlob(g, topX,    topY-35, spread*0.95*tight, 7);
+
+    if (t.wired){
+      g.strokeStyle = "rgba(200,200,210,0.45)";
+      g.lineWidth = 2;
+      g.beginPath();
+      for (let i=0;i<18;i++){
+        const y = trunkY - (trunkH/18)*i;
+        const x = trunkX + bend*70*(i/18);
+        g.arc(x, y, 10 + i*0.3, 0, Math.PI*2);
+      }
+      g.stroke();
+    }
+
+    // overlay panel
+    g.fillStyle = "rgba(15,20,26,0.85)";
+    roundRect(g, 14, 14, 360, 92, 12, true);
+    g.strokeStyle = "#1b2430";
+    g.lineWidth = 2;
+    roundRect(g, 14, 14, 360, 92, 12, false);
+
+    g.fillStyle = "#e8eef7";
+    g.font = "800 14px system-ui,-apple-system,Segoe UI,Roboto,Arial";
+    g.fillText(spById(t.speciesId).name, 26, 40);
+    g.font = "650 12px system-ui,-apple-system,Segoe UI,Roboto,Arial";
+    g.fillStyle = "#9fb0c4";
+    g.fillText(`Wasser ${fmt(t.water)} · HP ${fmt(t.hp)} · Form ${fmt(t.shape)} · Canopy ${fmt(t.canopy)}`, 26, 64);
+    g.fillText(t.wired ? "Draht: AN" : "Draht: AUS", 26, 86);
+  }
+
+  // ---------- Panels ----------
+  const panels = {
+    play: $("panelPlay"),
+    quests: $("panelQuests"),
+    collection: $("panelCollection"),
+    shop: $("panelShop"),
+    photos: $("panelPhotos")
+  };
+
+  function setTab(name){
+    for (const k in panels) panels[k].style.display = (k === name) ? "block" : "none";
+    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  }
+
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
+
+  // ---------- Render UI sections ----------
+  function renderGallery(){
+    const el = $("gallery");
+    if (!el) return;
+    el.innerHTML = "";
+    const shots = S.photos.slice().reverse().slice(0,15);
+    for (const src of shots){
+      const d = document.createElement("div");
+      d.className = "shot";
+      const img = document.createElement("img");
+      img.src = src;
+      d.appendChild(img);
+      el.appendChild(d);
+    }
+  }
+
+  function renderCollection(){
+    const grid = $("collectionGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    for (const sp of SPECIES){
+      const owned = !!S.unlockedSpecies[sp.id];
+      const u = sp.unlock;
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
+
+      const h = document.createElement("h3");
+      h.textContent = owned ? sp.name : "???";
+      tile.appendChild(h);
+
+      const sub = document.createElement("div");
+      sub.className = "sub";
+      sub.textContent = owned
+        ? `Wachstum ${sp.growth.toFixed(2)} · Wasser ${sp.thirst.toFixed(2)} · Toleranz ${sp.tolerance.toFixed(2)}`
+        : `Req: Canopy ${u.canopy} · Form ${u.shape} · HP ${u.hp}`;
+      tile.appendChild(sub);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const t1 = document.createElement("div");
+      t1.className = "tag " + (owned ? "good" : "bad");
+      t1.textContent = owned ? "UNLOCKED" : "LOCKED";
+      meta.appendChild(t1);
+
+      const t2 = document.createElement("div");
+      t2.className = "tag cyan";
+      t2.textContent = owned ? `Facts: ${sp.facts.length}` : "—";
+      meta.appendChild(t2);
+
+      tile.appendChild(meta);
+
+      if (owned){
+        const btn = document.createElement("button");
+        btn.className = "btn small";
+        btn.textContent = "Auswählen";
+        btn.onclick = () => { S.tree.speciesId = sp.id; speciesSel.value = sp.id; lastFact.id=""; save(); updateHud(); };
+        tile.appendChild(document.createElement("div")).style.height="8px";
+        tile.appendChild(btn);
+      } else {
+        const prog = document.createElement("div");
+        prog.className = "mini";
+        prog.textContent = `Jetzt: Canopy ${fmt(S.tree.canopy)} · Form ${fmt(S.tree.shape)} · HP ${fmt(S.tree.hp)}`;
+        tile.appendChild(prog);
+      }
+
+      grid.appendChild(tile);
+    }
+  }
+
+  function renderShop(){
+    const pg = $("potsGrid");
+    const sg = $("soilsGrid");
+    if (!pg || !sg) return;
+
+    pg.innerHTML = "";
+    for (const p of POTS){
+      const owned = !!S.ownedPots[p.id];
+      const equipped = S.equipped.pot === p.id;
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.innerHTML = `
+        <h3>${p.name}</h3>
+        <div class="sub">${p.note} · Preis ${p.price}</div>
+        <div class="meta">
+          <div class="tag cyan">Wasserpuffer ${p.waterCap>=0?"+":""}${p.waterCap}</div>
+          <div class="tag vio">Form x${p.shapeMul.toFixed(2)}</div>
+        </div>
+      `;
+
+      const btn = document.createElement("button");
+      btn.className = "btn small";
+      if (equipped){ btn.textContent = "Equipped"; btn.disabled = true; }
+      else if (owned){ btn.textContent = "Equip"; btn.onclick = () => { S.equipped.pot = p.id; save(); updateHud(); }; }
+      else {
+        btn.textContent = `Kaufen (${p.price})`;
+        btn.onclick = () => { if (S.coins >= p.price){ S.coins -= p.price; S.ownedPots[p.id]=true; save(); updateHud(); } };
+      }
+
+      tile.appendChild(document.createElement("div")).style.height="8px";
+      tile.appendChild(btn);
+      pg.appendChild(tile);
+    }
+
+    sg.innerHTML = "";
+    for (const s of SOILS){
+      const owned = !!S.ownedSoils[s.id];
+      const equipped = S.equipped.soil === s.id;
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.innerHTML = `
+        <h3>${s.name}</h3>
+        <div class="sub">${s.note} · Preis ${s.price}</div>
+        <div class="meta">
+          <div class="tag cyan">Drainage ${s.drainage>=0?"+":""}${s.drainage}</div>
+          <div class="tag vio">Buffer ${s.buffer>=0?"+":""}${s.buffer}</div>
+          <div class="tag">Recover ${s.recover.toFixed(2)}</div>
+        </div>
+      `;
+
+      const btn = document.createElement("button");
+      btn.className = "btn small";
+      if (equipped){ btn.textContent = "Equipped"; btn.disabled = true; }
+      else if (owned){ btn.textContent = "Equip"; btn.onclick = () => { S.equipped.soil = s.id; save(); updateHud(); }; }
+      else {
+        btn.textContent = `Kaufen (${s.price})`;
+        btn.onclick = () => { if (S.coins >= s.price){ S.coins -= s.price; S.ownedSoils[s.id]=true; save(); updateHud(); } };
+      }
+
+      tile.appendChild(document.createElement("div")).style.height="8px";
+      tile.appendChild(btn);
+      sg.appendChild(tile);
+    }
+  }
+
+  function tierTagClass(tier){
+    if (tier==="GOLD") return "tag good";
+    if (tier==="SILVER") return "tag cyan";
+    if (tier==="BRONZE") return "tag vio";
+    return "tag";
+  }
+
+  function renderQuests(){
+    // Daily
+    const dg = $("dailyGrid");
+    const mg = $("milestoneGrid");
+    const bg = $("badgeGrid");
+    if (!dg || !mg || !bg) return;
+
+    if (!Array.isArray(S.meta.daily) || S.meta.daily.length !== 3){
+      genDailyTasks();
+    }
+
+    dg.innerHTML = "";
+    for (const t of S.meta.daily){
+      const prog = dailyProgress(t);
+      const done = dailyComplete(t);
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.innerHTML = `
+        <h3>${t.desc}</h3>
+        <div class="sub">Reward: ${t.reward} Coins</div>
+        <div class="meta">
+          <div class="tag cyan">${prog}/${t.goal}</div>
+          <div class="tag ${done ? "good" : ""}">${done ? "DONE" : "IN PROGRESS"}</div>
+          <div class="tag ${t.claimed ? "good" : ""}">${t.claimed ? "CLAIMED" : "UNCLAIMED"}</div>
+        </div>
+      `;
+      const btn = document.createElement("button");
+      btn.className = "btn small";
+      btn.textContent = t.claimed ? "Claimed" : "Claim";
+      btn.disabled = t.claimed || !done;
+      btn.onclick = () => claimDaily(t.id);
+      tile.appendChild(document.createElement("div")).style.height="8px";
+      tile.appendChild(btn);
+      dg.appendChild(tile);
+    }
+
+    // Milestones
+    mg.innerHTML = "";
+    for (const m of milestoneDefs()){
+      const claimed = milestoneClaimed(m.id);
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.innerHTML = `
+        <h3>${m.name}</h3>
+        <div class="sub">${m.desc} · Reward: ${m.reward} Coins</div>
+        <div class="meta">
+          <div class="tag ${m.done ? "good" : ""}">${m.done ? "DONE" : "NOT YET"}</div>
+          <div class="tag ${claimed ? "good" : ""}">${claimed ? "CLAIMED" : "UNCLAIMED"}</div>
+        </div>
+      `;
+      const btn = document.createElement("button");
+      btn.className = "btn small";
+      btn.textContent = claimed ? "Claimed" : "Claim";
+      btn.disabled = claimed || !m.done;
+      btn.onclick = () => claimMilestone(m.id);
+      tile.appendChild(document.createElement("div")).style.height="8px";
+      tile.appendChild(btn);
+      mg.appendChild(tile);
+    }
+
+    // Badges
+    bg.innerHTML = "";
+    for (const b of badges()){
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.innerHTML = `
+        <h3>${b.name}</h3>
+        <div class="sub">${b.desc}</div>
+        <div class="meta">
+          <div class="${tierTagClass(b.tier)}">${b.tier}</div>
+        </div>
+      `;
+      bg.appendChild(tile);
+    }
+  }
+
+  // ---------- HUD ----------
+  function updateHud(){
+    $("coins").textContent = fmt(S.coins);
+    $("streak").textContent = fmt(S.streak);
+    $("day").textContent = fmt(S.day);
+    $("season").textContent = season().name;
+    $("potName").textContent = pot().name;
+    $("soilName").textContent = soil().name;
+
+    $("waterV").textContent = fmt(S.tree.water);
+    $("hpV").textContent = fmt(S.tree.hp);
+    $("canV").textContent = fmt(S.tree.canopy);
+    $("shapeV").textContent = fmt(S.tree.shape);
+
+    bar($("waterB"), S.tree.water);
+    bar($("hpB"), S.tree.hp);
+    bar($("canB"), S.tree.canopy);
+    bar($("shapeB"), S.tree.shape);
+
+    $("wireState").textContent = S.tree.wired ? "AN" : "AUS";
+    $("uCan").textContent = S.upgrades.can;
+    $("uShear").textContent = S.upgrades.shear;
+    $("uWire").textContent = S.upgrades.wire;
+
+    const sp = spById(S.tree.speciesId);
+    const p = pot(), so = soil();
+
+    $("toolInfo").innerHTML =
+      `Art: <span style="color:var(--good);font-weight:900">${sp.name}</span> · Wachstum ${sp.growth.toFixed(2)} · Wasser ${sp.thirst.toFixed(2)} · Toleranz ${sp.tolerance.toFixed(2)}<br>` +
+      `Topf: <span style="color:var(--cyan);font-weight:900">${p.name}</span> · Erde: <span style="color:var(--vio);font-weight:900">${so.name}</span><br>` +
+      `Gießen: +${waterAmount()} Wasser · Schneiden: +${pruneShapeGain().toFixed(1)} Form, −${pruneCanopyLoss().toFixed(1)} Canopy`;
+
+    $("fact").textContent = pickFact(sp);
+
+    renderGallery();
+    renderCollection();
+    renderShop();
+    renderQuests();
+  }
+
+  // ---------- Photos ----------
+  function savePhoto(){
+    const url = cv.toDataURL("image/png");
+    S.photos.push(url);
+    if (S.photos.length > 30) S.photos = S.photos.slice(-30);
+    S.coins += 6;
+    incAction("photo");
+    save();
+    updateHud();
+  }
+
+  // ---------- Save Export/Import ----------
+  const modal = $("modal");
+  const saveText = $("saveText");
+
+  function openModal(){
+    modal.style.display = "flex";
+    saveText.value = "";
+  }
+  function closeModal(){
+    modal.style.display = "none";
+  }
+
+  $("saveBtn").addEventListener("click", openModal);
+  $("closeModal").addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+  $("doExport").addEventListener("click", () => {
+    saveText.value = JSON.stringify(S);
+    saveText.select();
+  });
+
+  $("doImport").addEventListener("click", () => {
+    try{
+      const obj = JSON.parse(saveText.value.trim());
+      // minimal validation / merge
+      const base = defaultState();
+      S = {
+        ...base,
+        ...obj,
+        upgrades: { ...base.upgrades, ...(obj.upgrades||{}) },
+        unlockedSpecies: { ...base.unlockedSpecies, ...(obj.unlockedSpecies||{}) },
+        ownedPots: { ...base.ownedPots, ...(obj.ownedPots||{}) },
+        ownedSoils: { ...base.ownedSoils, ...(obj.ownedSoils||{}) },
+        equipped: { ...base.equipped, ...(obj.equipped||{}) },
+        tree: { ...base.tree, ...(obj.tree||{}) },
+        photos: Array.isArray(obj.photos) ? obj.photos : [],
+        meta: { ...base.meta, ...(obj.meta||{}) }
+      };
+      ensureMeta();
+      save();
+      rebuildSpeciesOptions();
+      updateHud();
+      closeModal();
+    }catch{
+      // ignore invalid import
+    }
+  });
+
+  $("doReset").addEventListener("click", () => {
+    localStorage.removeItem(SAVE_KEY);
+    S = defaultState();
+    ensureMeta();
+    save();
+    rebuildSpeciesOptions();
+    updateHud();
+    closeModal();
+  });
+
+  // ---------- UI hooks ----------
+  speciesSel.addEventListener("change", () => {
+    S.tree.speciesId = speciesSel.value;
+    lastFact.id = "";
+    save();
+    updateHud();
+  });
+
+  $("newTree").addEventListener("click", () => {
+    S.tree.water = 70; S.tree.hp = 85; S.tree.canopy = 20; S.tree.shape = 18; S.tree.wired = false;
+    S.streak = 0;
+    S.coins = Math.max(0, S.coins - 10);
+    incAction("newTree");
+    lastFact.id = "";
+    checkSpeciesUnlocks();
+    save();
+    rebuildSpeciesOptions();
+    updateHud();
+  });
+
+  $("waterBtn").addEventListener("click", actWater);
+  $("pruneBtn").addEventListener("click", actPrune);
+  $("wireBtn").addEventListener("click", actWireToggle);
+  $("seasonBtn").addEventListener("click", actSeason);
+  $("photoBtn").addEventListener("click", savePhoto);
+
+  // ---------- Loop ----------
+  let acc = 0;
+  let last = performance.now();
+
+  function frame(now){
+    const dt = Math.min(0.05, (now - last)/1000);
+    last = now;
+
+    acc += dt;
+    dayClock += dt;
+
+    while (dayClock >= 20){
+      dayClock -= 20;
+      dayAdvance();
+    }
+
+    while (acc >= 1/30){
+      tick(1/30);
+      acc -= 1/30;
+    }
+
+    if (Math.random() < 0.02){
+      checkSpeciesUnlocks();
+      tryAutoUpgrade();
+    }
+
+    saveThrottled();
+    updateHud();
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  let saveT = 0;
+  function saveThrottled(){ saveT++; if (saveT % 25 === 0) save(); }
+
+  function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return migrateFromPhase2(defaultState());
+      const obj = JSON.parse(raw);
+      const base = defaultState();
+      const merged = {
+        ...base,
+        ...obj,
+        upgrades: { ...base.upgrades, ...(obj.upgrades||{}) },
+        unlockedSpecies: { ...base.unlockedSpecies, ...(obj.unlockedSpecies||{}) },
+        ownedPots: { ...base.ownedPots, ...(obj.ownedPots||{}) },
+        ownedSoils: { ...base.ownedSoils, ...(obj.ownedSoils||{}) },
+        equipped: { ...base.equipped, ...(obj.equipped||{}) },
+        tree: { ...base.tree, ...(obj.tree||{}) },
+        photos: Array.isArray(obj.photos) ? obj.photos : [],
+        meta: { ...base.meta, ...(obj.meta||{}) }
+      };
+      return merged;
+    }catch{
+      return migrateFromPhase2(defaultState());
+    }
+  }
+
+  function migrateFromPhase2(base){
+    try{
+      const raw2 = localStorage.getItem("bonsai_phase2_v1");
+      if (!raw2) return base;
+      const old = JSON.parse(raw2);
+      base.coins = old.coins ?? base.coins;
+      base.streak = old.streak ?? base.streak;
+      base.day = old.day ?? base.day;
+      base.seasonIdx = old.seasonIdx ?? base.seasonIdx;
+      base.upgrades = { ...base.upgrades, ...(old.upgrades||{}) };
+      base.tree = { ...base.tree, ...(old.tree||{}) };
+      base.photos = Array.isArray(old.photos) ? old.photos : [];
+      base.unlockedSpecies = { ...base.unlockedSpecies, ...(old.unlockedSpecies||{}) };
+      base.ownedPots = { ...base.ownedPots, ...(old.ownedPots||{}) };
+      base.ownedSoils = { ...base.ownedSoils, ...(old.ownedSoils||{}) };
+      base.equipped = { ...base.equipped, ...(old.equipped||{}) };
+      return base;
+    }catch{
+      return base;
+    }
+  }
+
+  // ---------- Init ----------
+  if (!Array.isArray(S.meta.daily) || S.meta.daily.length !== 3) genDailyTasks();
+  checkSpeciesUnlocks();
+  rebuildSpeciesOptions();
+  setTab("play");
+  updateHud();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
+```
