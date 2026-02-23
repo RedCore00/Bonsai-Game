@@ -423,7 +423,7 @@
           <button class="btn" id="bendBtn">🧵 <span id="btnBendLabel">Bend</span></button>
           <button class="btn" id="seasonBtn">🍂 <span id="btnSeasonLabel">Change season</span></button>
           <button class="btn" id="photoBtn">📷 <span id="btnPhotoLabel">Save photo</span></button>
-          <button class="btn" id="saveBtn">💾 <span id="btnSaveLabel">Save export/import</span></button>
+          <button class="btn" id="saveBtn" style="display:none">💾 <span id="btnSaveLabel">Save export/import</span></button>
         </div>
 
         <div class="mini" id="toolInfo"></div>
@@ -612,6 +612,14 @@
         <div class="sep"></div>
       </div>
 
+      <div class="sep"></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn small" id="openSaveFromSettings">💾 <span id="btnSaveFromSettingsLabel">Save export/import</span></button>
+      </div>
+
+      <div style="height:10px"></div>
+
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn small" id="applySettingsBtn">✅ <span id="btnApplyLabel">Apply</span></button>
         <button class="btn small" id="backToMenuBtn">🏠 <span id="btnMenuLabel">Back to menu</span></button>
@@ -637,7 +645,7 @@
       <div class="actions">
         <button class="btn" id="menuPlay">▶️ <span id="menuPlayLabel">Play</span></button>
         <button class="btn" id="menuSettings">⚙️ <span id="menuSettingsLabel">Settings</span></button>
-        <button class="btn" id="menuQuit">⏻ <span id="menuQuitLabel">Quit</span></button>
+        <button class="btn" id="menuQuit" style="display:none">⏻ <span id="menuQuitLabel">Quit</span></button>
       </div>
     </div>
     <div class="content">
@@ -1130,7 +1138,7 @@
     daySeconds: 6 * 3600,        // default "normal"
     tickHz: 30,
     maxOfflineSeconds: 7 * 24 * 3600,
-    hudHz: 6,
+    hudHz: 15,
     timeScale: 1.0,              // sim seconds / real second
     growthMul: 1.0,
     thirstMul: 1.0,
@@ -1156,6 +1164,12 @@
   };
 
   let drag = null; // {kind, id, startX,startY, base...}
+
+  // camera / capture
+  const view = { zoom: 1.25, cx: 0.5, cy: 0.62, min: 1.0, max: 2.2 };
+  let renderTime = 0; // seconds (render timeline)
+  let photoMode = false;
+  let openedSettingsFromMenu = false;
 
   // -----------------------------
   // Game logic helpers
@@ -1469,6 +1483,22 @@
     saveNow();
   }
 
+
+  function previewBend(kind, id, deltaStrength=0, newPivot=null, branchAngle=null, branchBend=null){
+    if (kind==="trunk"){
+      const tb = S.treeModel.trunkBend;
+      tb.strength = clamp(tb.strength + deltaStrength, -0.65, 0.65);
+      if (newPivot !== null) tb.pivot = clamp(newPivot, 0.15, 0.88);
+    } else if (kind==="branch"){
+      const b = S.treeModel.branches.find(x => x.id === id);
+      if (!b || !b.alive) return;
+      if (branchAngle !== null) b.baseAngle = clamp(branchAngle, -1.45, 1.45);
+      if (branchBend !== null) b.bend = clamp(branchBend, -1.0, 1.0);
+    }
+    markDirty("play");
+  }
+
+
   function actBend(kind, id, deltaStrength=0, newPivot=null, branchAngle=null, branchBend=null){
     if (kind==="trunk"){
       const tb = S.treeModel.trunkBend;
@@ -1552,7 +1582,10 @@
     const recM = SIM.recoverMul;
 
     // water drain
-    const waterDrain = (0.85 * sp.thirst * sea.thirstMul * thirstM) * dt;
+    const p = pot();
+    const retain = clamp01((p.waterCap*0.03) + (so.buffer*0.04));
+    const drainFactor = clamp(0.65 * (1 - retain), 0.30, 0.65);
+    const waterDrain = (drainFactor * sp.thirst * sea.thirstMul * thirstM) * dt;
     S.tree.water = clamp(S.tree.water - waterDrain, 0, 100);
 
     const {min,max} = idealRange();
@@ -1622,7 +1655,7 @@
   function applyModeToSim(){
     // default
     SIM.tickHz = 30;
-    SIM.hudHz = 6;
+    SIM.hudHz = 15;
     SIM.maxOfflineSeconds = 7 * 24 * 3600;
 
     if (settings.mode === "real"){
@@ -1697,6 +1730,72 @@
     g.fillStyle = grd;
     g.fillRect(0,0,w,h);
 
+    // day/night cycle
+    const cycleSec = 120;
+    const t = (renderTime % cycleSec) / cycleSec; // 0..1
+    const sunH = Math.sin(t*Math.PI*2 - Math.PI/2) * 0.5 + 0.5; // 0..1
+    const night = clamp01(1 - sunH*1.35);
+
+    // stars
+    if (night > 0.05){
+      const rngS = mulberry32((S.day*92821)>>>0);
+      g.save();
+      g.globalAlpha = 0.55*night;
+      g.fillStyle = "rgba(235,245,255,0.95)";
+      for (let i=0;i<90;i++){
+        const x = rngS()*w;
+        const y = rngS()*h*0.55;
+        const r = 0.6 + rngS()*1.2;
+        g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill();
+      }
+      g.restore();
+    }
+
+    // sun / moon
+    {
+      const cx = w*(0.18 + 0.64*t);
+      const cy = h*(0.22 + (1 - sunH)*0.18);
+      g.save();
+      if (night < 0.75){
+        g.globalAlpha = clamp01(1 - night*1.1);
+        g.fillStyle = "rgba(255,235,170,0.95)";
+        g.beginPath(); g.arc(cx,cy, 22, 0, Math.PI*2); g.fill();
+        g.globalAlpha *= 0.18;
+        g.fillStyle = "rgba(255,235,170,0.65)";
+        g.beginPath(); g.arc(cx,cy, 48, 0, Math.PI*2); g.fill();
+      } else {
+        g.globalAlpha = clamp01((night-0.55)/0.45);
+        g.fillStyle = "rgba(220,235,255,0.88)";
+        g.beginPath(); g.arc(cx,cy, 18, 0, Math.PI*2); g.fill();
+        g.globalAlpha *= 0.22;
+        g.fillStyle = "rgba(220,235,255,0.55)";
+        g.beginPath(); g.arc(cx,cy, 40, 0, Math.PI*2); g.fill();
+      }
+      g.restore();
+    }
+
+    // clouds
+    {
+      const cloudN = 7;
+      const baseY = h*0.18;
+      for (let i=0;i<cloudN;i++){
+        const s = (0.7 + i*0.09);
+        const x = (w * ((renderTime*0.010*s + i*0.17) % 1)) - 120;
+        const y = baseY + (i%3)*28 + Math.sin(renderTime*0.35 + i)*10;
+        const a = 0.10 + (1-night)*0.10;
+        g.save();
+        g.globalAlpha = a * (0.35 + (1-night)*0.65);
+        g.fillStyle = night>0.6 ? "rgba(210,225,245,0.55)" : "rgba(255,255,255,0.62)";
+        g.beginPath();
+        g.ellipse(x+40,y, 46,18, 0, 0, Math.PI*2);
+        g.ellipse(x+70,y-8, 40,16, 0, 0, Math.PI*2);
+        g.ellipse(x+92,y+2, 48,18, 0, 0, Math.PI*2);
+        g.ellipse(x+60,y+6, 56,20, 0, 0, Math.PI*2);
+        g.fill();
+        g.restore();
+      }
+    }
+
     // distant landscape
     function hill(yBase, amp, colA, colB, seed){
       const rng = mulberry32(seed);
@@ -1741,6 +1840,15 @@
     vg.addColorStop(1, "rgba(0,0,0,0.58)");
     g.fillStyle = vg;
     g.fillRect(0,0,w,h);
+
+    // night tint
+    if (night > 0.02){
+      g.save();
+      g.globalAlpha = 0.55*night;
+      g.fillStyle = "rgba(5,8,14,1)";
+      g.fillRect(0,0,w,h);
+      g.restore();
+    }
 
     // balcony floor
     g.fillStyle = "rgba(9,12,18,1)";
@@ -1846,6 +1954,26 @@
     bodyGrd.addColorStop(0, rgba(pc.rim,1));
     bodyGrd.addColorStop(1, rgba(pc.body,1));
     roundRect(potX, potY, potW, potH, 18, bodyGrd, "rgba(27,36,48,1)");
+
+    // 3D rim + side shading
+    g.save();
+    g.globalAlpha = 0.35;
+    const rimY = potY + 22;
+    g.strokeStyle = "rgba(255,255,255,0.18)";
+    g.lineWidth = 3;
+    g.beginPath();
+    g.ellipse(w*0.5, rimY, potW*0.44, potH*0.22, 0, 0, Math.PI*2);
+    g.stroke();
+
+    const side = g.createLinearGradient(potX, 0, potX+potW, 0);
+    side.addColorStop(0, "rgba(0,0,0,0.55)");
+    side.addColorStop(0.18, "rgba(0,0,0,0.05)");
+    side.addColorStop(0.82, "rgba(255,255,255,0.06)");
+    side.addColorStop(1, "rgba(0,0,0,0.45)");
+    g.fillStyle = side;
+    g.beginPath();
+    roundRect(potX, potY, potW, potH, 18, side, "rgba(0,0,0,0)", 0);
+    g.restore();
 
     // cavity
     const cavX = potX+18, cavY = potY+24, cavW = potW-36, cavH = potH-44;
@@ -2155,6 +2283,25 @@
       g.beginPath();
       g.ellipse(x,y, rx,ry, 0, 0, Math.PI*2);
       g.fill();
+
+      // micro leaves for texture (broadleaf)
+      g.save();
+      g.globalAlpha = alpha*0.55;
+      const n = Math.floor(24 + (rx+ry)*0.18);
+      for (let i=0;i<n;i++){
+        const a2 = rng()*Math.PI*2;
+        const rr = Math.sqrt(rng());
+        const px = x + Math.cos(a2)*rx*rr*0.78;
+        const py = y + Math.sin(a2)*ry*rr*0.78;
+        const lr = 1.8 + rng()*2.8;
+        const lw = lr*(0.55 + rng()*0.55);
+        const la = (rng()-0.5)*1.0;
+        g.fillStyle = rgba(mix(palA,palB,rng()), 0.85);
+        g.beginPath();
+        g.ellipse(px,py, lw, lr, la, 0, Math.PI*2);
+        g.fill();
+      }
+      g.restore();
     }
 
     // highlight rim
@@ -2414,11 +2561,11 @@
       const {ctrl} = drawBranch(base, tip, thick, rng);
 
       // record hit segments (approximate curve with 2 segments)
-      hit.branches.push({type:"branchSeg", id:b.id, ax:base.x, ay:base.y, bx:ctrl.x, by:ctrl.y});
-      hit.branches.push({type:"branchSeg", id:b.id, ax:ctrl.x, ay:ctrl.y, bx:tip.x, by:tip.y});
+      hit.branches.push({type:"branchSeg", id:b.id, segIndex:0, ax:base.x, ay:base.y, bx:ctrl.x, by:ctrl.y});
+      hit.branches.push({type:"branchSeg", id:b.id, segIndex:1, ax:ctrl.x, ay:ctrl.y, bx:tip.x, by:tip.y});
 
       // branch tip handle for bend mode
-      if (toolMode==="bend"){
+      if (toolMode==="bend" && !photoMode){
         hit.handles.push({type:"branchTip", id:b.id, x:tip.x, y:tip.y, r:10});
         // draw handle
         g.save();
@@ -2521,19 +2668,33 @@
     const seaId = seasonObj().id;
 
     drawBalconyBackground(w,h,seaId);
+
+    // scene transform (zoom)
+    g.save();
+    const cx = w*view.cx;
+    const cy = h*view.cy;
+    g.translate(cx, cy);
+    g.scale(view.zoom, view.zoom);
+    g.translate(-cx, -cy);
+
     const geom = drawPotAndSoil(w,h);
     drawBonsai(w,h,geom);
 
-    // overlay
-    drawCompactOverlay();
-
-    // tool animations
+    // tool animations + cursor are part of the scene
     drawWateringCanAndDrops(w,h,geom);
     drawPruneScissors(w,h);
-    drawBendHint(w,h);
 
-    // tool cursor hint (mouse)
-    drawToolCursorHint(lastMouse.x, lastMouse.y);
+    if (!photoMode){
+      drawToolCursorHint(lastMouse.x, lastMouse.y);
+    }
+
+    g.restore();
+
+    // overlays (screen-space)
+    if (!photoMode){
+      drawCompactOverlay();
+      drawBendHint(w,h);
+    }
   }
 
   // -----------------------------
@@ -2828,6 +2989,7 @@
     $("btnSeasonLabel").textContent = t("btnSeason");
     $("btnPhotoLabel").textContent = t("btnPhoto");
     $("btnSaveLabel").textContent = t("btnSave");
+    $("btnSaveFromSettingsLabel").textContent = t("btnSave");
 
     $("pillUpgradesLabel").textContent = t("upgrades");
     $("upCanLabel").textContent = t("upCan");
@@ -2941,6 +3103,7 @@
   function openSave(){ modalSave.style.display = "flex"; saveText.value = ""; }
   function closeSave(){ modalSave.style.display = "none"; }
   $("saveBtn").addEventListener("click", openSave);
+  $("openSaveFromSettings").addEventListener("click", openSave);
   $("closeSave").addEventListener("click", closeSave);
   modalSave.addEventListener("click", (e) => { if (e.target === modalSave) closeSave(); });
 
@@ -3045,6 +3208,7 @@
     $("btnMenuLabel").textContent = t("backToMenu");
     $("settingsFootText").textContent = t("settingsFoot");
     $("btnCloseLabel3").textContent = t("close");
+    $("btnSaveFromSettingsLabel").textContent = t("btnSave");
 
     $("langSel").value = settings.lang;
     $("modeSel").value = settings.mode;
@@ -3058,7 +3222,7 @@
     updateSettingsUI();
     modalSettings.style.display = "flex";
   }
-  function closeSettings(){ modalSettings.style.display = "none"; }
+  function closeSettings(){ modalSettings.style.display = "none"; if (openedSettingsFromMenu){ openedSettingsFromMenu=false; showMenu(); } }
   $("openSettings").addEventListener("click", openSettings);
   $("closeSettings").addEventListener("click", closeSettings);
   modalSettings.addEventListener("click", (e) => { if (e.target === modalSettings) closeSettings(); });
@@ -3117,6 +3281,7 @@
   });
 
   $("backToMenuBtn").addEventListener("click", () => {
+    openedSettingsFromMenu = false;
     closeSettings();
     showMenu();
   });
@@ -3157,7 +3322,7 @@
     offlineCatchup();
     markDirty("hud"); markDirty("play");
   });
-  $("menuSettings").addEventListener("click", () => openSettings());
+  $("menuSettings").addEventListener("click", () => { openedSettingsFromMenu = true; hideMenu(); openSettings(); });
   $("menuQuit").addEventListener("click", () => {
     // browser can't reliably close tabs unless opened by script -> return to menu
     showMenu();
@@ -3204,15 +3369,23 @@
   });
 
   $("photoBtn").addEventListener("click", () => {
+    // capture without overlays/UI
+    const prevTool = toolMode;
+    photoMode = true;
+    toolMode = "none";
+    markDirty("play");
+    draw();
     const url = cv.toDataURL("image/png");
+    photoMode = false;
+    toolMode = prevTool;
+
     S.photos.push(url);
     if (S.photos.length > 30) S.photos = S.photos.slice(-30);
     S.coins += 6;
     S.streak++;
     incAction("photo");
-    markDirty("photos"); markDirty("hud"); markDirty("quests");
+    markDirty("photos"); markDirty("hud"); markDirty("quests"); markDirty("play");
     saveNow();
-    // auto open preview
     openPhotoPreview(url);
   });
 
@@ -3225,6 +3398,15 @@
     if (e.key==="b" || e.key==="B"){ setTool(toolMode==="bend" ? "none" : "bend"); }
   });
 
+  // zoom (mouse wheel)
+  cv.addEventListener("wheel", (e) => {
+    if (!isRunning) return;
+    const dz = (e.deltaY > 0) ? -0.08 : 0.08;
+    view.zoom = clamp(view.zoom + dz, view.min, view.max);
+    markDirty("play");
+    e.preventDefault();
+  }, { passive:false });
+
   // -----------------------------
   // Canvas interactions (prune exact click, bend drag system)
   // -----------------------------
@@ -3232,7 +3414,9 @@
     const r = cv.getBoundingClientRect();
     const x = (e.clientX - r.left) * (cv.width / r.width);
     const y = (e.clientY - r.top) * (cv.height / r.height);
-    return {x,y};
+    const cx = cv.width*view.cx;
+    const cy = cv.height*view.cy;
+    return { x: (x - cx)/view.zoom + cx, y: (y - cy)/view.zoom + cy };
   }
 
   function findNearestHandle(x,y){
@@ -3291,26 +3475,37 @@
   cv.addEventListener("pointermove", (e) => {
     const p = canvasToLocal(e);
     lastMouse = p;
-    if (drag){
-      if (drag.kind==="trunkTop"){
-        const dx = p.x - drag.startX;
-        const delta = dx / 220; // scale
-        actBend("trunk", "trunk", delta, null, null, null);
-        drag.startX = p.x; // incremental
-      } else if (drag.kind==="trunkPivot"){
-        // pivot based on y movement along trunk
-        const dy = p.y - drag.startY;
-        const newPivot = drag.startPivot + (dy / 240);
-        actBend("trunk", "trunk", 0, newPivot, null, null);
-      } else if (drag.kind==="branchTip"){
-        const bInfo = findBranchBaseAndTip(drag.id);
-        if (!bInfo) return;
-        const base = bInfo.base;
-        const ang = Math.atan2(p.y - base.y, p.x - base.x);
-        // bend based on lateral offset from base->tip direction
-        const bend = clamp((p.x - (base.x + Math.cos(ang)*60)) / 90, -1, 1);
-        actBend("branch", drag.id, 0, null, ang, bend);
-      }
+    if (!drag) return;
+
+    if (drag.kind==="trunkTop"){
+      const dx = p.x - drag.startX;
+      const targetStrength = clamp(drag.startStrength + dx/220, -0.65, 0.65);
+      const delta = targetStrength - S.treeModel.trunkBend.strength;
+      if (Math.abs(delta) > 1e-6) previewBend("trunk","trunk", delta, null, null, null);
+      e.preventDefault();
+      return;
+    }
+
+    if (drag.kind==="trunkPivot"){
+      const dy = p.y - drag.startY;
+      const newPivot = clamp(drag.startPivot + dy/240, 0.15, 0.88);
+      previewBend("trunk","trunk", 0, newPivot, null, null);
+      e.preventDefault();
+      return;
+    }
+
+    if (drag.kind==="branchTip"){
+      const bInfo = findBranchBaseAndTip(drag.id);
+      if (!bInfo) return;
+      const base = bInfo.base;
+
+      const ang = Math.atan2(p.y - base.y, p.x - base.x);
+      const c = Math.cos(ang), s = Math.sin(ang);
+      const dx = p.x - base.x, dy = p.y - base.y;
+      const perp = (-dx*s + dy*c);
+      const bend = clamp(perp / 90, -1, 1);
+
+      previewBend("branch", drag.id, 0, null, ang, bend);
       e.preventDefault();
       return;
     }
@@ -3326,7 +3521,7 @@
       const h = findNearestHandle(p.x,p.y);
       if (h){
         if (h.type==="trunkTop"){
-          drag = {kind:"trunkTop", id:"trunk", startX:p.x, startY:p.y};
+          drag = {kind:"trunkTop", id:"trunk", startX:p.x, startY:p.y, startStrength: S.treeModel.trunkBend.strength};
           return;
         }
         if (h.type==="trunkPivot"){
@@ -3334,14 +3529,15 @@
           return;
         }
         if (h.type==="branchTip"){
-          drag = {kind:"branchTip", id:h.id, startX:p.x, startY:p.y};
+          const b = S.treeModel.branches.find(x => x.id === h.id);
+          drag = {kind:"branchTip", id:h.id, startX:p.x, startY:p.y, startAngle: b ? b.baseAngle : 0, startBend: b ? b.bend : 0};
           return;
         }
       }
-      // if clicked near a branch tip (no handle list yet), try select seg -> start drag anyway
       const bs = findNearestBranchSeg(p.x,p.y);
       if (bs){
-        drag = {kind:"branchTip", id:bs.seg.id, startX:p.x, startY:p.y};
+        const b = S.treeModel.branches.find(x => x.id === bs.seg.id);
+        drag = {kind:"branchTip", id:bs.seg.id, startX:p.x, startY:p.y, startAngle: b ? b.baseAngle : 0, startBend: b ? b.bend : 0};
       }
       return;
     }
@@ -3350,38 +3546,59 @@
       const bs = findNearestBranchSeg(p.x,p.y);
       if (!bs) return;
 
-      // determine cut ratio: if click is closer to base, cut more; we approximate by using segment projection t & then translate into lenMul
-      // We'll compute approximate branch length fraction by comparing distance from tip
-      const bInfo = findBranchBaseAndTip(bs.seg.id);
-      if (!bInfo) return;
-
-      const base = bInfo.base, tip = bInfo.tip;
-      const dx = tip.x - base.x, dy = tip.y - base.y;
-      const L2 = dx*dx+dy*dy;
-      let frac = 0.6;
-      if (L2>1){
-        const wx = p.x - base.x, wy = p.y - base.y;
-        frac = clamp((wx*dx+wy*dy)/L2, 0.08, 1.0);
-      }
-      // apply prune
+      // use segment index + projected t to get a stable cut ratio along the branch curve
+      const segIndex = (bs.seg.segIndex != null) ? bs.seg.segIndex : 0;
+      const frac = clamp((segIndex===0 ? bs.proj.t*0.5 : 0.5 + bs.proj.t*0.5), 0.08, 1.0);
       actPruneBranch(bs.seg.id, frac);
       return;
     }
 
     if (toolMode==="water"){
-      // water if click near pot region (lower half)
       if (p.y > cv.height*0.55){
         actWaterAt(p.x,p.y);
-        // keep water mode on (feels like a tool) – ESC to cancel
       }
       return;
     }
   });
 
-  cv.addEventListener("pointerup", (e) => {
-    if (!isRunning) return;
+  function commitDragOnce(){
+    if (!isRunning || !drag) { drag=null; return; }
+
+    if (drag.kind==="trunkTop"){
+      const finalStrength = S.treeModel.trunkBend.strength;
+      const deltaStrength = finalStrength - drag.startStrength;
+      if (Math.abs(deltaStrength) > 0.001){
+        actBend("trunk", "trunk", deltaStrength, null, null, null);
+      }
+      drag = null;
+      return;
+    }
+
+    if (drag.kind==="trunkPivot"){
+      // pivot is a handle position, not a rewarded action
+      markDirty("play"); markDirty("hud");
+      saveNow();
+      drag = null;
+      return;
+    }
+
+    if (drag.kind==="branchTip"){
+      const b = S.treeModel.branches.find(x => x.id === drag.id);
+      if (b){
+        const changed = (Math.abs(b.baseAngle - (drag.startAngle||0)) > 0.002) || (Math.abs(b.bend - (drag.startBend||0)) > 0.002);
+        if (changed){
+          actBend("branch", drag.id, 0, null, b.baseAngle, b.bend);
+        }
+      }
+      drag = null;
+      return;
+    }
+
     drag = null;
-  });
+  }
+
+  cv.addEventListener("pointerup", () => commitDragOnce());
+  cv.addEventListener("pointercancel", () => { drag = null; });
 
   // -----------------------------
   // Mobile + desktop tabs sync
@@ -3413,6 +3630,7 @@
   function frame(now){
     const dtReal = Math.min(0.05, (now - last)/1000);
     last = now;
+    renderTime += dtReal;
 
     if (isRunning){
       // advance sim
