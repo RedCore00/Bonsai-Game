@@ -1,5 +1,3 @@
-
-
 <!doctype html>
 <html lang="de">
 <head>
@@ -38,14 +36,16 @@
       display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
       margin-bottom:10px;
     }
+
+    /* Cleaner title */
     .brand{display:flex;align-items:center;gap:10px;min-width:240px}
     .logo{
-      width:36px;height:36px;border-radius:12px;
-      background: radial-gradient(circle at 30% 30%, rgba(118,228,255,.35), rgba(202,166,255,.22));
-      border:1px solid rgba(118,228,255,.25);
+      width:34px;height:34px;border-radius:12px;
+      background: radial-gradient(circle at 30% 30%, rgba(118,228,255,.38), rgba(202,166,255,.22));
+      border:1px solid rgba(118,228,255,.24);
       box-shadow: 0 10px 30px rgba(118,228,255,.08);
     }
-    h1{font-size:16px;margin:0;font-weight:950;letter-spacing:.2px}
+    h1{font-size:18px;margin:0;font-weight:980;letter-spacing:.2px}
     .mini{font-size:12px;color:var(--muted);line-height:1.35}
 
     .pillRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
@@ -60,8 +60,8 @@
     }
     .pill b{color:var(--txt)}
     .dot{width:7px;height:7px;border-radius:99px;background:rgba(123,227,154,.85); box-shadow:0 0 0 3px rgba(123,227,154,.12)}
-    .dot.w{background:rgba(246,199,90,.92); box-shadow:0 0 0 3px rgba(246,199,90,.12)}
     .dot.r{background:rgba(255,90,99,.92); box-shadow:0 0 0 3px rgba(255,90,99,.12)}
+    .dot.c{background:rgba(118,228,255,.85); box-shadow:0 0 0 3px rgba(118,228,255,.12)}
 
     .layout{
       display:grid;
@@ -71,8 +71,10 @@
     }
     @media (max-width: 980px){
       .layout{grid-template-columns:1fr}
-      .wrap{padding-bottom:88px}
+      .wrap{padding-bottom:92px}
       header{margin-bottom:8px}
+      .pill{padding:6px 9px;font-size:12px}
+      h1{font-size:17px}
     }
 
     .card{
@@ -85,7 +87,17 @@
     }
 
     .canvasWrap{position:relative}
-    canvas{display:block;width:100%;height:auto;background:#06090e}
+    canvas{
+      display:block;
+      width:100%;
+      height:auto;
+      background:#06090e;
+      touch-action:none; /* important on mobile */
+    }
+    @media (max-width:980px){
+      /* make canvas taller on phones so the tree is visible */
+      canvas{height:min(62vh, 560px);}
+    }
 
     .underCanvas{
       display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;
@@ -147,17 +159,26 @@
     .tab.active{outline:2px solid rgba(118,228,255,.25); border-color: rgba(118,228,255,.25)}
     @media (max-width: 980px){ .tabsDesktop{display:none} }
 
-    /* Right panel becomes a drawer on mobile */
+    /* Right panel becomes a collapsible drawer on mobile */
     .side{position:relative}
     @media (max-width:980px){
-      .side{position:fixed;left:0;right:0;bottom:64px;z-index:45;pointer-events:none}
+      .side{
+        position:fixed;left:0;right:0;
+        bottom:64px; /* sits above mobile tabs */
+        z-index:45;
+        pointer-events:none;
+      }
       .drawer{
         pointer-events:auto;
         width:min(980px, 100vw);
         margin:0 auto;
         border-radius:18px 18px 0 0;
-        max-height: 60vh;
+        max-height: 58vh;
         overflow:auto;
+      }
+      .drawer.collapsed{
+        max-height: 62px; /* only header visible */
+        overflow:hidden;
       }
       .drawer::-webkit-scrollbar{width:10px}
       .drawer::-webkit-scrollbar-thumb{background:rgba(28,42,58,.7); border-radius:10px}
@@ -170,6 +191,15 @@
         background: linear-gradient(180deg, rgba(15,22,32,.92), rgba(9,12,18,.86));
       }
       .drawerBody{padding:12px}
+      .drawerHandle{
+        display:flex;align-items:center;gap:8px;
+        font-weight:950;
+      }
+      .grab{
+        width:34px;height:5px;border-radius:99px;
+        background:rgba(118,228,255,.20);
+        border:1px solid rgba(118,228,255,.20);
+      }
     }
 
     .pad{padding:12px}
@@ -368,8 +398,7 @@
     </div>
 
     <div class="pillRow">
-      <div class="pill"><span class="dot"></span><span id="pillCoins">Coins</span>: <b id="coins">0</b></div>
-      <div class="pill"><span class="dot w"></span><span id="pillStreak">Streak</span>: <b id="streak">0</b></div>
+      <div class="pill"><span class="dot c"></span><span id="pillCoins">Coins</span>: <b id="coins">0</b></div>
       <div class="pill"><span class="dot r"></span><span id="pillDay">Tag</span>: <b id="day">1</b> · <span id="pillSeason">Saison</span>: <b id="season">—</b></div>
       <div class="pill"><span id="pillTree">Baum</span>: <b id="treeNameTop">—</b></div>
       <button class="btn small" id="openSettings">⚙️ <span id="btnSettings">Einstellungen</span></button>
@@ -399,8 +428,14 @@
     <div class="side">
       <div class="card drawer" id="drawer">
         <div class="drawerHead" id="drawerHead" style="display:none">
-          <div style="font-weight:950" id="drawerTitle">Play</div>
-          <button class="btn small ghost" id="drawerClose">✖️</button>
+          <div class="drawerHandle">
+            <div class="grab" aria-hidden="true"></div>
+            <div style="font-weight:950" id="drawerTitle">Play</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn small" id="drawerToggle">⬆️</button>
+            <button class="btn small ghost" id="drawerClose">✖️</button>
+          </div>
         </div>
 
         <div class="drawerBody pad" id="drawerBody">
@@ -821,26 +856,21 @@
     return SEASONS[seasonIdx % SEASONS.length];
   }
 
-  // Tree model: nodes + segments (mathematical, stable, no wobble)
-  // Each segment is a polyline of points generated from param curve, stored deterministically in segment.points.
-  // Leaves are generated anchored along segment points, stored as offsets and remain stable (seeded).
   function defaultBranch(seed, parentId=null, attachT=0.72, baseAngle=-0.55, len=0.16, thick=1.0){
     return {
       id: "br_" + ((seed ^ (Math.random()*1e9)|0)>>>0).toString(16) + "_" + ((Math.random()*1e6)|0),
       parentId,
-      attachT,             // along parent path 0..1 (for trunk parentId=null uses trunk)
+      attachT,
       baseAngle,
-      bend: 0.0,           // additional bend param
-      lenMul: len,         // 0..1 relative length
-      thickMul: thick,     // thickness factor
+      bend: 0.0,
+      lenMul: len,
+      thickMul: thick,
       alive: true,
       children: [],
-      // growth state
-      age: 0,              // seconds alive
-      vigor: 1.0,          // 0..1
-      // persistent geometry
-      points: [],          // filled by builder each render (but deterministic)
-      leafAnchors: []      // {segT, side, rot, size, jitter} seeded, anchored to this branch only
+      age: 0,
+      vigor: 1.0,
+      points: [],
+      leafAnchors: []
     };
   }
 
@@ -862,28 +892,26 @@
       photos: [],
       cam:{ zoom: 1.22 },
       env:{
-        timeOfDay: 0.35,     // 0..1 (24h)
+        timeOfDay: 0.35,
         cloudT: 0,
         birdT: 0
       },
       meta:{
         day: 1,
         dayFrac: 0,
-        streak: 0,
         coins: 0,
-        lastActiveTs: Date.now(), // only used for active tree
+        lastActiveTs: Date.now(),
         lastDailyDay: 1,
         dayActions:{ water:0, prune:0, bend:0, photo:0, newTree:0 },
         daily: [],
         milestonesClaimed:{}
       },
-      // Tree geometry state:
       trunk:{
-        strength: 0.0,     // -1..1
-        pivot: 0.55        // 0.15..0.88
+        strength: 0.0,
+        pivot: 0.55
       },
       branches: [
-        defaultBranch(seed^0xA5A5A5A5, null, 0.0, -0.25, 0.14, 1.0) // first tiny offshoot (becomes “leaf/branch”)
+        defaultBranch(seed^0xA5A5A5A5, null, 0.0, -0.25, 0.14, 1.0)
       ],
       nextGate: 0
     };
@@ -911,7 +939,6 @@
       if(!Array.isArray(merged.trees) || merged.trees.length===0) merged.trees=base.trees;
       if(typeof merged.activeTreeId!=="number") merged.activeTreeId=0;
       merged.activeTreeId=clamp(merged.activeTreeId,0,merged.trees.length-1);
-      // normalize each tree
       merged.trees = merged.trees.map((t,idx)=>normalizeTree({...defaultTree((Math.random()*1e9)|0), ...t}, idx));
       return merged;
     }catch{
@@ -921,7 +948,7 @@
 
   function normalizeTree(T, idx){
     if(!T.meta) T.meta=defaultTree(0).meta;
-    if(!T.meta.dayActions) T.meta.dayActions={ water:0, prune:0, bend:0, photo:0, newTree:0 };
+    if(!T.meta.dayActions) T.meta.dayActions={ water:0,prune:0,bend:0,photo:0,newTree:0 };
     if(!T.meta.milestonesClaimed) T.meta.milestonesClaimed={};
     if(!Array.isArray(T.meta.daily)) T.meta.daily=[];
     if(!Array.isArray(T.photos)) T.photos=[];
@@ -946,7 +973,6 @@
     if(!Array.isArray(T.branches) || T.branches.length===0){
       T.branches=[ defaultBranch(T.seed^0xA5A5A5A5, null, 0, -0.25, 0.14, 1.0) ];
     }
-    // children list
     const map=new Map(T.branches.map(b=>[b.id,b]));
     T.branches.forEach(b=>{ if(!Array.isArray(b.children)) b.children=[]; b.children.length=0; });
     T.branches.forEach(b=>{
@@ -976,7 +1002,6 @@
   // ------------------------------------------------------------
   let settings=loadSettings();
   let SAVE=loadSave();
-
   function activeTree(){ return SAVE.trees[SAVE.activeTreeId]; }
 
   // ------------------------------------------------------------
@@ -1021,12 +1046,8 @@
   // ------------------------------------------------------------
   // Balance functions
   // ------------------------------------------------------------
-  function pot(T){
-    return POTS.find(p=>p.id===T.equipped.pot) || POTS[0];
-  }
-  function soil(T){
-    return SOILS.find(s=>s.id===T.equipped.soil) || SOILS[0];
-  }
+  function pot(T){ return POTS.find(p=>p.id===T.equipped.pot) || POTS[0]; }
+  function soil(T){ return SOILS.find(s=>s.id===T.equipped.soil) || SOILS[0]; }
 
   function waterAmount(T){ return 18 + (T.upgrades.can-1)*7; }
   function pruneShapeGain(T){ return 2.2 + (T.upgrades.shear-1)*1.0; }
@@ -1152,9 +1173,7 @@
   let dirty={hud:true, play:true, quests:true, collection:true, shop:true, photos:true};
   const markDirty=(k)=>dirty[k]=true;
 
-  function seasonObj(T){
-    return seasonFromMode(settings.mode, T.seasonIdx);
-  }
+  function seasonObj(T){ return seasonFromMode(settings.mode, T.seasonIdx); }
   function seasonName(T){
     const sea=seasonObj(T);
     return (settings.lang==="en") ? (sea.name.en) : (sea.name.de);
@@ -1183,7 +1202,7 @@
     if(!arr || !arr.length) return "";
     if(lastFact.id!==sp.id){ lastFact.id=sp.id; lastFact.idx=Math.floor(Math.random()*arr.length); }
     else if(Math.random()<0.06){ lastFact.idx=(lastFact.idx+1)%arr.length; }
-    return (settings.lang==="en" ? "Fun Fact: " : "Fun Fact: ") + arr[lastFact.idx];
+    return "Fun Fact: " + arr[lastFact.idx];
   }
 
   let lastHpDelta=0;
@@ -1243,13 +1262,10 @@
     currentTab=name;
     for(const k in panels) panels[k].style.display = (k===name)?"block":"none";
     document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
-
-    // mobile drawer title
     if(window.matchMedia("(max-width: 980px)").matches){
       $("drawerHead").style.display="flex";
       $("drawerTitle").textContent = name[0].toUpperCase()+name.slice(1);
     }
-
     if(name==="quests") dirty.quests=true;
     if(name==="collection") dirty.collection=true;
     if(name==="shop") dirty.shop=true;
@@ -1265,9 +1281,32 @@
   const cv=$("cv");
   const g=cv.getContext("2d");
 
+  function resizeCanvas(){
+    const parent=cv.parentElement;
+    const rect=parent.getBoundingClientRect();
+    const dpr=Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const isMobile=window.matchMedia("(max-width: 980px)").matches;
+
+    // pick a nice height on mobile (tree visible above drawer)
+    const targetCSSH = isMobile ? Math.round(Math.min(560, Math.max(420, window.innerHeight*0.56))) : Math.round(rect.width * (620/980));
+    cv.style.height = targetCSSH+"px";
+
+    const cssW = Math.round(rect.width);
+    const cssH = targetCSSH;
+
+    cv.width = Math.round(cssW * dpr);
+    cv.height= Math.round(cssH * dpr);
+    cv.style.width = cssW+"px";
+
+    // scale drawing coordinates back to “css pixels”
+    g.setTransform(dpr,0,0,dpr,0,0);
+
+    markDirty("play");
+  }
+
   const cam={
-    anchorX:()=>cv.width*0.5,
-    anchorY:()=>cv.height*0.58,
+    anchorX:()=>cv.width/(window.devicePixelRatio||1)*0.5,
+    anchorY:()=>cv.height/(window.devicePixelRatio||1)*0.58,
     zoom:()=>activeTree().cam.zoom
   };
   function withCamera(ctx, fn){
@@ -1282,8 +1321,8 @@
   }
   function screenToWorld(px,py){
     const r=cv.getBoundingClientRect();
-    const sx=(px-r.left)*(cv.width/r.width);
-    const sy=(py-r.top)*(cv.height/r.height);
+    const sx=(px-r.left)*(cv.width/r.width)/(window.devicePixelRatio||1);
+    const sy=(py-r.top)*(cv.height/r.height)/(window.devicePixelRatio||1);
     const ax=cam.anchorX(), ay=cam.anchorY();
     const z=cam.zoom();
     const wx=(sx-ax)/z + ax;
@@ -1291,12 +1330,7 @@
     return {sx,sy,x:wx,y:wy};
   }
 
-  // Hit containers for pruning and bending
-  const hit={
-    pot:null,
-    handles:[],     // {type:"trunkTop"|"trunkPivot"|"branchTip", id, x,y,r}
-    segs:[]         // {branchId, ax,ay,bx,by, cum0, segLen, totalLen}
-  };
+  const hit={ pot:null, handles:[], segs:[] };
 
   // ------------------------------------------------------------
   // Rendering helpers
@@ -1314,7 +1348,7 @@
 
   // Background: mountains + 24h sun/moon + clouds + birds
   function drawSky(w,h,T){
-    const tod=T.env.timeOfDay; // 0..1
+    const tod=T.env.timeOfDay;
     const dayF=smoothstep(Math.sin(tod*2*Math.PI - Math.PI/2)*0.5 + 0.5);
     const nightF=1-dayF;
 
@@ -1331,7 +1365,6 @@
     grd.addColorStop(1, rgba(bot,1));
     g.fillStyle=grd; g.fillRect(0,0,w,h);
 
-    // stars
     if(nightF>0.25){
       const rng=mulberry32(((T.seed*99991)^0xA53)>>>0);
       g.save();
@@ -1344,13 +1377,11 @@
       g.restore();
     }
 
-    // sun + moon positions
     const sunX = w*(0.12 + 0.76*tod);
     const sunY = h*(0.18 + 0.10*Math.sin(tod*2*Math.PI));
     const moonX= w*(0.12 + 0.76*((tod+0.5)%1));
     const moonY= h*(0.18 + 0.10*Math.sin(((tod+0.5)%1)*2*Math.PI));
 
-    // sun glow
     g.save();
     g.globalAlpha=0.22*dayF;
     let rg=g.createRadialGradient(sunX,sunY,0,sunX,sunY,w*0.25);
@@ -1359,7 +1390,6 @@
     g.fillStyle=rg; g.fillRect(0,0,w,h);
     g.restore();
 
-    // moon glow
     g.save();
     g.globalAlpha=0.18*nightF;
     rg=g.createRadialGradient(moonX,moonY,0,moonX,moonY,w*0.22);
@@ -1368,7 +1398,6 @@
     g.fillStyle=rg; g.fillRect(0,0,w,h);
     g.restore();
 
-    // cloud layers
     const cloudBaseA=mix([210,225,245],[120,140,170],nightF*0.65);
     const cloudBaseB=mix([255,255,255],[150,170,200],nightF*0.65);
 
@@ -1400,7 +1429,6 @@
     cloud(w*l3+420, h*0.16, 1.10, 0.10);
     g.restore();
 
-    // vignette
     const vg=g.createRadialGradient(w*0.55,h*0.35,w*0.18,w*0.55,h*0.35,w*0.92);
     vg.addColorStop(0,"rgba(0,0,0,0)");
     vg.addColorStop(1,"rgba(0,0,0,0.58)");
@@ -1476,13 +1504,11 @@
   }
 
   function drawBirds(w,h,T){
-    // birds fly across occasionally, deterministic but alive
-    T.env.birdT += 0.020; // speed
+    T.env.birdT += 0.020;
     const t = T.env.birdT;
     const dayF=smoothstep(Math.sin(T.env.timeOfDay*2*Math.PI - Math.PI/2)*0.5 + 0.5);
-    if(dayF<0.15) return; // mostly daytime
+    if(dayF<0.15) return;
 
-    // Two flocks
     for(let flock=0; flock<2; flock++){
       const base = (t*0.12 + flock*0.37) % 1;
       const x = lerp(-120, w+120, base);
@@ -1496,7 +1522,6 @@
       for(let i=0;i<count;i++){
         const ox = (i-count/2)*18;
         const oy = Math.sin((base*6 + i)*1.2)*6;
-        // simple "M" bird
         g.beginPath();
         g.moveTo(x+ox-8, y+oy);
         g.quadraticCurveTo(x+ox, y+oy-6, x+ox+8, y+oy);
@@ -1506,7 +1531,6 @@
     }
   }
 
-  // Pot/soil: 3D-ish
   function potColors(id){
     const map={
       basic:{ body:[18,22,28], rim:[28,34,44], glaze:false },
@@ -1539,7 +1563,6 @@
 
     hit.pot={x:potX,y:potY,w:potW,h:potH};
 
-    // shadow
     g.save();
     g.globalAlpha=0.38;
     g.fillStyle="rgba(0,0,0,0.95)";
@@ -1548,7 +1571,6 @@
     g.fill();
     g.restore();
 
-    // body gradient
     const bodyGrd=g.createLinearGradient(potX,potY,potX+potW,potY);
     bodyGrd.addColorStop(0, rgba(mix(pc.body,[0,0,0],0.35),1));
     bodyGrd.addColorStop(0.20, rgba(pc.rim,1));
@@ -1560,7 +1582,6 @@
     g.strokeStyle="rgba(27,36,48,1)";
     g.lineWidth=2.2; g.stroke();
 
-    // rim highlight
     g.save();
     g.globalAlpha=0.20;
     g.strokeStyle="rgba(255,255,255,0.55)";
@@ -1569,7 +1590,6 @@
     g.stroke();
     g.restore();
 
-    // cavity + soil
     const cavX=potX+22, cavY=potY+30, cavW=potW-44, cavH=potH-52;
     const soilGrd=g.createLinearGradient(cavX,cavY,cavX,cavY+cavH);
     soilGrd.addColorStop(0, rgba(sc.top,1));
@@ -1579,7 +1599,6 @@
     g.strokeStyle="rgba(18,20,26,1)";
     g.lineWidth=2; g.stroke();
 
-    // grit
     const rng=mulberry32(((T.seed*1717)^(so.id.length*123))>>>0);
     g.save();
     g.globalAlpha=0.30;
@@ -1590,7 +1609,6 @@
     }
     g.restore();
 
-    // specular for glaze
     if(pc.glaze){
       g.save();
       g.globalAlpha=0.18;
@@ -1612,7 +1630,6 @@
   // Tree geometry + leaves (anchored to branches)
   // ------------------------------------------------------------
   function leafProfile(spId){
-    // basic palette by species
     const P={
       ficus:{type:"broad", a:[85,195,140], b:[130,230,165]},
       elm:{type:"broad", a:[78,188,132], b:[120,224,160]},
@@ -1677,7 +1694,7 @@
 
   function trunkBezier(baseX, baseY, trunkH, T){
     const bend=T.trunk;
-    const tilt = -0.05 + (T.shape/100)*0.06; // better steering range
+    const tilt = -0.05 + (T.shape/100)*0.06;
     const topOff = (tilt*0.55 + bend.strength) * trunkH * 0.95;
     const p0={x:baseX,y:baseY};
     const p3={x:baseX+topOff,y:baseY-trunkH};
@@ -1698,7 +1715,6 @@
     g.fillStyle=grd;
     g.beginPath(); g.ellipse(0,0,w,h,0,0,Math.PI*2); g.fill();
 
-    // vein
     g.globalAlpha*=0.20;
     g.strokeStyle="rgba(255,255,255,0.65)";
     g.lineWidth=Math.max(0.6,w*0.10);
@@ -1707,7 +1723,6 @@
     g.quadraticCurveTo(0,-h*0.15,w*0.55,0);
     g.stroke();
 
-    // shadow edge
     g.globalAlpha=alpha*0.16;
     g.strokeStyle="rgba(0,0,0,0.55)";
     g.lineWidth=Math.max(0.7,w*0.12);
@@ -1735,11 +1750,10 @@
   }
 
   function genLeafAnchorsIfNeeded(branch, T){
-    // stable leaf anchor positions (only on this branch)
     const pal=leafPalette(T);
     const sea=seasonObj(T).id;
     const deciduous=pal.deciduous;
-    if(sea==="winter" && deciduous) return; // no new leaves
+    if(sea==="winter" && deciduous) return;
     const canopy01=T.canopy/100;
 
     const target = (T.canopy<10) ? 1 : Math.floor(6 + canopy01*16 + branch.lenMul*10);
@@ -1760,7 +1774,6 @@
   }
 
   function buildBranchCurve(base, tip, rng){
-    // cubic curve with “bonsai arc”
     const dx=tip.x-base.x, dy=tip.y-base.y;
     const len=Math.sqrt(dx*dx+dy*dy)||1;
     const nx=-dy/len, ny=dx/len;
@@ -1785,7 +1798,6 @@
   }
 
   function drawTaperedPolyline(points, thick0, colA, colB){
-    // shadow
     g.save();
     g.globalAlpha=0.18;
     g.strokeStyle="rgba(0,0,0,0.92)";
@@ -1797,7 +1809,6 @@
     g.stroke();
     g.restore();
 
-    // main + highlight
     g.save();
     g.lineCap="round";
     for(let i=0;i<points.length-1;i++){
@@ -1833,14 +1844,14 @@
     return {x:cx+dx*s, y:cy+dy*s};
   }
 
+  // ------------------------------------------------------------
+  // Tree drawing (no floating leaves, stable geometry)
+  // ------------------------------------------------------------
   function drawTree(w,h,geom,T){
-    // reset hit lists
     hit.handles.length=0;
     hit.segs.length=0;
 
-    const sp=spById(T.speciesId);
     const sea=seasonObj(T).id;
-
     const canopy01=T.canopy/100;
     const shape01=T.shape/100;
     const hp01=T.hp/100;
@@ -1848,17 +1859,15 @@
     const baseX=w*0.5;
     const baseY=geom.soilY + 34;
 
-    // trunk height grows with canopy
     const heightMul=0.45 + canopy01*0.85;
     const trunkH=120*heightMul + canopy01*160;
     const thick0=(16 + canopy01*9) - shape01*4 + (1-hp01)*2.0;
 
     const bark=barkPalette(T);
-    const rng=mulberry32(((T.seed)^(T.meta.day*10007)^(sp.id.length*9137))>>>0);
+    const rng=mulberry32(((T.seed)^(T.meta.day*10007))>>>0);
 
     const trunkPath=trunkBezier(baseX, baseY, trunkH, T);
 
-    // trunk polyline samples
     const trunkPts=[];
     const samples=30;
     for(let i=0;i<=samples;i++){
@@ -1867,19 +1876,18 @@
     }
     drawTaperedPolyline(trunkPts, thick0, bark.a, bark.b);
 
-    // trunk handles (bend tool)
     hit.handles.push({type:"trunkTop", id:"trunk", x:trunkPath.p3.x, y:trunkPath.p3.y, r:12});
-    hit.handles.push({type:"trunkPivot", id:"trunk", x:bezier(trunkPath.p0,trunkPath.p1,trunkPath.p2,trunkPath.p3,T.trunk.pivot).x,
-                                          y:bezier(trunkPath.p0,trunkPath.p1,trunkPath.p2,trunkPath.p3,T.trunk.pivot).y, r:11});
+    hit.handles.push({type:"trunkPivot", id:"trunk",
+      x:bezier(trunkPath.p0,trunkPath.p1,trunkPath.p2,trunkPath.p3,T.trunk.pivot).x,
+      y:bezier(trunkPath.p0,trunkPath.p1,trunkPath.p2,trunkPath.p3,T.trunk.pivot).y, r:11
+    });
 
-    // canopy silhouette
     const top=trunkPath.p3;
     const canopyCX=top.x;
     const canopyCY=top.y + trunkH*0.12;
     const rx=(74 + canopy01*180) * (0.95 + shape01*0.34);
     const ry=(56 + canopy01*135) * (0.92 + shape01*0.28);
 
-    // canopy shadow
     g.save();
     g.globalAlpha=0.18;
     g.fillStyle="rgba(0,0,0,0.85)";
@@ -1888,21 +1896,13 @@
     g.fill();
     g.restore();
 
-    // branch drawing
     const pal=leafPalette(T);
     const alive=T.branches.filter(b=>b.alive);
-
-    // ensure leaf anchors are stable
     for(const b of alive) genLeafAnchorsIfNeeded(b,T);
 
-    // helper: get trunk point at t
     const trunkAt=(t)=>bezier(trunkPath.p0,trunkPath.p1,trunkPath.p2,trunkPath.p3, t);
-
-    // map for parent lookup
     const map=new Map(T.branches.map(b=>[b.id,b]));
 
-    // generate geometry for branches in parent order (simple: sort by age/parent)
-    // we keep deterministic order by insertion in array.
     for(const b of alive){
       let parentBase;
       if(!b.parentId){
@@ -1923,23 +1923,20 @@
 
       let tipX = parentBase.x + Math.cos(ang)*lenBase;
       let tipY = parentBase.y + Math.sin(ang)*lenBase*0.62 - (22 + canopy01*34)*(0.38 + shape01*0.62);
-      // bend effect
       tipX += bend * 60 * (0.55 + canopy01*0.65);
       tipY += bend * 18;
 
-      // keep within canopy ellipse when big enough
       if(T.canopy>12){
         const cl=clampPointToEllipse(tipX,tipY, canopyCX,canopyCY, rx,ry, 1.05);
         tipX=cl.x; tipY=cl.y;
       }
 
       const pts=buildBranchCurve(parentBase, {x:tipX,y:tipY}, rng);
-      b.points=pts; // stable for hit + leaves
+      b.points=pts;
 
       const thick=Math.max(1.1, thick0*(0.28 + (1-clamp(b.attachT,0.2,0.9))*0.22) * (0.82 + canopy01*0.30) * b.thickMul);
       drawTaperedPolyline(pts, thick, bark.a, bark.b);
 
-      // hit segments for prune (exact)
       let cum=0;
       for(let i=0;i<pts.length-1;i++){
         const ax=pts[i].x, ay=pts[i].y, bx=pts[i+1].x, by=pts[i+1].y;
@@ -1947,22 +1944,18 @@
         hit.segs.push({branchId:b.id, ax,ay,bx,by, cum0:cum, segLen, totalLen:0});
         cum += segLen;
       }
-      // set totalLen
       for(let i=hit.segs.length-(pts.length-1); i<hit.segs.length; i++){
         hit.segs[i].totalLen = Math.max(1e-6, cum);
       }
 
-      // branch tip handle for bending
       hit.handles.push({type:"branchTip", id:b.id, x:pts[pts.length-1].x, y:pts[pts.length-1].y, r:10});
 
-      // leaves anchored along this branch only
       const alpha=(0.55 + smoothstep(canopy01)*0.30) * (0.55 + hp01*0.45);
-      const seaId=sea;
       const deciduous=pal.deciduous;
-      if(seaId==="winter" && deciduous){
+
+      if(sea==="winter" && deciduous){
         // no leaves
       }else if(T.canopy<7){
-        // tiny stage: one leaf at tip
         const cA=mix(pal.a,pal.b,0.35);
         const cB=mix(pal.b,pal.a,0.25);
         const tip=pts[pts.length-1];
@@ -1971,7 +1964,6 @@
         const tip=pts[pts.length-1];
         const size=(18 + canopy01*40) * (0.60 + b.lenMul*0.60);
 
-        // leaf pads for needle/scale
         if(pal.type==="needle" || pal.type==="scale"){
           drawNeedlePad(tip.x, tip.y, size*0.85, pal.a, pal.b, alpha*0.85, rng);
         }else{
@@ -1982,24 +1974,19 @@
             const tx=p1.x-p0.x, ty=p1.y-p0.y;
             const n=norm(-ty, tx);
             const w = (3.2 + rng()*5.6) * L.size;
-            const h = (2.2 + rng()*4.2) * L.size;
+            const hh = (2.2 + rng()*4.2) * L.size;
             const px = p0.x + n.x*(L.side*(5 + size*0.08) + L.jitter*2);
             const py = p0.y + n.y*(L.side*(5 + size*0.08) + L.jitter*2);
             const rot = Math.atan2(ty,tx) + L.rot;
             const cA=mix(pal.a,pal.b, rng()*0.55);
             const cB=mix(pal.b,pal.a, rng()*0.35);
-            drawLeaf(px,py,w,h,rot,cA,cB, alpha*(0.70 + rng()*0.30));
+            drawLeaf(px,py,w,hh,rot,cA,cB, alpha*(0.70 + rng()*0.30));
           }
         }
-
-        // canopy fill (only attached: we attach to the thickest/top 2 branches via their points)
-        // -> no “floating leaves” anymore.
       }
     }
 
-    // handles visuals if bend tool active
     if(toolMode==="bend"){
-      // trunk handle line
       const topH=hit.handles.find(h=>h.type==="trunkTop");
       const pvH=hit.handles.find(h=>h.type==="trunkPivot");
       if(topH && pvH){
@@ -2025,7 +2012,6 @@
         drawHandle(pvH.x,pvH.y,11,"rgba(202,166,255,0.18)","rgba(202,166,255,0.65)");
       }
 
-      // branch tip handles
       for(const hnd of hit.handles){
         if(hnd.type!=="branchTip") continue;
         g.save();
@@ -2122,7 +2108,7 @@
   // ------------------------------------------------------------
   function renderScene(noUI=false){
     const T=activeTree();
-    const w=cv.width, h=cv.height;
+    const w=cv.width/(window.devicePixelRatio||1), h=cv.height/(window.devicePixelRatio||1);
 
     drawSky(w,h,T);
     drawMountains(w,h,T);
@@ -2132,7 +2118,6 @@
     withCamera(g, ()=>{
       const geom=drawPotAndSoil(w,h,T);
       drawTree(w,h,geom,T);
-
       if(!noUI) drawWaterCan(w,h,geom);
     });
 
@@ -2144,18 +2129,14 @@
   // ------------------------------------------------------------
   function dayAdvance(T){
     T.meta.day += 1;
-
     const score=(T.hp*0.45 + T.shape*0.35 + T.canopy*0.20);
     T.meta.coins += Math.max(5, Math.round(score/10));
-    T.meta.streak = Math.max(0, T.meta.streak-1);
-
     T.meta.lastDailyDay = T.meta.day;
     T.meta.daily = genDaily(T.meta.day);
     resetDayActions(T);
   }
 
   function addShootAfterPrune(T, parentBranchId, attachT, baseAngle){
-    // spawn 1-2 new shoots at cut location, classic bonsai response
     const rng=mulberry32(((T.seed^0xCAFE) ^ (parentBranchId.length*977) ^ (Math.floor(attachT*1000)))>>>0);
     const n = (rng()<0.55) ? 1 : 2;
 
@@ -2172,23 +2153,16 @@
   }
 
   function ensureOrganicStructure(T){
-    // “Natural” growth: early stage -> tiny trunk leaf -> then branching, then crown density
-    // Gate by canopy to add new branches progressively (stable, avoids jumps).
     const canopy=T.canopy;
     const gate=Math.floor(canopy/10);
     if(gate<=T.nextGate) return;
 
     const rng=mulberry32((T.seed ^ (T.meta.day*9917) ^ (gate*31337))>>>0);
-
-    // desired count scales with canopy
-    const aliveCount=T.branches.filter(b=>b.alive).length;
     const maxBranches = 1 + Math.floor(2 + canopy/7);
-
-    // pick a “parent candidate” among alive branches (or trunk for early)
     const alive=T.branches.filter(b=>b.alive);
+
     function pickParent(){
-      if(canopy<18 || alive.length===0) return null; // trunk parent
-      // prefer thicker/older branches
+      if(canopy<18 || alive.length===0) return null;
       const weights=alive.map(b=> (0.6 + b.lenMul*1.2 + b.thickMul*0.8 + (b.age/300)*0.3));
       const sum=weights.reduce((a,b)=>a+b,0) || 1;
       let r=rng()*sum;
@@ -2214,7 +2188,7 @@
       b.vigor = clamp(0.7 + rng()*0.35, 0.4, 1.0);
       T.branches.push(b);
 
-      if(rng()<0.60) break; // keep sparse
+      if(rng()<0.60) break;
       if(T.branches.length>50) break;
     }
 
@@ -2227,7 +2201,6 @@
     const sea=seasonObj(T);
     const so=soil(T);
 
-    // slower base drain
     const waterDrain=(0.42 * sp.thirst * sea.thirstMul * SIM.thirstMul) * dt;
     T.water=clamp(T.water - waterDrain, 0, 100);
 
@@ -2240,7 +2213,6 @@
     T.hp=clamp(T.hp + hpDelta, 0, 100);
     lastHpDelta=hpDelta;
 
-    // growth
     const hpMul=0.35 + (T.hp/100)*0.95;
     const waterMul=0.35 + (T.water/100)*0.85;
     const grow=(0.55 * sp.growth * sea.growMul * hpMul * waterMul * SIM.growthMul) * dt;
@@ -2248,32 +2220,24 @@
     if(T.hp>12) T.canopy=clamp(T.canopy + grow, 0, 100);
     else T.canopy=clamp(T.canopy - 0.18*dt, 0, 100);
 
-    // form drift (needs bending)
     const decay=(0.018 + (T.canopy/100)*0.018) * dt;
     T.shape=clamp(T.shape - decay, 0, 100);
 
-    // organic branch aging: branches thicken/lengthen slowly (stable)
     for(const b of T.branches){
       if(!b.alive) continue;
       b.age += dt;
       const vigor = b.vigor * (0.6 + hpMul*0.4);
-      // grow length towards 1 with diminishing returns
       b.lenMul = clamp(b.lenMul + dt * 0.0009 * (0.9 + T.canopy/100) * vigor, 0.08, 1.0);
-      // thicken a bit
       b.thickMul = clamp(b.thickMul + dt * 0.00025 * (0.6 + T.canopy/100) * vigor, 0.25, 2.2);
-      // subtle self-stabilize bend (prevents “wobble” feel)
       b.bend = lerp(b.bend, clamp(b.bend, -1, 1), 0.05);
     }
 
-    // env
-    T.env.timeOfDay = (T.env.timeOfDay + dt/(24*60)) % 1; // ~24 real minutes cycle
+    T.env.timeOfDay = (T.env.timeOfDay + dt/(24*60)) % 1;
     T.env.cloudT += dt*0.02;
 
-    // unlocks, structure
     checkSpeciesUnlocks(T);
     ensureOrganicStructure(T);
 
-    // day advance
     T.meta.dayFrac += dt / SIM.daySeconds;
     if(T.meta.dayFrac>=1){
       T.meta.dayFrac -= 1;
@@ -2284,7 +2248,6 @@
   function advanceActive(dtSim){
     const T=activeTree();
     ensureDaily(T);
-    // advance with substeps for stability
     const steps = Math.ceil(dtSim * SIM.tickHz);
     const dt = dtSim / Math.max(1, steps);
     for(let i=0;i<steps;i++) tickTree(T, dt);
@@ -2313,7 +2276,6 @@
   function actWater(){
     const T=activeTree();
     T.water=clamp(T.water + waterAmount(T), 0, 100);
-    T.meta.streak++;
     incAction(T,"water");
     rewardSmall(T);
     anim.water.on=true; anim.water.t=0;
@@ -2337,23 +2299,18 @@
     if(!b || !b.alive) return false;
 
     const before=b.lenMul;
-    // interpret cutFrac along branch length (0..1), keep minimal remaining length
     const newLen=clamp(Math.min(b.lenMul, cutFrac), 0.10, 1.0);
     b.lenMul=newLen;
 
     const removed=clamp((before - newLen) / Math.max(0.001,before), 0, 1);
     if(removed<=0.01) return false;
 
-    // prune affects stats
     T.canopy = clamp(T.canopy - pruneCanopyLoss(T)*(0.55+removed*0.85), 0, 100);
     T.shape  = clamp(T.shape  + pruneShapeGain(T)*(0.40+removed*0.70), 0, 100);
     T.hp     = clamp(T.hp     - 1.2*removed, 0, 100);
 
-    // remove some leaf anchors near the end to match cut
     b.leafAnchors = b.leafAnchors.filter(L => L.segT <= cutFrac + 0.02);
 
-    // if cut deep, delete children beyond that region (bonsai: cut creates new shoots)
-    // we “kill” a portion of children with probability
     if(cutFrac < 0.55 && b.children && b.children.length){
       for(const cid of b.children){
         const ch=T.branches.find(x=>x.id===cid);
@@ -2361,13 +2318,10 @@
       }
     }
 
-    // create new shoots at cut point with 1-2
     addShootAfterPrune(T, b.id, clamp(cutFrac,0.18,0.92), b.baseAngle);
 
-    // chance to kill branch if extremely short
     if(b.lenMul<=0.12 && Math.random()<0.18) b.alive=false;
 
-    T.meta.streak++;
     incAction(T,"prune");
     rewardSmall(T);
     saveNow();
@@ -2382,7 +2336,6 @@
 
     const frac = clamp((bs.seg.cum0 + bs.proj.t*bs.seg.segLen) / Math.max(1e-6, bs.seg.totalLen), 0.08, 1.0);
 
-    // scissors animation EXACT at cut point
     anim.scissor.on=true;
     anim.scissor.t=0;
     anim.scissor.sx=screenX;
@@ -2392,7 +2345,6 @@
     pruneBranchAt(T, bs.seg.branchId, frac);
   }
 
-  // Bending
   function findNearestHandle(wx,wy){
     let best=null, bestD2=1e18;
     for(const h of hit.handles){
@@ -2409,7 +2361,6 @@
     const gain=bendShapeGain(T)*(0.22 + Math.min(1, Math.abs(delta)*2.0));
     T.shape=clamp(T.shape+gain,0,100);
     T.hp=clamp(T.hp - bendStress(T)*Math.abs(delta)*12, 0, 100);
-    T.meta.streak++;
     incAction(T,"bend");
     rewardSmall(T);
     saveNow();
@@ -2425,7 +2376,6 @@
     const gain=bendShapeGain(T)*0.35;
     T.shape=clamp(T.shape+gain,0,100);
     T.hp=clamp(T.hp - bendStress(T)*0.55, 0, 100);
-    T.meta.streak++;
     incAction(T,"bend");
     rewardSmall(T);
     saveNow();
@@ -2435,7 +2385,7 @@
   // ------------------------------------------------------------
   // Tool mode + input
   // ------------------------------------------------------------
-  let toolMode="none"; // none|water|prune|bend
+  let toolMode="none";
   let isRunning=false;
   let drag=null;
 
@@ -2447,7 +2397,6 @@
     markDirty("hud");
   }
 
-  // pointer events
   cv.addEventListener("pointerdown",(e)=>{
     if(!isRunning) return;
     cv.setPointerCapture(e.pointerId);
@@ -2471,7 +2420,6 @@
           return;
         }
       }
-      // click near a segment -> bend that branch
       const bs=findNearestSegment(p.x,p.y);
       if(bs){
         const b=T.branches.find(x=>x.id===bs.seg.branchId);
@@ -2504,7 +2452,7 @@
     if(drag.kind==="trunkTop"){
       const dx=p.x - drag.startWX;
       const target=clamp(drag.startStrength + dx/190, -0.85, 0.85);
-      T.trunk.strength = target; // preview
+      T.trunk.strength = target;
       markDirty("play");
       return;
     }
@@ -2518,15 +2466,11 @@
       const b=T.branches.find(x=>x.id===drag.id);
       if(!b || !b.alive) return;
 
-      // Use vector from approximate base to pointer to derive angle, plus bend from lateral offset.
-      // This is much nicer on touch: you can drag anywhere.
-      // We estimate base using first point (branch start) if available.
       let base = b.points && b.points.length ? b.points[0] : {x:drag.baseWX,y:drag.baseWY};
       const vx=p.x-base.x, vy=p.y-base.y;
       const ang=Math.atan2(vy,vx);
       b.baseAngle = clamp(ang, -1.85, 1.85);
 
-      // bend from how far you pull sideways relative to forward direction
       const f=norm(Math.cos(ang), Math.sin(ang));
       const side=norm(-f.y, f.x);
       const projSide = vx*side.x + vy*side.y;
@@ -2547,15 +2491,12 @@
     }else if(drag.kind==="branchTip"){
       commitBendBranch(T, drag.id, drag.startAngle, drag.startBend);
     }else if(drag.kind==="trunkPivot"){
-      // pivot-only: no reward
       saveNow();
       markDirty("hud"); markDirty("play");
     }
-
     drag=null;
   });
 
-  // keyboard shortcuts
   window.addEventListener("keydown",(e)=>{
     if(!isRunning) return;
     if(e.key==="Escape"){ setTool("none"); drag=null; }
@@ -2589,7 +2530,6 @@
 
   function takePhotoNoUI(){
     const T=activeTree();
-    // render noUI on main canvas, then restore next frame
     renderScene(true);
     const url=cv.toDataURL("image/png");
 
@@ -2597,7 +2537,6 @@
     if(T.photos.length>30) T.photos=T.photos.slice(-30);
 
     T.meta.coins += 6;
-    T.meta.streak++;
     incAction(T,"photo");
     saveNow();
 
@@ -2606,7 +2545,7 @@
   }
 
   // ------------------------------------------------------------
-  // UI rendering: collection, shop, photos, quests
+  // UI rendering
   // ------------------------------------------------------------
   function renderGallery(){
     const T=activeTree();
@@ -2849,14 +2788,11 @@
   }
 
   // ------------------------------------------------------------
-  // HUD update
+  // HUD update (streak removed)
   // ------------------------------------------------------------
   function updateHud(){
     const T=activeTree();
-    const sp=spById(T.speciesId);
-
     $("coins").textContent=fmt(T.meta.coins);
-    $("streak").textContent=fmt(T.meta.streak);
     $("day").textContent=fmt(T.meta.day);
     $("season").textContent=seasonName(T);
     $("treeNameTop").textContent=T.name;
@@ -2881,7 +2817,6 @@
     updateIdealOverlay(T);
     $("seasonBtn").disabled = (settings.mode==="real");
 
-    // Zoom panel
     $("rngZoom").value=T.cam.zoom;
     $("valZoom").textContent=(T.cam.zoom*100).toFixed(0)+"%";
   }
@@ -2919,7 +2854,6 @@
     const T=activeTree();
     if(settings.mode==="real") return;
     T.seasonIdx=(T.seasonIdx+1)%SEASONS.length;
-    T.meta.streak++;
     rewardSmall(T);
     saveNow();
     markDirty("hud"); markDirty("play");
@@ -2928,7 +2862,6 @@
   $("photoBtn").addEventListener("click", takePhotoNoUI);
 
   $("newTree").addEventListener("click", ()=>{
-    // Create a new tree (separate life)
     const seed=(Math.random()*1e9)|0;
     const t=defaultTree(seed);
     t.name="Bonsai " + (SAVE.trees.length+1);
@@ -2936,7 +2869,6 @@
     SAVE.activeTreeId=SAVE.trees.length-1;
     normalizeTree(t, SAVE.activeTreeId);
 
-    // reset tool
     setTool("none");
     drag=null;
 
@@ -2949,16 +2881,14 @@
     const idx=Number($("treeSel").value);
     if(!isFinite(idx)) return;
 
-    // save active timestamp before switch
     const current=activeTree();
     current.meta.lastActiveTs=Date.now();
 
     SAVE.activeTreeId=clamp(idx,0,SAVE.trees.length-1);
     const T=activeTree();
-    T.meta.lastActiveTs=Date.now(); // start growing now
+    T.meta.lastActiveTs=Date.now();
     ensureDaily(T);
 
-    // reset tool + drag
     setTool("none");
     drag=null;
 
@@ -2968,10 +2898,33 @@
   });
 
   // ------------------------------------------------------------
+  // Mobile drawer: collapse/expand so bonsai is visible
+  // ------------------------------------------------------------
+  const drawer=$("drawer");
+  function setDrawerCollapsed(v){
+    const isMobile=window.matchMedia("(max-width: 980px)").matches;
+    if(!isMobile) return;
+    drawer.classList.toggle("collapsed", !!v);
+    $("drawerToggle").textContent = v ? "⬆️" : "⬇️";
+  }
+  $("drawerToggle").addEventListener("click", ()=>{
+    setDrawerCollapsed(!drawer.classList.contains("collapsed"));
+    // after layout changes, re-measure canvas
+    setTimeout(resizeCanvas, 50);
+  });
+
+  // default: collapsed on phones so the tree isn't covered
+  function ensureMobileDefault(){
+    const isMobile=window.matchMedia("(max-width: 980px)").matches;
+    if(isMobile) setDrawerCollapsed(true);
+    else drawer.classList.remove("collapsed");
+  }
+
+  // ------------------------------------------------------------
   // Settings modal
   // ------------------------------------------------------------
   const modalSettings=$("modalSettings");
-  function openSettings(fromMenu=false){
+  function openSettings(){
     $("langSel").value=settings.lang;
     $("modeSel").value=settings.mode;
     $("rngTimeScale").value=settings.test.timeScale;
@@ -2983,7 +2936,7 @@
     modalSettings.style.display="flex";
   }
   function closeSettings(){ modalSettings.style.display="none"; }
-  $("openSettings").addEventListener("click", ()=>openSettings(false));
+  $("openSettings").addEventListener("click", ()=>openSettings());
   $("closeSettings").addEventListener("click", closeSettings);
   modalSettings.addEventListener("click",(e)=>{ if(e.target===modalSettings) closeSettings(); });
 
@@ -3035,7 +2988,6 @@
       const obj=JSON.parse(($("saveText").value||"").trim());
       if(!isValidSave(obj)) return;
       SAVE=obj;
-      // normalize
       if(!Array.isArray(SAVE.trees) || SAVE.trees.length===0) SAVE=defaultSave();
       SAVE.activeTreeId=clamp(SAVE.activeTreeId||0,0,SAVE.trees.length-1);
       SAVE.trees=SAVE.trees.map((t,idx)=>normalizeTree(t,idx));
@@ -3083,11 +3035,11 @@
   $("menuSettings").addEventListener("click", ()=>{
     $("startMenu").style.display="none";
     isRunning=false;
-    openSettings(true);
+    openSettings();
   });
 
   // ------------------------------------------------------------
-  // Visibility change: keep only active tree time
+  // Visibility change
   // ------------------------------------------------------------
   document.addEventListener("visibilitychange", ()=>{
     const T=activeTree();
@@ -3147,30 +3099,28 @@
   function syncDrawerMode(){
     const isMobile=window.matchMedia("(max-width: 980px)").matches;
     $("drawerHead").style.display = isMobile ? "flex" : "none";
-    // on mobile: always show drawer; on desktop: normal right panel
     if(isMobile){
       $("drawerTitle").textContent = currentTab[0].toUpperCase()+currentTab.slice(1);
     }
   }
-  window.addEventListener("resize", syncDrawerMode);
+  window.addEventListener("resize", ()=>{
+    syncDrawerMode();
+    ensureMobileDefault();
+    resizeCanvas();
+  });
 
   // ------------------------------------------------------------
   // Init
   // ------------------------------------------------------------
   function init(){
     applyModeToSim();
-
-    // ensure active tree daily
     ensureDaily(activeTree());
-
     rebuildTreeSelect();
     setTab("play");
     syncDrawerMode();
-
-    // Settings defaults UI
+    ensureMobileDefault();
     updateSettingsUI();
-
-    // start in menu
+    resizeCanvas();
     showMenu();
     requestAnimationFrame(frame);
   }
