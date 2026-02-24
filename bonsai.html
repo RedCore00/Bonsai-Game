@@ -710,10 +710,8 @@
 <script>
 const LEAF_BINS = 12;
 const LEAF_BIN_MAX = 3;
-const LEAF_PADS = 1;      // leaf groups per branch
-const PAD_LEAF_COUNT = 2; // leaves drawn per group
-  const MAX_LEAF_PADS_PER_BRANCH = 2;
-  const MAX_TOTAL_LEAF_PADS = 180;
+const LEAF_PADS = 2;      // leaf groups per branch
+const PAD_LEAF_COUNT = 3; // leaves drawn per group
 (() => {
   "use strict";
 
@@ -1051,8 +1049,8 @@ safeSetItem(SETTINGS_KEY, JSON.stringify(settings)); }
 
       // geometry params (persistent)
       angle: baseAngle,      // direction
-      bend: (rng()-0.5)*0.15, // lateral bend
-      arc:  (rng()-0.5)*0.25, // curvature
+      bend: (rng()-0.5)*0.28, // lateral bend (more organic)
+      arc:  (rng()-0.5)*0.85, // curvature (more organic)
       maxLen: maxLen,        // target length (changes with growth)
       len: Math.max(14, maxLen*0.18),
       radius: radius,        // thickness (changes with growth)
@@ -2120,12 +2118,15 @@ if(((G_T && G_T.leafCountApprox)||0) < 380){
   const target = Math.max(0, Math.min(LEAF_PADS, Math.round(LEAF_PADS * budget)));
 
   if(!b.leafPads) b.leafPads=[];
-// hard caps to prevent runaway overdraw
-if(b.leafPads.length > MAX_LEAF_PADS_PER_BRANCH){
-  b.leafPads.sort((a,b)=> (b.g||0)-(a.g||0));
-  b.leafPads.length = MAX_LEAF_PADS_PER_BRANCH;
+
+// only develop leaves when the shoot is mature enough (prevents leaf spam on tiny branches)
+if(b.len < 28 || (b.len/(b.maxLen||1)) < 0.45){
+  // still let existing pads mature slowly
+  if(b.leafPads && b.leafPads.length){
+    for(const P of b.leafPads) P.g = clamp((P.g||0) + dt*0.18, 0, 1);
+  }
+  return;
 }
-if((T.leafCountApprox||0) > MAX_TOTAL_LEAF_PADS) return;
 
   b.leafAcc = (b.leafAcc||0);
 
@@ -2149,15 +2150,15 @@ if((T.leafCountApprox||0) > MAX_TOTAL_LEAF_PADS) return;
   b.leafAcc -= 1;
 
   // place pads away from trunk-attach to avoid center blobs
-  const minT = (b.parentId==="trunk") ? 0.68 : 0.52;
-  const maxT = 0.94;
+  const minT = 0.80; // spawn near tip (last 20%)
+  const maxT = 0.98;
   const rng=mulberry32((b.seed ^ (b.leafPads.length*977) ^ (T.seed*131))>>>0);
 
   const t = clamp(minT + rng()*(maxT-minT), 0.08, 0.98);
   const side = (rng()<0.5)?-1:1;
   const rot = (rng()-0.5)*1.0;
   const tint = rng();
-  if(b.leafPads.length >= MAX_LEAF_PADS_PER_BRANCH) return;
+
   b.leafPads.push({t, side, rot, tint, g:0, seed:(b.seed^((b.leafPads.length+1)*99991))>>>0});
 }
 
@@ -2214,13 +2215,25 @@ function buildTrunkPoints(T, baseX, baseY){
     const dx=tip.x-base.x, dy=tip.y-base.y;
     const len=Math.sqrt(dx*dx+dy*dy)||1;
     const nx=-dy/len, ny=dx/len;
-    const a = arc * len * 0.25;
 
-    const c1={x: base.x + dx*0.35 + nx*a, y: base.y + dy*0.35 + ny*a - 6};
-    const c2={x: base.x + dx*0.72 + nx*a*0.60, y: base.y + dy*0.72 + ny*a*0.60 - 10};
+    // organic curvature + slight seeded asymmetry
+    const rng=mulberry32((seed^0xA5A5A5A5)>>>0);
+    const arcJ = clamp(arc + (rng()-0.5)*0.25, -1, 1);
+    const a = arcJ * len * 0.22;
+
+    // small tangent/normal jitter that scales with length (keeps short shoots tidy)
+    const jN = (rng()-0.5) * Math.min(10, len*0.06);
+    const jT = (rng()-0.5) * Math.min(8,  len*0.05);
+
+    const lift = Math.min(10, len*0.08); // subtle upward "growth" bias
+
+    const c1={x: base.x + dx*0.34 + nx*(a + jN*0.8) + (dx/len)*jT,
+              y: base.y + dy*0.34 + ny*(a + jN*0.8) - lift*0.6 + (dy/len)*jT};
+    const c2={x: base.x + dx*0.72 + nx*(a*0.65 + jN*0.6),
+              y: base.y + dy*0.72 + ny*(a*0.65 + jN*0.6) - lift};
 
     const pts=[];
-    const segs=18;
+    const segs=12; // performance
     for(let i=0;i<=segs;i++){
       const t=i/segs;
       const u=1-t;
@@ -2233,6 +2246,7 @@ function buildTrunkPoints(T, baseX, baseY){
     }
     return pts;
   }
+
 
   function nearestPointOnPolyline(px,py, poly){
     let best=null, bestD2=1e18, bestIdx=0, bestT=0;
@@ -2625,7 +2639,7 @@ for(const hnd of hit.trunkHandles){
       const b=defaultBranch(T.seed^((Math.random()*1e9)|0), "trunk", clamp(cutT,0.12,0.92), ang, maxLen, rad, true, true);
       b.arc = clamp((rng()-0.5)*0.65, -1, 1);
       b.bend= clamp((rng()-0.5)*0.35, -1, 1);
-      b.len = Math.max(16, maxLen*0.20);
+      b.len = Math.max(12, maxLen*0.10);
       T.branches.push(b);
     }
     normalizeTree(T,0);
@@ -2731,8 +2745,8 @@ function scheduleRegrowBranch(b, delaySec){
     for(let i=0;i<n;i++){
       const side=(i===0)?-1:1;
       const ang = clamp(b.angle + side*(0.55 + rng()*0.55), -2.2, 2.2);
-          const maxLen = clamp(42 + T.crown*1.4 + rng()*80, 24, 240);
-    const rad = clamp(2.8 + T.crown*0.03 + rng()*0.8, 2.0, 7.0);
+          const maxLen = clamp(42 + crown*1.4 + rng()*80, 24, 240);
+    const rad = clamp(2.8 + crown*0.03 + rng()*0.8, 2.0, 7.0);
       const nb=defaultBranch(T.seed^((Math.random()*1e9)|0), b.id, clamp(cutFrac,0.12,0.92), ang, maxLen, rad, false, false);
       nb.arc = clamp((rng()-0.5)*0.75, -1, 1);
       nb.bend= clamp((rng()-0.5)*0.25, -1, 1);
@@ -2803,7 +2817,7 @@ function scheduleRegrowBranch(b, delaySec){
     b.bend= clamp((rng()-0.5)*0.35, -1, 1);
 
     // start tiny with 1 leaf vibe
-    b.len = Math.max(14, maxLen*0.14);
+    b.len = Math.max(12, maxLen*0.10);
 
     scheduleRegrowBranch(b, 12 + rng()*10);
     T.branches.push(b);
@@ -2885,9 +2899,16 @@ for(const b of T.branches){
       const vigor = b.vigor * (0.6 + hpMul*0.4);
 
       // maxLen grows slowly with crown
-      b.maxLen = clamp(b.maxLen + dt*(0.10 + (T.crown/100)*0.55)*vigor, 20, 520);
-      // actual len follows maxLen
-      b.len = clamp(b.len + dt*(0.28 + (T.crown/100)*0.75)*vigor, 10, b.maxLen);
+      // growth: slow, organic length increase
+// maxLen is the species potential; it creeps up slowly with age/health
+b.maxLen = clamp(b.maxLen + dt*(0.015 + (T.crown/100)*0.05)*vigor, 20, 520);
+
+// target length rises with age (prevents instant long straight branches)
+const targetLen = clamp(14 + b.age*(0.030 + (T.crown/100)*0.050)*vigor, 10, b.maxLen);
+
+// len eases toward target
+b.len = clamp(b.len + (targetLen - b.len)* (1.0 - Math.exp(-dt*0.22)), 10, b.maxLen);
+
 
       // thickness
       b.radius = clamp(b.radius + dt*(0.008 + (T.crown/100)*0.022)*vigor, 1, 36);
