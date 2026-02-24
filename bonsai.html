@@ -224,11 +224,13 @@ class Branch {
   serialize() { return { 
     x:this.x, y:this.y, a:this.angle, ta:this.targetAngle, l:this.len, ml:this.maxLen, 
     th:this.thick, d:this.depth, cut:this.cut, spr:this.sprouted, gr:this.grafted,
+    leaves: this.leaves,
     c:this.children.map(c=>c.serialize()) 
   };}
   static deserialize(d, p) {
     let b = new Branch(p, d.x, d.y, d.a, d.ml, d.th, d.d);
     b.len=d.l; b.targetAngle=d.ta; b.cut=d.cut; b.sprouted=d.spr; b.grafted=d.gr;
+    if(d.leaves) b.leaves = d.leaves;
     if(d.c) b.children=d.c.map(cd=>Branch.deserialize(cd, b));
     return b;
   }
@@ -289,7 +291,7 @@ function update(dt) {
       const thresh = b.maxLen*0.85;
       if(b.depth>0 && b.len>thresh) {
          if(b.leaves.length < SETTINGS.maxLeaves && Math.random()<0.1) {
-            b.leaves.push({ f:0.85+Math.random()*0.15, r:Math.random()*6.28, s:0.1, ms:1+Math.random() });
+            b.leaves.push({ f:0.85+Math.random()*0.15, r:Math.random()*6.28, s:0.1, ms:8+Math.random()*6 });
          }
       }
       
@@ -305,7 +307,7 @@ function update(dt) {
          }
       }
     }
-    for(let l of b.leaves) if(l.s < l.ms) l.s += 2*dt;
+    for(let l of b.leaves) if(l.s < l.ms) l.s += 10*dt; 
     
     // Wind
     const sway = Math.sin(Date.now()*0.002+b.windPhase)*SETTINGS.windSpeed * (0.05*b.len)/(Math.max(1,b.thick));
