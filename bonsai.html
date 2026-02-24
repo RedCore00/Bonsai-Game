@@ -386,7 +386,11 @@
       padding:2px 6px;border-radius:9px;
       color:var(--muted);font-size:12px;font-weight:900;
     }
-  </style>
+  
+    /* camera: wheel/pinch zoom + drag pan (no UI zoom button) */
+    #zoomBtn,#zoomPanel{display:none !important;}
+    canvas{touch-action:none;}
+</style>
 </head>
 
 <body class="menuOpen">
@@ -786,11 +790,27 @@ function dbgLine(s){
 
 function dbgState(){
   const sm=$("startMenu");
-  let leaf="?", tree="no";
+  let tree="no";
+  let leafApprox=0;
+  let branchesAlive=0, branchesSpawned=0, leafPadsNow=0, leafPadsSpawned=0, leavesNow=0, leavesSpawned=0;
   try{
-    if(typeof activeTree==="function" && activeTree()){
-      tree="yes";
-      leaf=String(activeTree().leafCountApprox||0);
+    if(typeof activeTree==="function"){
+      const T=activeTree();
+      if(T){
+        tree="yes";
+        leafApprox=(T.leafCountApprox||0);
+        if(T.stats){
+          branchesAlive=(T.stats.branchesAlive||0);
+          branchesSpawned=(T.stats.branchesSpawned||0);
+          leafPadsNow=(T.stats.leafPadsNow||0);
+          leafPadsSpawned=(T.stats.leafPadsSpawned||0);
+          leavesNow=(T.stats.leavesNowApprox||0);
+          leavesSpawned=(T.stats.leavesSpawnedApprox||0);
+        }else{
+          branchesAlive=(T.branches||[]).filter(b=>b&&b.alive).length;
+          branchesSpawned=(T.branches||[]).length;
+        }
+      }
     }
   }catch(_){}
   const st=[
@@ -798,7 +818,13 @@ function dbgState(){
     `menuDisplay=${sm ? sm.style.display : "?"}`,
     `menuClass=${document.body.classList.contains("menuOpen")}`,
     `tree=${tree}`,
-    `leafApprox=${leaf}`,
+    `branchesAlive=${branchesAlive}`,
+    `branchesSpawned=${branchesSpawned}`,
+    `leafPadsNow=${leafPadsNow}`,
+    `leafPadsSpawned=${leafPadsSpawned}`,
+    `leavesNow≈${leavesNow}`,
+    `leavesSpawned≈${leavesSpawned}`,
+    `leafApprox=${leafApprox}`,
     `lastErr=${DBG.lastErr ? DBG.lastErr : "none"}`,
     `lastRej=${DBG.lastRej ? DBG.lastRej : "none"}`
   ].join("\n");
@@ -884,9 +910,56 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
   }
 // alias used by some subsystems
 function makeRng(seed){ return mulberry32(seed>>>0); }
-window.makeRng = makeRng;
+
+
+// poly sampling helpers (t in [0..1] along polyline length)
+function polyTotalLen(poly){
+  let L=0;
+  for(let i=1;i<poly.length;i++){
+    const a=poly[i-1], b=poly[i];
+    const dx=b.x-a.x, dy=b.y-a.y;
+    L += Math.hypot(dx,dy);
+  }
+  return Math.max(1e-6, L);
+}
+function pointOnPoly(poly, t){
+  t = Math.max(0, Math.min(1, t||0));
+  const total = polyTotalLen(poly);
+  let target = total * t;
+  for(let i=1;i<poly.length;i++){
+    const a=poly[i-1], b=poly[i];
+    const dx=b.x-a.x, dy=b.y-a.y;
+    const seg = Math.hypot(dx,dy);
+    if(target <= seg || i===poly.length-1){
+      const u = seg>1e-6 ? (target/seg) : 0;
+      return {x: a.x + dx*u, y: a.y + dy*u};
+    }
+    target -= seg;
+  }
+  const last = poly[poly.length-1];
+  return {x:last.x, y:last.y};
+}
+function normalOnPoly(poly, t){
+  t = Math.max(0, Math.min(1, t||0));
+  const total = polyTotalLen(poly);
+  let target = total * t;
+  for(let i=1;i<poly.length;i++){
+    const a=poly[i-1], b=poly[i];
+    const dx=b.x-a.x, dy=b.y-a.y;
+    const seg = Math.hypot(dx,dy);
+    if(target <= seg || i===poly.length-1){
+      const inv = seg>1e-6 ? (1/seg) : 0;
+      // perpendicular unit normal
+      return {x: -dy*inv, y: dx*inv};
+    }
+    target -= seg;
+  }
+  return {x:0, y:-1};
+}
+
 
   const mix = (a,b,t)=>[a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
+  const mixCol = (a,b,t)=>mix(a,b,clamp(t,0,1));
   const rgba = (c,a)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
 
   function dist(ax,ay,bx,by){ const dx=bx-ax, dy=by-ay; return Math.sqrt(dx*dx+dy*dy); }
@@ -1097,7 +1170,7 @@ safeSetItem(SETTINGS_KEY, JSON.stringify(settings)); }
       unlockedSpecies:{ ficus:true },
 
       photos: [],
-      cam:{ zoom: 1.20 },
+      cam:{ zoom: 1.20, panX: 0, panY: 0 },
 
       env:{
         timeOfDay: 0.35,
@@ -1545,30 +1618,38 @@ function trunkCtrlRadius(T, t){
   }
 
   // camera
+  const CAM_Z_MIN=0.35, CAM_Z_MAX=4.0;
+
   const cam={
     anchorX:()=>viewW*0.5,
     anchorY:()=>viewH*0.60,
-    zoom:()=>activeTree().cam.zoom
+    zoom:()=> (activeTree().cam.zoom ?? 1),
+    panX:()=> (activeTree().cam.panX ?? 0),
+    panY:()=> (activeTree().cam.panY ?? 0)
   };
-  function withCamera(ctx, fn){
+    function withCamera(ctx, fn){
     ctx.save();
     const ax=cam.anchorX(), ay=cam.anchorY();
     const z=cam.zoom();
-    ctx.translate(ax,ay);
-    ctx.scale(z,z);
-    ctx.translate(-ax,-ay);
+    const px=cam.panX(), py=cam.panY();
+    ctx.translate(px, py);
+    ctx.translate(ax, ay);
+    ctx.scale(z, z);
+    ctx.translate(-ax, -ay);
     fn();
     ctx.restore();
   }
-  function screenToWorld(clientX,clientY){
+  
+  function screenToWorld(cx,cy){
     const r=cv.getBoundingClientRect();
-    const sx=(clientX-r.left);
-    const sy=(clientY-r.top);
+    const sx=(cx-r.left);
+    const sy=(cy-r.top);
     const ax=cam.anchorX(), ay=cam.anchorY();
     const z=cam.zoom();
-    const wx=(sx-ax)/z + ax;
-    const wy=(sy-ay)/z + ay;
-    return {sx,sy,x:wx,y:wy};
+    const px=cam.panX(), py=cam.panY();
+    const wx=((sx-px)-ax)/z + ax;
+    const wy=((sy-py)-ay)/z + ay;
+    return {sx,sy,x:wx,y:wy, ax,ay, z, px,py};
   }
 
   // ------------------------------------------------------------
@@ -2312,6 +2393,7 @@ function buildTrunkPoints(T, baseX, baseY){
     // trunk thickness grows with time + crown, does NOT shrink on prune
     const trunkR = clamp(T.trunk.baseRadius + (T.trunk.len-180)*0.03 + crown01*8 - (1-hp01)*2, 10, 52);
     const bark=barkPalette(T);
+    const pal=leafPalette(T);
 
     // build trunk polyline
     const trunk = buildTrunkPoints(T, baseX, baseY);
@@ -2337,8 +2419,8 @@ if(T.trunkLeafPads && T.trunkLeafPads.length){
       const yy = y + n.y*ks*0.6;
       const w0 = 8;
       const h0 = 5.5;
-      const colA = mixCol(COL.leafA, COL.leafB, P.tint*0.35);
-      const colB = mixCol(COL.leafB, COL.leafC, 0.25+P.tint*0.25);
+      const colA = mix(pal.a, pal.b, (P.tint||0.5)*0.55);
+      const colB = mix(pal.b, pal.a, 0.25 + (P.tint||0.5)*0.25);
       drawLeafShape("oval", xx, yy, rot + (k-0.5)*0.25, w0, h0, colA, colB, 0.85, P.seed^k);
     }
   }
@@ -2429,7 +2511,6 @@ for(const hnd of hit.trunkHandles){
     });
 
     // render branches + hits + leaves
-    const pal=leafPalette(T);
 
     for(const b of alive){
 
@@ -2968,7 +3049,79 @@ function scheduleRegrowBranch(b, delaySec){
     normalizeTree(T,0);
   }
 
-  function tickTree(T, dt){
+  function trackSpawnCounts(T){
+  if(!T) return;
+  if(!T.stats){
+    T.stats = {
+      branchesSpawned: 0,
+      leafPadsSpawned: 0,
+      leavesSpawnedApprox: 0,
+      branchesAlive: 0,
+      leafPadsNow: 0,
+      leavesNowApprox: 0
+    };
+  }
+  // seen-sets (stats only). These may deserialize as plain objects; fix defensively.
+  if(!(T._seenBranchIds && typeof T._seenBranchIds.has==="function" && typeof T._seenBranchIds.add==="function")) T._seenBranchIds = new Set();
+  if(!(T._seenLeafPadKeys && typeof T._seenLeafPadKeys.has==="function" && typeof T._seenLeafPadKeys.add==="function")) T._seenLeafPadKeys = new Set();
+  if(!(T._seenTrunkPadKeys && typeof T._seenTrunkPadKeys.has==="function" && typeof T._seenTrunkPadKeys.add==="function")) T._seenTrunkPadKeys = new Set();
+
+  let branchesAlive = 0;
+  // assign missing ids once (rare, but avoids NaN/undefined spam)
+  if(T._nextBranchId==null){
+    let mx=1;
+    for(const bb of (T.branches||[])) if(bb && typeof bb.id==="number" && bb.id>=mx) mx=bb.id+1;
+    T._nextBranchId=mx;
+  }
+  for(const b of (T.branches||[])){
+    if(!b) continue;
+    if(b.id==null){ b.id = T._nextBranchId++; }
+    const bid=b.id;
+    if(!T._seenBranchIds.has(bid)){
+      T._seenBranchIds.add(bid);
+      T.stats.branchesSpawned += 1;
+    }
+    if(b.alive) branchesAlive += 1;
+  }
+
+  let padsNow = 0;
+
+  // starter crown (trunk tip pads)
+  if(T.trunkLeafPads){
+    for(const P of T.trunkLeafPads){
+      if(!P) continue;
+      padsNow += 1;
+      const k = "trunk|" + ((P.seed>>>0)) + "|" + Math.round((P.t||0)*1000);
+      if(!T._seenTrunkPadKeys.has(k)){
+        T._seenTrunkPadKeys.add(k);
+        T.stats.leafPadsSpawned += 1;
+      }
+    }
+  }
+
+  for(const b of (T.branches||[])){
+    const pads = b && b.leafPads;
+    if(!pads) continue;
+    for(const P of pads){
+      if(!P) continue;
+      padsNow += 1;
+      const k = (b.id!=null?b.id:"?") + "|" + ((P.seed>>>0)) + "|" + Math.round((P.t||0)*1000);
+      if(!T._seenLeafPadKeys.has(k)){
+        T._seenLeafPadKeys.add(k);
+        T.stats.leafPadsSpawned += 1;
+      }
+    }
+  }
+
+  T.stats.branchesAlive = branchesAlive;
+  T.stats.leafPadsNow = padsNow;
+
+  const perPad = (typeof PAD_LEAF_COUNT==="number" ? PAD_LEAF_COUNT : 1);
+  T.stats.leavesNowApprox = padsNow * perPad;
+  T.stats.leavesSpawnedApprox = T.stats.leafPadsSpawned * perPad;
+}
+
+function tickTree(T, dt){
     // approximate total leaf count for throttling
     let leafApprox=0;
     for(const b of T.branches){ leafApprox += (b.leafPads?b.leafPads.length:0); if(leafApprox>400) break; }
@@ -3069,6 +3222,7 @@ b.len = clamp(b.len + (targetLen - b.len)* (1.0 - Math.exp(-dt*0.22)), 10, b.max
     // unlocks + structure
     checkSpeciesUnlocks(T);
     ensureOrganicStructure(T);
+    trackSpawnCounts(T);
 
     // day advance
     T.meta.dayFrac += dt / SIM.daySeconds;
@@ -3194,8 +3348,9 @@ b.len = clamp(b.len + (targetLen - b.len)* (1.0 - Math.exp(-dt*0.22)), 10, b.max
   let toolMode="none"; // none|water|prune|bend
   let isRunning=false;
   let drag=null;
-  let pan=null;
-  let pinch=null;
+  let pan=null;   // {id,sx,sy,panX,panY}
+  let pinch=null; // {idA,idB,startDist,startZoom,panX0,panY0,ax,ay,wx,wy}
+  const touchPts=new Map(); // pointerId -> {sx,sy}
   let activePointerId=null;
   let G_T=null;
   function setTool(m){
@@ -3236,6 +3391,36 @@ b.len = clamp(b.len + (targetLen - b.len)* (1.0 - Math.exp(-dt*0.22)), 10, b.max
     cv.setPointerCapture(e.pointerId);
     const p=screenToWorld(e.clientX,e.clientY);
     const T=activeTree();
+// camera pan (mouse: middle/right drag)
+if(e.pointerType==="mouse" && (e.button===1 || e.button===2)){
+  pan={ id:e.pointerId, sx:p.sx, sy:p.sy, panX:(T.cam.panX ?? 0), panY:(T.cam.panY ?? 0) };
+  drag=null;
+  e.preventDefault();
+  markDirty("play");
+  return;
+}
+
+// camera pinch (touch: 2-finger zoom + pan)
+if(e.pointerType!=="mouse"){
+  touchPts.set(e.pointerId,{sx:p.sx, sy:p.sy});
+  if(touchPts.size>=2){
+    const ids=[...touchPts.keys()];
+    const a=touchPts.get(ids[0]), b=touchPts.get(ids[1]);
+    const dx=b.sx-a.sx, dy=b.sy-a.sy;
+    const dist=Math.hypot(dx,dy);
+    const cx=(a.sx+b.sx)/2, cy=(a.sy+b.sy)/2;
+    const z0=(T.cam.zoom ?? 1);
+    const panX0=(T.cam.panX ?? 0), panY0=(T.cam.panY ?? 0);
+    const ax=cam.anchorX(), ay=cam.anchorY();
+    const wx=((cx-panX0)-ax)/z0 + ax;
+    const wy=((cy-panY0)-ay)/z0 + ay;
+    pinch={ idA:ids[0], idB:ids[1], startDist:Math.max(10,dist), startZoom:z0, panX0, panY0, ax, ay, wx, wy };
+    drag=null;
+    e.preventDefault();
+    markDirty("play");
+    return;
+  }
+}
 
     if(toolMode==="bend"){
       // 1) trunk handle drag
@@ -3301,6 +3486,34 @@ drag={
     const p=screenToWorld(e.clientX,e.clientY);
     const T=activeTree();
 
+// camera pan drag (mouse)
+if(pan && e.pointerId===pan.id){
+  T.cam.panX = pan.panX + (p.sx - pan.sx);
+  T.cam.panY = pan.panY + (p.sy - pan.sy);
+  e.preventDefault();
+  markDirty("play");
+  return;
+}
+
+// camera pinch (touch)
+if(e.pointerType!=="mouse"){
+  if(touchPts.has(e.pointerId)) touchPts.set(e.pointerId,{sx:p.sx, sy:p.sy});
+  if(pinch && (e.pointerId===pinch.idA || e.pointerId===pinch.idB)){
+    const a=touchPts.get(pinch.idA), b=touchPts.get(pinch.idB);
+    if(a && b){
+      const dx=b.sx-a.sx, dy=b.sy-a.sy;
+      const dist=Math.hypot(dx,dy);
+      const cx=(a.sx+b.sx)/2, cy=(a.sy+b.sy)/2;
+      const z1=clamp(pinch.startZoom * (dist/pinch.startDist), CAM_Z_MIN, CAM_Z_MAX);
+      T.cam.zoom=z1;
+      T.cam.panX = cx - ((pinch.wx - pinch.ax)*z1 + pinch.ax);
+      T.cam.panY = cy - ((pinch.wy - pinch.ay)*z1 + pinch.ay);
+      e.preventDefault();
+      markDirty("play");
+      return;
+    }
+  }
+}
     if(toolMode==="prune"){
       updateHoverPrune(p.x,p.y,p.sx,p.sy);
       return;
@@ -3363,18 +3576,49 @@ drag={
     }
   });
 
-  cv.addEventListener("pointerup",(e)=>{
-    if(!isRunning || !drag){ drag=null; return; }
+    // camera: wheel zoom (mouse/trackpad) + disable context menu (right-drag pan)
+  cv.addEventListener("wheel",(e)=>{
+    if(!isRunning) return;
+    e.preventDefault();
     const T=activeTree();
+    const p=screenToWorld(e.clientX,e.clientY);
+    const ax=cam.anchorX(), ay=cam.anchorY();
+    const z0=(T.cam.zoom ?? 1);
+    const factor=Math.exp(-e.deltaY*0.0012);
+    const z1=clamp(z0*factor, CAM_Z_MIN, CAM_Z_MAX);
+    if(z1===z0) return;
+    const panX=(T.cam.panX ?? 0), panY=(T.cam.panY ?? 0);
+    const k=(z1/z0);
+    T.cam.panX = p.sx - ax - (p.sx - panX - ax)*k;
+    T.cam.panY = p.sy - ay - (p.sy - panY - ay)*k;
+    T.cam.zoom=z1;
+    markDirty("play");
+  }, {passive:false});
+  cv.addEventListener("contextmenu",(e)=>e.preventDefault());
 
-    if(drag.kind==="trunkCtrl"){
-      commitBendReward(T, 0.55);
-    }else if(drag.kind==="branchDrag"){
-      commitBendReward(T, 0.75);
+cv.addEventListener("pointerup",(e)=>{
+    // camera cleanup
+    if(pan && e.pointerId===pan.id) pan=null;
+    if(touchPts.has(e.pointerId)) touchPts.delete(e.pointerId);
+    if(pinch && (e.pointerId===pinch.idA || e.pointerId===pinch.idB || touchPts.size<2)) pinch=null;
+
+    if(!isRunning){
+      drag=null;
+      activePointerId=null;
+      return;
+    }
+    if(drag){
+      const T=activeTree();
+      if(drag.kind==="trunkCtrl"){
+        commitBendReward(T, 0.55);
+      }else if(drag.kind==="branchDrag"){
+        commitBendReward(T, 0.75);
+      }
     }
     drag=null;
-    drag=null; pan=null; pinch=null; activePointerId=null;
+    activePointerId=null;
   });
+
 cv.addEventListener("pointercancel",(e)=>{
   try{ if(activePointerId!=null) cv.releasePointerCapture(activePointerId); }catch(_){}
   drag=null; pan=null; pinch=null; activePointerId=null;
