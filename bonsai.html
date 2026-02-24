@@ -884,6 +884,7 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
   }
 // alias used by some subsystems
 function makeRng(seed){ return mulberry32(seed>>>0); }
+window.makeRng = makeRng;
 
   const mix = (a,b,t)=>[a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
   const rgba = (c,a)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
