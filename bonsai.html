@@ -3636,12 +3636,6 @@ window.addEventListener("blur",()=>{
     updateSettingsUI();
     modalSettings.style.display="flex";
   }
-// EARLY GLOBAL BINDINGS (so menu works even if later code throws)
-window.hideMenu = ()=>{ try{ hideMenu(); }catch(e){ console.error(e); } };
-window.showMenu = ()=>{ try{ showMenu(); }catch(e){ console.error(e); } };
-window.openSettings = ()=>{ try{ openSettings(); }catch(e){ console.error(e); } };
-
-
   function closeSettings(){ modalSettings.style.display="none"; }
   $("openSettings").addEventListener("click", openSettings);
   $("closeSettings").addEventListener("click", closeSettings);
@@ -3729,7 +3723,6 @@ window.openSettings = ()=>{ try{ openSettings(); }catch(e){ console.error(e); } 
     saveNow();
   }
   function hideMenu(){
-    try{ document.body.classList.remove("menuOpen"); }catch(_){ }
     console.log("hideMenu()");
     document.body.classList.remove("menuOpen");
     $("startMenu").style.display="none";
