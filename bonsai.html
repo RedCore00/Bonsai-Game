@@ -91,7 +91,6 @@
 
   /* MOBILE OPTIMIZATION */
   @media(max-width: 900px) {
-    /* Gib dem Canvas 50vh, dem Menü den Rest - das löst das Overlap-Problem */
     .app-grid { grid-template-columns: 1fr; grid-template-rows: 50vh 1fr 70px; }
     .sidebar { grid-column: 1 / 2; grid-row: 2 / 3; border-left:none; border-top:1px solid #333; overflow-y: auto; padding-bottom: 20px; }
     .bottom-bar { grid-column: 1 / 2; grid-row: 3 / 4; }
@@ -627,6 +626,7 @@ function handlePointerUp() {
   MOUSE.drag=false;
   BEND_TARGET=null;
   WATERING=false;
+  HOVER=null; // <--- HIER IST DER FIX: Hover wird beim Loslassen sofort zurückgesetzt
 }
 
 // Mouse Events
