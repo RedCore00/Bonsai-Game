@@ -710,8 +710,8 @@
 <script>
 const LEAF_BINS = 12;
 const LEAF_BIN_MAX = 3;
-const LEAF_PADS = 2;      // leaf groups per branch
-const PAD_LEAF_COUNT = 3; // leaves drawn per group
+const LEAF_PADS = 1;      // leaf groups per branch (performance)
+const PAD_LEAF_COUNT = 2; // leaves drawn per group (performance)
 (() => {
   "use strict";
 
@@ -2401,7 +2401,7 @@ for(const hnd of hit.trunkHandles){
     const aL = alpha * (0.18 + 0.82*gg);
 
     // group center offset away from branch
-    const off = (10 + thick*0.40 + crown01*6.0) * P.side;
+    const off = (2.2 + thick*0.62) * P.side; // attach to branch surface
     const cx = p0.x + n.x*off;
     const cy = p0.y + n.y*off;
 
@@ -2410,11 +2410,11 @@ for(const hnd of hit.trunkHandles){
 
     // group scale (clamped)
     const baseS = (0.70 + crown01*0.90) * (0.70 + thick*0.04);
-    const w0 = Math.min(14 + crown01*18, 8.0*baseS);
-    const h0 = Math.min(9  + crown01*13, 5.2*baseS);
+    const w0 = Math.min(10 + crown01*12, 6.4*baseS);
+    const h0 = Math.min(7  + crown01*9,  4.2*baseS);
 
     for(let k=0;k<PAD_LEAF_COUNT;k++){
-      const ks = (k-1) * (w0*0.55 + 2.0);
+      const ks = (k-0.5) * (w0*0.32 + 1.2);
       const jn = (k===1?0:(k===0?-1:1)) * (h0*0.10);
       const px = cx + tdir.x*ks + n.x*jn;
       const py = cy + tdir.y*ks + n.y*jn;
