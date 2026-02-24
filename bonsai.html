@@ -710,8 +710,10 @@
 <script>
 const LEAF_BINS = 12;
 const LEAF_BIN_MAX = 3;
-const LEAF_PADS = 1;      // leaf groups per branch (performance)
-const PAD_LEAF_COUNT = 2; // leaves drawn per group (performance)
+const LEAF_PADS = 1;      // leaf groups per branch
+const PAD_LEAF_COUNT = 2; // leaves drawn per group
+  const MAX_LEAF_PADS_PER_BRANCH = 2;
+  const MAX_TOTAL_LEAF_PADS = 180;
 (() => {
   "use strict";
 
@@ -722,6 +724,43 @@ const PAD_LEAF_COUNT = 2; // leaves drawn per group (performance)
   
 
 
+
+
+// ---- STORAGE SAFETY ----
+let STORAGE_DISABLED=false;
+function safeSetItem(k,v){
+  if(STORAGE_DISABLED) return false;
+  try{
+    localStorage.setItem(k,v);
+    return true;
+  }catch(e){
+    try{ console.error("storage setItem failed:", e && (e.name||e.message||e)); }catch(_){}
+    // attempt cleanup of older/larger keys
+    try{
+      const ks=[];
+      for(let i=0;i<localStorage.length;i++){
+        const key=localStorage.key(i);
+        if(!key) continue;
+        if(key.startsWith("bonsai_save_") || key.startsWith("bonsai_photo_") || key.startsWith("bonsai_snap_") || key.startsWith("bonsai_save_v")){
+          ks.push(key);
+        }
+      }
+      ks.sort((a,b)=> (localStorage.getItem(b)||"").length - (localStorage.getItem(a)||"").length);
+      for(let i=0;i<Math.min(12, ks.length);i++){
+        if(ks[i]!==k) localStorage.removeItem(ks[i]);
+      }
+      localStorage.setItem(k,v);
+      return true;
+    }catch(_e){
+      STORAGE_DISABLED=true;
+      return false;
+    }
+  }
+}
+function safeGetItem(k){
+  try{ return localStorage.getItem(k); }catch(_){ return null; }
+}
+// ------------------------
 // ---------------- DEBUG ----------------
 const DEBUG = true;
 const DBG = {
@@ -965,14 +1004,15 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 
   function loadSettings(){
     try{
-      const raw=localStorage.getItem(SETTINGS_KEY);
+      const raw=safeGetItem(SETTINGS_KEY);
       if(!raw) return defaultSettings();
       const obj=JSON.parse(raw);
       const base=defaultSettings();
       return {...base,...obj,test:{...base.test,...(obj.test||{})}};
     }catch{ return defaultSettings(); }
   }
-  function saveSettings(){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+  function saveSettings(){ 
+safeSetItem(SETTINGS_KEY, JSON.stringify(settings)); }
 
   // ------------------------------------------------------------
   // Tree data model (stable trunk length + trunk control points)
@@ -1089,8 +1129,6 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
     defaultBranch(seed^0x1A2B3C4D, "trunk", 0.76,  0.35, 105, 5.8, false, true),
     defaultBranch(seed^0xBEEF0042, "trunk", 0.82, -0.05,  90, 5.2, false, true),
   ],
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
 }
 ;
 
@@ -1109,7 +1147,7 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 
   function loadSave(){
     try{
-      const raw=localStorage.getItem(SAVE_KEY);
+      const raw=safeGetItem(SAVE_KEY);
       if(!raw) return defaultSave();
       const obj=JSON.parse(raw);
       const base=defaultSave();
@@ -1192,7 +1230,7 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
   let settings=loadSettings();
   let SAVE=loadSave();
   function activeTree(){ return SAVE.trees[SAVE.activeTreeId]; }
-  function saveNow(){ localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); }
+  function saveNow(){ safeSetItem(SAVE_KEY, JSON.stringify(SAVE)); }
 
   // ------------------------------------------------------------
   // SIM config
@@ -1978,7 +2016,6 @@ function trunkCtrlRadius(T, t){
   }
 
   function drawLeafShape(kind, x,y, rot, w,h, colA, colB, alpha, seed){
-(kind, x,y, rot, w,h, colA, colB, alpha, seed){
     g.save();
     g.translate(x,y);
     g.rotate(rot);
@@ -2083,6 +2120,13 @@ if(((G_T && G_T.leafCountApprox)||0) < 380){
   const target = Math.max(0, Math.min(LEAF_PADS, Math.round(LEAF_PADS * budget)));
 
   if(!b.leafPads) b.leafPads=[];
+// hard caps to prevent runaway overdraw
+if(b.leafPads.length > MAX_LEAF_PADS_PER_BRANCH){
+  b.leafPads.sort((a,b)=> (b.g||0)-(a.g||0));
+  b.leafPads.length = MAX_LEAF_PADS_PER_BRANCH;
+}
+if((T.leafCountApprox||0) > MAX_TOTAL_LEAF_PADS) return;
+
   b.leafAcc = (b.leafAcc||0);
 
   // grow existing pads slowly
@@ -2113,7 +2157,7 @@ if(((G_T && G_T.leafCountApprox)||0) < 380){
   const side = (rng()<0.5)?-1:1;
   const rot = (rng()-0.5)*1.0;
   const tint = rng();
-
+  if(b.leafPads.length >= MAX_LEAF_PADS_PER_BRANCH) return;
   b.leafPads.push({t, side, rot, tint, g:0, seed:(b.seed^((b.leafPads.length+1)*99991))>>>0});
 }
 
@@ -2401,7 +2445,7 @@ for(const hnd of hit.trunkHandles){
     const aL = alpha * (0.18 + 0.82*gg);
 
     // group center offset away from branch
-    const off = (2.2 + thick*0.62) * P.side; // attach to branch surface
+    const off = (10 + thick*0.40 + crown01*6.0) * P.side;
     const cx = p0.x + n.x*off;
     const cy = p0.y + n.y*off;
 
@@ -2410,11 +2454,11 @@ for(const hnd of hit.trunkHandles){
 
     // group scale (clamped)
     const baseS = (0.70 + crown01*0.90) * (0.70 + thick*0.04);
-    const w0 = Math.min(10 + crown01*12, 6.4*baseS);
-    const h0 = Math.min(7  + crown01*9,  4.2*baseS);
+    const w0 = Math.min(14 + crown01*18, 8.0*baseS);
+    const h0 = Math.min(9  + crown01*13, 5.2*baseS);
 
     for(let k=0;k<PAD_LEAF_COUNT;k++){
-      const ks = (k-0.5) * (w0*0.32 + 1.2);
+      const ks = (k-1) * (w0*0.55 + 2.0);
       const jn = (k===1?0:(k===0?-1:1)) * (h0*0.10);
       const px = cx + tdir.x*ks + n.x*jn;
       const py = cy + tdir.y*ks + n.y*jn;
@@ -2609,36 +2653,6 @@ for(const hnd of hit.trunkHandles){
   if(b.leaves) b.leaves.length=0;
 }
 
-  // keep only ~10% (performance) but spread along branch
-  arr.sort((a,c)=>(a.t||0)-(c.t||0));
-  const keep=Math.max(1, Math.ceil(arr.length*keepRatio));
-  if(arr.length>keep){
-    const picked=[];
-    for(let i=0;i<keep;i++){
-      const idx=Math.floor(i*(arr.length-1)/Math.max(1,keep-1));
-      picked.push(arr[idx]);
-    }
-    arr=picked;
-  }
-
-  // rebuild bins + slots, enforce max overlap
-  const bins=new Array(LEAF_BINS).fill(0);
-  const out=[];
-  for(const L of arr){
-    const bin = (L.bin!=null) ? L.bin : Math.min(LEAF_BINS-1, Math.floor(clamp01(L.t||0)*LEAF_BINS));
-    const slot = bins[bin];
-    if(slot>=LEAF_BIN_MAX) continue;
-    bins[bin] = slot+1;
-    L.bin=bin;
-    L.slot=slot;
-    out.push(L);
-  }
-  b.leaves=out;
-  b.leafBins=bins;
-  b.leafAcc=0;
-  b.leafBudgetMul=0.10;
-}
-
 function pruneTrunkAt(T, cutFrac){
     // cutFrac: 0..1 along trunk length (arc-length fraction)
     cutFrac=clamp(cutFrac, 0.12, 0.98);
@@ -2717,8 +2731,8 @@ function scheduleRegrowBranch(b, delaySec){
     for(let i=0;i<n;i++){
       const side=(i===0)?-1:1;
       const ang = clamp(b.angle + side*(0.55 + rng()*0.55), -2.2, 2.2);
-          const maxLen = clamp(42 + crown*1.4 + rng()*80, 24, 240);
-    const rad = clamp(2.8 + crown*0.03 + rng()*0.8, 2.0, 7.0);
+          const maxLen = clamp(42 + T.crown*1.4 + rng()*80, 24, 240);
+    const rad = clamp(2.8 + T.crown*0.03 + rng()*0.8, 2.0, 7.0);
       const nb=defaultBranch(T.seed^((Math.random()*1e9)|0), b.id, clamp(cutFrac,0.12,0.92), ang, maxLen, rad, false, false);
       nb.arc = clamp((rng()-0.5)*0.75, -1, 1);
       nb.bend= clamp((rng()-0.5)*0.25, -1, 1);
@@ -3836,14 +3850,6 @@ window.openSettings = openSettings;
 
 
   init();
-// AUTO_START_FAILSAFE (iOS/embedded): if menu tap handlers fail, auto-start
-setTimeout(()=>{
-  try{
-    const sm=document.getElementById("startMenu");
-    if(sm && sm.style.display!=="none"){ hideMenu(); }
-  }catch(_){}
-}, 900);
-
 })();
 </script>
 
