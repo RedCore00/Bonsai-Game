@@ -3636,6 +3636,8 @@ window.addEventListener("blur",()=>{
 
     bindTap("menuPlay", ()=>{ hideMenu(); markDirty("hud"); markDirty("play"); });
   bindTap("menuSettings", ()=>{ $("startMenu").style.display="none"; isRunning=false; openSettings(); });
+  bindTap("startMenu", ()=>{ hideMenu(); markDirty("hud"); markDirty("play"); });
+
 // ------------------------------------------------------------
   // Mobile drawer collapse
   // ------------------------------------------------------------
@@ -3734,6 +3736,14 @@ window.openSettings = openSettings;
 
 
   init();
+// AUTO_START_FAILSAFE (iOS/embedded): if menu tap handlers fail, auto-start
+setTimeout(()=>{
+  try{
+    const sm=document.getElementById("startMenu");
+    if(sm && sm.style.display!=="none"){ hideMenu(); }
+  }catch(_){}
+}, 900);
+
 })();
 </script>
 </body>
