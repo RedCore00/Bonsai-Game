@@ -98,6 +98,9 @@
       -webkit-user-select:none;
       cursor: default; /* remove any “circle feel” */
     }
+    body.menuOpen canvas{pointer-events:none;}
+    .start{pointer-events:auto;}
+
     @media (max-width:980px){
       canvas{ height: min(56vh, 520px); }
     }
@@ -386,7 +389,7 @@
   </style>
 </head>
 
-<body>
+<body class="menuOpen">
 <div class="wrap">
   <header>
     <div class="brand">
@@ -674,8 +677,8 @@
         <p>Ein belohnendes Bonsai-Game: starte klein, biege ihn in Form, schneide präzise, halte ihn gesund, verdiene Coins mit Quests und baue ein Foto-Album. Jeder Baum hat sein eigenes Leben.</p>
       </div>
       <div class="actions">
-        <button class="btn" id="menuPlay">▶️ Spielen</button>
-        <button class="btn" id="menuSettings">⚙️ Einstellungen</button>
+        <button class="btn" id="menuPlay" onclick="window.hideMenu && window.hideMenu()">▶️ Spielen</button>
+        <button class="btn" id="menuSettings" onclick="window.openSettings && window.openSettings()">⚙️ Einstellungen</button>
       </div>
     </div>
     <div class="content">
@@ -716,7 +719,18 @@ const PAD_LEAF_COUNT = 3; // leaves drawn per group
   // Helpers
   // ------------------------------------------------------------
   const $ = (id)=>document.getElementById(id);
-  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  
+
+function bindTap(id, fn){
+  const el=$(id);
+  if(!el) return;
+  const handler=(e)=>{ try{ e.preventDefault(); e.stopPropagation(); }catch(_){} fn(); };
+  el.addEventListener("pointerup", handler, {passive:false});
+  el.addEventListener("touchend", handler, {passive:false});
+  el.addEventListener("click", handler);
+  el.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ handler(e); } });
+}
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
   const clamp01 = (x)=>clamp(x,0,1);
   const lerp = (a,b,t)=>a+(b-a)*t;
   const fmt = (n)=>Math.round(n);
@@ -978,7 +992,10 @@ const PAD_LEAF_COUNT = 3; // leaves drawn per group
     defaultBranch(seed^0x1A2B3C4D, "trunk", 0.76,  0.35, 105, 5.8, false, true),
     defaultBranch(seed^0xBEEF0042, "trunk", 0.82, -0.05,  90, 5.2, false, true),
   ],
-};
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+;
 
   }
 
@@ -3600,6 +3617,7 @@ window.addEventListener("blur",()=>{
   // Start menu
   // ------------------------------------------------------------
   function showMenu(){
+    document.body.classList.add("menuOpen");
     isRunning=false;
     $("startMenu").style.display="flex";
     const T=activeTree();
@@ -3607,6 +3625,7 @@ window.addEventListener("blur",()=>{
     saveNow();
   }
   function hideMenu(){
+    document.body.classList.remove("menuOpen");
     $("startMenu").style.display="none";
     isRunning=true;
     offlineCatchup();
@@ -3615,17 +3634,9 @@ window.addEventListener("blur",()=>{
     saveNow();
   }
 
-  $("menuPlay").addEventListener("click", ()=>{
-    hideMenu();
-    markDirty("hud"); markDirty("play");
-  });
-  $("menuSettings").addEventListener("click", ()=>{
-    $("startMenu").style.display="none";
-    isRunning=false;
-    openSettings();
-  });
-
-  // ------------------------------------------------------------
+    bindTap("menuPlay", ()=>{ hideMenu(); markDirty("hud"); markDirty("play"); });
+  bindTap("menuSettings", ()=>{ $("startMenu").style.display="none"; isRunning=false; openSettings(); });
+// ------------------------------------------------------------
   // Mobile drawer collapse
   // ------------------------------------------------------------
   function syncDrawerMode(){
