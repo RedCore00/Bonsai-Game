@@ -711,7 +711,10 @@
 const LEAF_BINS = 12;
 const LEAF_BIN_MAX = 3;
 const LEAF_PADS = 2;      // leaf groups per branch
-const PAD_LEAF_COUNT = 3; // leaves drawn per group
+const PAD_LEAF_COUNT = 1; // base, actual per-branch is dynamic
+  const LEAF_MIN_LEN = 10;     // first leaf appears
+  const LEAF_LEN_STEP = 34;    // add another leaf every N px
+  const LEAF_MAX_PER_BRANCH = 5; // perf cap
 (() => {
   "use strict";
 
@@ -2109,7 +2112,23 @@ if(((G_T && G_T.leafCountApprox)||0) < 380){
     g.restore();
   }
 
-  function ensureLeaves(T, b, dt){
+  
+function ensureStarterCrown(T){
+  if(T._starterCrown) return;
+  T._starterCrown = true;
+  T.trunkLeafPads = [];
+  const rng = makeRng((T.seed^0xC0FFEE)>>>0);
+  const pads = 3;
+  for(let i=0;i<pads;i++){
+    const side = (i%2===0)?1:-1;
+    const rot  = (rng()-0.5)*0.8;
+    const tint = rng();
+    const t = 0.86 + rng()*0.10; // near tip
+    T.trunkLeafPads.push({t, side, rot, tint, g:1, seed:(T.seed^(i*1337))});
+  }
+}
+
+function ensureLeaves(T, b, dt){
   const hp01=T.hp/100;
   const crown01=T.crown/100;
 
@@ -2119,6 +2138,16 @@ if(((G_T && G_T.leafCountApprox)||0) < 380){
 
   if(!b.leafPads) b.leafPads=[];
 
+      // create initial pad as soon as branch exists (leaf follows length)
+      if(b.len >= LEAF_MIN_LEN && b.leafPads.length===0){
+        const rng = makeRng(b.seed ^ 0xA11F00D);
+        const side = (rng()<0.5)?-1:1;
+        const rot  = (rng()-0.5)*0.9;
+        const tint = rng();
+        // last 20% near the tip
+        const t = 0.82 + rng()*0.14;
+        b.leafPads.push({t, side, rot, tint, g:0, seed:(b.seed^(b.leafPads.length*9973))});
+      }
 // only develop leaves when the shoot is mature enough (prevents leaf spam on tiny branches)
 if(b.len < 28 || (b.len/(b.maxLen||1)) < 0.45){
   // still let existing pads mature slowly
@@ -2274,6 +2303,7 @@ function buildTrunkPoints(T, baseX, baseY){
 
     const baseX=w*0.5;
     const baseY=geom.soilY + 34;
+    T._baseX = baseX; T._baseY = baseY;
 
     // trunk thickness grows with time + crown, does NOT shrink on prune
     const trunkR = clamp(T.trunk.baseRadius + (T.trunk.len-180)*0.03 + crown01*8 - (1-hp01)*2, 10, 52);
@@ -2281,6 +2311,35 @@ function buildTrunkPoints(T, baseX, baseY){
 
     // build trunk polyline
     const trunk = buildTrunkPoints(T, baseX, baseY);
+
+// starter crown leaves on trunk tip
+if(T.trunkLeafPads && T.trunkLeafPads.length){
+  // approximate thickness from trunk
+  const baseS = 1.0;
+  const thick = 10;
+  for(const P of T.trunkLeafPads){
+    const p = pointOnPoly(trunk.poly, P.t);
+    const n = normalOnPoly(trunk.poly, P.t);
+    const off = (0.6 + thick*0.18) * P.side;
+    const x = p.x + n.x*off;
+    const y = p.y + n.y*off;
+    const rot = Math.atan2(trunk.poly[Math.min(trunk.poly.length-1, Math.floor(P.t*(trunk.poly.length-1)))].y - trunk.poly[Math.max(0, Math.floor(P.t*(trunk.poly.length-1))-1)].y,
+                           trunk.poly[Math.min(trunk.poly.length-1, Math.floor(P.t*(trunk.poly.length-1)))].x - trunk.poly[Math.max(0, Math.floor(P.t*(trunk.poly.length-1))-1)].x) + P.rot;
+    // small crown: 1-2 leaves
+    const dynLeaves = 2;
+    for(let k=0;k<dynLeaves;k++){
+      const ks = (k-0.5) * 1.6;
+      const xx = x + n.x*ks*0.6;
+      const yy = y + n.y*ks*0.6;
+      const w0 = 8;
+      const h0 = 5.5;
+      const colA = mixCol(COL.leafA, COL.leafB, P.tint*0.35);
+      const colB = mixCol(COL.leafB, COL.leafC, 0.25+P.tint*0.25);
+      drawLeafShape("oval", xx, yy, rot + (k-0.5)*0.25, w0, h0, colA, colB, 0.85, P.seed^k);
+    }
+  }
+}
+
     const trunkPoly = trunk.poly;
 
     // trunk draw
@@ -2471,7 +2530,8 @@ for(const hnd of hit.trunkHandles){
     const w0 = Math.min(14 + crown01*18, 8.0*baseS);
     const h0 = Math.min(9  + crown01*13, 5.2*baseS);
 
-    for(let k=0;k<PAD_LEAF_COUNT;k++){
+    const dynLeaves = clamp(1 + Math.floor((b.len-LEAF_MIN_LEN)/LEAF_LEN_STEP), 1, LEAF_MAX_PER_BRANCH);
+      for(let k=0;k<dynLeaves;k++){
       const ks = (k-1) * (w0*0.55 + 2.0);
       const jn = (k===1?0:(k===0?-1:1)) * (h0*0.10);
       const px = cx + tdir.x*ks + n.x*jn;
@@ -2626,7 +2686,86 @@ for(const hnd of hit.trunkHandles){
     }
   }
 
-  function addLeadersAfterTrunkCut(T, cutT){
+  
+// ------------------------------------------------------------
+// Anti-overlap branch spawning (prevents stacked branches on bend)
+// ------------------------------------------------------------
+const BRANCH_SLOTS = 12;          // discrete attach bins along parent
+const MIN_BASE_DIST = 24;         // px in tree-space
+const MIN_ANGLE_DIFF = 0.45;      // rad (~26°)
+const MAX_BRANCHES_TOTAL = 90;    // perf cap
+
+function slotKey(parentId, attachT){
+  const s = clamp(Math.floor(clamp(attachT,0,0.999)*BRANCH_SLOTS), 0, BRANCH_SLOTS-1);
+  return parentId + ":" + s;
+}
+
+function getTrunkPolyForSpawn(T){
+  const baseX = (T._baseX!=null)?T._baseX:0;
+  const baseY = (T._baseY!=null)?T._baseY:0;
+  return buildTrunkPoints(T, baseX, baseY).poly;
+}
+
+function attachPoint(T, parentId, attachT, trunkPoly){
+  if(parentId==="trunk"){
+    const idx = Math.floor(clamp(attachT,0.02,0.98)*(trunkPoly.length-1));
+    return trunkPoly[idx];
+  }
+  const pb = T.branches.find(x=>x && x.id===parentId);
+  if(pb && pb.points && pb.points.poly && pb.points.poly.length){
+    const poly = pb.points.poly;
+    const idx = Math.floor(clamp(attachT,0.02,0.98)*(poly.length-1));
+    return poly[idx];
+  }
+  // fallback to trunk
+  const idx = Math.floor(0.72*(trunkPoly.length-1));
+  return trunkPoly[idx];
+}
+
+function angleDiff(a,b){
+  let d = a-b;
+  while(d> Math.PI) d-=Math.PI*2;
+  while(d<-Math.PI) d+=Math.PI*2;
+  return Math.abs(d);
+}
+
+function safeAddBranch(T, b){
+  if(!b || !b.alive) return false;
+  if(T.branches.length >= MAX_BRANCHES_TOTAL) return false;
+
+  if(!T._slotTaken) T._slotTaken = Object.create(null);
+
+  const key = slotKey(b.parentId, b.attachT);
+  if(T._slotTaken[key]) return false;
+
+  // compute attach point in current tree-space (uses cached parent points if available)
+  const trunkPoly = getTrunkPolyForSpawn(T);
+  const p = attachPoint(T, b.parentId, b.attachT, trunkPoly);
+
+  // spatial minimum distance vs existing bases
+  for(const ob of T.branches){
+    if(!ob || !ob.alive) continue;
+    if(!ob.basePos) continue;
+    const d = dist(p.x,p.y, ob.basePos.x, ob.basePos.y);
+    if(d < MIN_BASE_DIST) return false;
+  }
+
+  // angle/side uniqueness inside same slot
+  const s = key;
+  for(const ob of T.branches){
+    if(!ob || !ob.alive) continue;
+    if(ob._slotKey !== s) continue;
+    if(ob.side === b.side && angleDiff(ob.angle, b.angle) < MIN_ANGLE_DIFF) return false;
+  }
+
+  b._slotKey = key;
+  b.basePos = {x:p.x, y:p.y};
+  T._slotTaken[key] = true;
+  safeAddBranch(T, b);
+  return true;
+}
+
+function addLeadersAfterTrunkCut(T, cutT){
     const sp=spById(T.speciesId);
     const rng=mulberry32(((T.seed^0xCAFE) ^ (Math.floor(cutT*1000)*977))>>>0);
     const n=2;
@@ -2640,7 +2779,7 @@ for(const hnd of hit.trunkHandles){
       b.arc = clamp((rng()-0.5)*0.65, -1, 1);
       b.bend= clamp((rng()-0.5)*0.35, -1, 1);
       b.len = Math.max(12, maxLen*0.10);
-      T.branches.push(b);
+      safeAddBranch(T, b);
     }
     normalizeTree(T,0);
   }
@@ -2752,7 +2891,7 @@ function scheduleRegrowBranch(b, delaySec){
       nb.bend= clamp((rng()-0.5)*0.25, -1, 1);
       nb.len = Math.max(12, maxLen*0.18);
       scheduleRegrowBranch(nb, 10 + rng()*8);
-      T.branches.push(nb);
+      safeAddBranch(T, nb);
     }
 
     // stats (does NOT shrink trunk)
@@ -2769,6 +2908,7 @@ function scheduleRegrowBranch(b, delaySec){
   }
 
   function ensureOrganicStructure(T){
+    ensureStarterCrown(T);
     // prevent immediate respawn after pruning
     if(T.meta && T.meta.lastPruneTs && (Date.now()-T.meta.lastPruneTs)<9000) return;
 
@@ -2820,7 +2960,7 @@ function scheduleRegrowBranch(b, delaySec){
     b.len = Math.max(12, maxLen*0.10);
 
     scheduleRegrowBranch(b, 12 + rng()*10);
-    T.branches.push(b);
+    safeAddBranch(T, b);
     normalizeTree(T,0);
   }
 
