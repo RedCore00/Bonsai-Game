@@ -1,4282 +1,710 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>Balkon-Bonsai</title>
-  <style>
-    :root{
-      --bg:#0b0f14;
-      --panel:#0f1620;
-      --panel2:#0b1018;
-      --line:#1c2a3a;
-      --txt:#eaf1fb;
-      --muted:#9fb2c7;
-      --good:#7be39a;
-      --warn:#f6c75a;
-      --bad:#ff5a63;
-      --accent:#76e4ff;
-      --accent2:#caa6ff;
-      --glass: rgba(15,22,32,.72);
-      --glass2: rgba(11,16,24,.55);
-      --shadow: 0 18px 50px rgba(0,0,0,.45);
-      --radius: 16px;
-      --safeB: env(safe-area-inset-bottom, 0px);
-      --safeT: env(safe-area-inset-top, 0px);
-    }
-
-    html,body{height:100%;margin:0;color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
-    body{
-      background:
-        radial-gradient(1200px 900px at 20% 10%, #0f1b2b 0%, var(--bg) 55%, #070a0f 100%);
-      overflow-x:hidden;
-    }
-    *{box-sizing:border-box}
-
-    .wrap{max-width:1180px;margin:0 auto;padding:12px 12px calc(18px + var(--safeB))}
-    header{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-      margin-bottom:10px;
-      padding-top: max(0px, var(--safeT));
-    }
-    .brand{display:flex;align-items:center;gap:10px;min-width:240px}
-    .logo{
-      width:36px;height:36px;border-radius:12px;
-      background: radial-gradient(circle at 30% 30%, rgba(118,228,255,.35), rgba(202,166,255,.22));
-      border:1px solid rgba(118,228,255,.25);
-      box-shadow: 0 10px 30px rgba(118,228,255,.08);
-      flex: 0 0 auto;
-    }
-    h1{font-size:16px;margin:0;font-weight:950;letter-spacing:.2px}
-    .mini{font-size:12px;color:var(--muted);line-height:1.35}
-
-    /* Top bar minimal */
-    .pillRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-    .pill{
-      border:1px solid rgba(28,42,58,.9);
-      background: rgba(11,16,24,.55);
-      border-radius:999px;
-      padding:7px 10px;
-      font-size:13px;
-      color:var(--muted);
-      display:flex;align-items:center;gap:8px;white-space:nowrap;
-    }
-    .pill b{color:var(--txt)}
-    .dot{width:7px;height:7px;border-radius:99px;background:rgba(123,227,154,.85); box-shadow:0 0 0 3px rgba(123,227,154,.12)}
-    .dot.w{background:rgba(246,199,90,.92); box-shadow:0 0 0 3px rgba(246,199,90,.12)}
-    .dot.c{background:rgba(118,228,255,.92); box-shadow:0 0 0 3px rgba(118,228,255,.12)}
-
-    .layout{
-      display:grid;
-      grid-template-columns: 1.35fr 0.65fr;
-      gap:14px;
-      align-items:start;
-    }
-    @media (max-width: 980px){
-      .layout{grid-template-columns:1fr}
-      header{margin-bottom:8px}
-      .wrap{padding-bottom: calc(120px + var(--safeB))}
-    }
-
-    .card{
-      background: linear-gradient(180deg, rgba(18,26,38,.85), rgba(10,14,20,.75));
-      border:1px solid rgba(28,42,58,.8);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      backdrop-filter: blur(10px);
-    }
-
-    .canvasWrap{position:relative}
-    canvas{
-      display:block;
-      width:100%;
-      height: min(68vh, 680px);
-      background:#06090e;
-      touch-action:none; /* critical for mobile */
-      user-select:none;
-      -webkit-user-select:none;
-      cursor: default; /* remove any “circle feel” */
-    }
-    body.menuOpen canvas{pointer-events:none;}
-    .start{pointer-events:auto;}
-
-    @media (max-width:980px){
-      canvas{ height: min(56vh, 520px); }
-    }
-
-    .underCanvas{
-      display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;
-      padding:10px 12px;border-top:1px solid rgba(28,42,58,.55);
-      background: linear-gradient(180deg, rgba(9,12,18,.25), rgba(9,12,18,.55));
-    }
-
-    select{
-      background: rgba(11,16,24,.6);
-      border:1px solid rgba(28,42,58,.9);
-      color:var(--txt);
-      border-radius:12px;
-      padding:10px 10px;
-      font-weight:850;
-      outline:none;
-      max-width: 100%;
-    }
-
-    .btn{
-      appearance:none;
-      border:1px solid rgba(28,42,58,.9);
-      background: rgba(11,16,24,.58);
-      color:var(--txt);
-      border-radius:14px;
-      padding:12px 10px;
-      font-weight:950;
-      font-size:14px;
-      cursor:pointer;
-      user-select:none;
-      transition: transform .08s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
-      box-shadow: 0 10px 26px rgba(0,0,0,.18);
-    }
-    .btn:hover{background: rgba(14,20,30,.70)}
-    .btn:active{transform: translateY(1px)}
-    .btn.small{padding:10px 10px;font-size:13px;border-radius:12px}
-    .btn.ghost{background:transparent; box-shadow:none}
-    .btn:disabled{opacity:.45; cursor:not-allowed}
-    .btn.active{
-      border-color: rgba(118,228,255,.32);
-      box-shadow: 0 14px 34px rgba(118,228,255,.07), 0 10px 26px rgba(0,0,0,.18);
-      background: linear-gradient(180deg, rgba(15,26,38,.70), rgba(11,16,24,.62));
-    }
-
-    .tabsDesktop{display:flex;gap:8px;flex-wrap:wrap}
-    .tab{
-      border:1px solid rgba(28,42,58,.9);
-      background: rgba(11,16,24,.55);
-      color:var(--txt);
-      border-radius:999px;
-      padding:9px 12px;
-      font-weight:950;
-      font-size:13px;
-      cursor:pointer;
-      user-select:none;
-      transition: transform .08s ease, background .2s ease, border-color .2s ease;
-    }
-    .tab:hover{background: rgba(14,20,30,.68)}
-    .tab:active{transform: translateY(1px)}
-    .tab.active{outline:2px solid rgba(118,228,255,.25); border-color: rgba(118,228,255,.25)}
-    @media (max-width: 980px){ .tabsDesktop{display:none} }
-
-    /* Right panel becomes collapsible drawer on mobile */
-    .side{position:relative}
-    @media (max-width:980px){
-      .side{position:fixed;left:0;right:0;bottom:calc(64px + var(--safeB));z-index:45;pointer-events:none}
-      .drawer{
-        pointer-events:auto;
-        width:min(980px, 100vw);
-        margin:0 auto;
-        border-radius:18px 18px 0 0;
-        max-height: 62vh;
-        overflow:auto;
-      }
-      .drawer.collapsed{
-        max-height: 54px;
-        overflow:hidden;
-      }
-      .drawer::-webkit-scrollbar{width:10px}
-      .drawer::-webkit-scrollbar-thumb{background:rgba(28,42,58,.7); border-radius:10px}
-      .drawer::-webkit-scrollbar-track{background:rgba(0,0,0,.2); border-radius:10px}
-
-      .drawerHead{
-        position:sticky;top:0;z-index:2;
-        display:flex;align-items:center;justify-content:space-between;gap:10px;
-        padding:10px 12px;
-        border-bottom:1px solid rgba(28,42,58,.7);
-        background: linear-gradient(180deg, rgba(15,22,32,.92), rgba(9,12,18,.86));
-      }
-      .drawerBody{padding:12px}
-      .drawerToggle{
-        border:1px solid rgba(28,42,58,.9);
-        background: rgba(11,16,24,.52);
-        color:var(--muted);
-        border-radius:999px;
-        padding:6px 10px;
-        font-weight:950;
-        font-size:13px;
-        cursor:pointer;
-      }
-    }
-
-    .pad{padding:12px}
-    .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .stat{
-      border:1px solid rgba(28,42,58,.9);
-      border-radius:14px;
-      padding:10px;
-      background: rgba(11,16,24,.52);
-    }
-    .k{font-size:12px;color:var(--muted);font-weight:800}
-    .v{font-size:16px;font-weight:950;margin-top:2px}
-    .bar{height:9px;border-radius:999px;background:rgba(6,9,14,.8);border:1px solid rgba(18,26,38,.9);overflow:hidden}
-    .bar>i{display:block;height:100%;width:50%}
-    .barwrap{position:relative;margin-top:8px}
-    .ideal{position:absolute;left:0;top:0;height:10px;transform:translateY(-1px);pointer-events:none}
-    .ideal .zone{position:absolute;top:0;height:10px;border-radius:999px;background:rgba(123,227,154,.10);border:1px solid rgba(123,227,154,.22)}
-    .ideal .tick{position:absolute;top:-3px;width:2px;height:16px;background:rgba(123,227,154,.50);border-radius:2px}
-
-    .btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
-    .diag{
-      border:1px solid rgba(34,48,65,.85);
-      background: rgba(8,14,22,.55);
-      border-radius:14px;
-      padding:10px;
-      color:var(--muted);
-      line-height:1.35;
-      white-space:pre-line;
-      margin-top:10px;
-    }
-    .fact{
-      border:1px dashed rgba(43,57,74,.85);
-      background: rgba(11,16,24,.50);
-      border-radius:14px;
-      padding:10px;
-      color:var(--muted);
-      line-height:1.35;
-      margin-top:10px;
-    }
-    .sep{height:1px;background:rgba(28,42,58,.65);margin:10px 0}
-
-    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-    @media (max-width:900px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
-
-    .tile{
-      border:1px solid rgba(28,42,58,.9);
-      background: rgba(11,16,24,.52);
-      border-radius:14px;
-      padding:10px;
-    }
-    .tile h3{margin:0;font-size:14px;font-weight:950}
-    .tile .sub{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.35}
-    .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-    .tag{
-      border:1px solid rgba(34,48,65,.85);
-      background: rgba(8,14,24,.52);
-      border-radius:999px;
-      padding:5px 8px;
-      font-size:12px;
-      color:var(--muted);
-      font-weight:900
-    }
-    .tag.good{color:var(--good);border-color:rgba(35,68,52,.9)}
-    .tag.cyan{color:var(--accent);border-color:rgba(31,62,68,.9)}
-    .tag.vio{color:var(--accent2);border-color:rgba(58,42,70,.9)}
-    .tag.bad{color:var(--bad);border-color:rgba(68,35,38,.9)}
-
-    .gallery{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-    @media (max-width:900px){ .gallery{grid-template-columns:repeat(3,minmax(0,1fr))} }
-    .shot{
-      border:1px solid rgba(28,42,58,.9);
-      border-radius:14px;
-      overflow:hidden;
-      background:#06080a;
-      cursor:pointer;
-      position:relative;
-    }
-    .shot img{width:100%;display:block}
-    .shot:after{
-      content:"";
-      position:absolute; inset:0;
-      background: linear-gradient(180deg, rgba(255,255,255,.0), rgba(0,0,0,.22));
-      opacity:.75; pointer-events:none;
-    }
-
-    /* Mobile tabs fixed */
-    .mobileTabs{
-      position:fixed;left:0;right:0;bottom:0;z-index:50;
-      display:none;gap:8px;padding:10px calc(10px + var(--safeB)) calc(10px + var(--safeB));
-      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.55));
-      justify-content:center;
-    }
-    @media (max-width:980px){ .mobileTabs{display:flex} }
-
-    /* Modals */
-    .modal{
-      position:fixed; inset:0;
-      background: rgba(0,0,0,.68);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:14px;
-      z-index:80;
-    }
-    .modal .box{
-      width:min(980px, 96vw);
-      background: rgba(15,22,32,.86);
-      border:1px solid rgba(28,42,58,.9);
-      border-radius:18px;
-      overflow:hidden;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-    }
-    .modal .head{
-      display:flex;justify-content:space-between;align-items:center;
-      padding:12px;border-bottom:1px solid rgba(28,42,58,.7);
-    }
-    .modal .body{padding:12px}
-    textarea{
-      width:100%;min-height:180px;resize:vertical;
-      background: rgba(11,16,24,.62);
-      border:1px solid rgba(28,42,58,.9);
-      border-radius:14px;color:var(--txt);
-      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
-      font-size:12px;padding:10px;outline:none;
-    }
-
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:900px){ .row2{grid-template-columns:1fr} }
-    .field{
-      border:1px solid rgba(28,42,58,.9);
-      background: rgba(11,16,24,.52);
-      border-radius:14px;
-      padding:10px;
-      flex: 1 1 240px;
-    }
-    .field label{display:block;font-size:12px;color:var(--muted);font-weight:900}
-    .field select,.field input[type="range"]{width:100%;margin-top:8px}
-    input[type="range"]{accent-color: rgba(118,228,255,.8)}
-    .rangeVal{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px;font-weight:900}
-
-    /* Start menu */
-    .start{
-      position:fixed;inset:0;z-index:90;
-      display:flex;align-items:center;justify-content:center;
-      padding:18px;
-      background:
-        radial-gradient(900px 700px at 20% 20%, rgba(118,228,255,.10), rgba(0,0,0,0) 60%),
-        radial-gradient(900px 700px at 80% 60%, rgba(202,166,255,.10), rgba(0,0,0,0) 60%),
-        rgba(0,0,0,.55);
-      backdrop-filter: blur(10px);
-    }
-    .start .panel{
-      width:min(900px, 96vw);
-      border-radius:22px;
-      border:1px solid rgba(28,42,58,.9);
-      background: linear-gradient(180deg, rgba(15,22,32,.88), rgba(9,12,18,.70));
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .start .hero{
-      padding:18px;border-bottom:1px solid rgba(28,42,58,.7);
-      display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
-    }
-    .start .hero h2{margin:0;font-size:20px;font-weight:980;letter-spacing:.2px}
-    .start .hero p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35;max-width:60ch}
-    .start .actions{display:flex;gap:10px;flex-wrap:wrap}
-    .start .content{padding:18px}
-    .start .cols{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
-    @media (max-width:900px){ .start .cols{grid-template-columns:1fr} }
-    .cardMini{
-      border:1px solid rgba(28,42,58,.9);
-      background: rgba(11,16,24,.52);
-      border-radius:16px;
-      padding:12px;
-    }
-    .kbd{
-      font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
-      background: rgba(8,14,22,.65);
-      border:1px solid rgba(28,42,58,.9);
-      padding:2px 6px;border-radius:9px;
-      color:var(--muted);font-size:12px;font-weight:900;
-    }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Bonsai Master v3.1 (Leaf Upgrade)</title>
+<style>
+  :root {
+    --bg-dark: #020617; 
+    --panel: rgba(15, 23, 42, 0.92);
+    --accent: #38bdf8; --success: #4ade80; --gold: #fbbf24;
+    --text: #f1f5f9; --text-muted: #94a3b8;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  body { margin:0; height:100vh; background: #000; overflow:hidden; font-family: var(--font); color:var(--text); user-select:none; }
   
-    /* camera: wheel/pinch zoom + drag pan (no UI zoom button) */
-    #zoomBtn,#zoomPanel{display:none !important;}
-    canvas{touch-action:none;}
+  .app-grid { display: grid; grid-template-columns: 1fr 300px; grid-template-rows: 1fr 70px; height: 100%; width: 100%; }
+  
+  .viewport { grid-column: 1 / 2; grid-row: 1 / 2; position: relative; cursor: grab; overflow: hidden; background: #000; }
+  .viewport:active { cursor: grabbing; }
+  .viewport.tool-active { cursor: crosshair; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  .sidebar {
+    grid-column: 2 / 3; grid-row: 1 / 3;
+    background: var(--panel); border-left: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    display: flex; flex-direction: column; gap: 15px; padding: 20px;
+    z-index: 10; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  }
+
+  .bottom-bar {
+    grid-column: 1 / 2; grid-row: 2 / 3;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    display: flex; justify-content: center; gap: 20px; align-items: center; z-index: 5;
+    padding-bottom: 10px; pointer-events: none;
+  }
+  .bottom-bar button { pointer-events: auto; }
+
+  h2 { margin: 0 0 10px 0; color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; border-bottom:1px solid #333; padding-bottom:5px;}
+  h3 { font-size:14px; margin:15px 0 5px 0; color:#fff;}
+
+  .stat-block { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; }
+  .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+  .bar-bg { width:100%; height:6px; background: rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
+  .bar-fill { height:100%; transition: width 0.3s; }
+
+  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn {
+    background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1;
+    padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; justify-content: center; gap:6px;
+  }
+  .btn:hover { background: rgba(255,255,255,0.1); color: #fff; transform: translateY(-1px); }
+  .btn.active { background: var(--accent); color: #000; border-color: transparent; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+
+  .tab-btn { 
+    background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2); color: #fff; 
+    width: 50px; height: 50px; border-radius: 50%; 
+    font-size: 22px; cursor: pointer; transition: 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tab-btn:hover { background: var(--accent); transform: scale(1.1); box-shadow: 0 0 20px #000; }
+
+  /* OVERLAYS */
+  .overlay-panel {
+    position: absolute; top: 30px; left: 30px; bottom: 90px; width: 420px;
+    background: rgba(13, 17, 28, 0.98); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 25px; z-index: 50; display: none;
+    overflow-y: auto; box-shadow: 0 25px 50px #000;
+    animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .overlay-panel.open { display: block; }
+  @keyframes slideUp { from{transform: translateY(30px); opacity:0} to{transform: translateY(0); opacity:1} }
+
+  .list-item { 
+    display: flex; align-items: center; gap: 10px; 
+    background: rgba(255,255,255,0.03); padding: 12px; margin-bottom: 8px; border-radius: 8px; 
+    border: 1px solid transparent; cursor:pointer;
+  }
+  .list-item:hover { border-color: var(--accent); background: rgba(255,255,255,0.06); }
+  .list-item img { width: 36px; height: 36px; border-radius: 50%; }
+  
+  .tag { font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase;}
+  .tag.active { background: var(--success); color: #000; }
+
+  #settingsGrid input { width: 100%; margin: 8px 0; accent-color: var(--accent); }
+  .toast { position: fixed; top: 20px; right: 340px; background: rgba(0,0,0,0.8); color: var(--gold); padding: 10px 20px; border-radius: 20px; pointer-events: none; opacity: 0; transition: opacity 0.5s; font-weight: bold; border:1px solid var(--gold); z-index: 100;}
+
+  @media(max-width: 900px) {
+    .app-grid { grid-template-columns: 1fr; grid-template-rows: 1fr 200px 70px; }
+    .sidebar { grid-column: 1 / 2; grid-row: 2 / 3; border-left:none; border-top:1px solid #333; }
+    .bottom-bar { grid-column: 1 / 2; grid-row: 3 / 4; }
+    .overlay-panel { width: auto; left: 15px; right: 15px; bottom: 280px; }
+    .toast { right: 20px; }
+  }
 </style>
 </head>
+<body>
 
-<body class="menuOpen">
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="logo"></div>
-      <div>
-        <h1 id="uiTitle">Balkon-Bonsai</h1>
-        <div class="mini" id="uiSubtitle" style="margin:2px 0 0">Belohnend • Relaxed • Wachsen • Biegen • Präzise schneiden • Fotos</div>
-      </div>
+<div class="app-grid">
+  <div class="viewport" id="viewport">
+    <canvas id="cv"></canvas>
+    
+    <div id="panel_collection" class="overlay-panel">
+      <h2>Baumschule</h2>
+      <div id="collectionList"></div>
+      <button class="btn" style="width:100%; margin-top:15px; background:var(--success); color:#000" id="btnBuyTree">🌱 Setzling kaufen (100 💰)</button>
     </div>
 
-    <div class="pillRow">
-      <div class="pill"><span class="dot"></span><span>Coins</span>: <b id="coins">0</b></div>
-      <div class="pill"><span class="dot w"></span><span>Tag</span>: <b id="day">1</b> · <span>Saison</span>: <b id="season">—</b></div>
-      <div class="pill"><span class="dot c"></span><span>Baum</span>: <b id="treeNameTop">—</b></div>
-      <button class="btn small" id="openSettings">⚙️ <span id="btnSettings">Einstellungen</span></button>
-    </div>
-  </header>
-
-  <div class="layout">
-    <div class="card canvasWrap">
-      <canvas id="cv"></canvas>
-
-      <div class="underCanvas">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <select id="treeSel"></select>
-          <button class="btn small" id="newTree">🌱 <span id="btnNewTree">Neuer Baum</span></button>
-        </div>
-
-        <div class="tabsDesktop" id="tabsDesktop">
-          <button class="tab active" data-tab="play">Play</button>
-          <button class="tab" data-tab="collection">Sammlung</button>
-          <button class="tab" data-tab="shop">Shop</button>
-          <button class="tab" data-tab="photos">Fotos</button>
-          <button class="tab" data-tab="quests">Quests</button>
-        </div>
-      </div>
+    <div id="panel_shop" class="overlay-panel">
+      <h2>Shop</h2>
+      <div style="text-align:right; font-weight:bold; color:var(--gold); margin-bottom:10px">Guthaben: <span id="shopMoney">0</span> 💰</div>
+      <h3>Töpfe</h3><div id="shopPotsList"></div>
+      <h3>Substrate</h3><div id="shopSoilsList"></div>
     </div>
 
-    <div class="side">
-      <div class="card drawer" id="drawer">
-        <div class="drawerHead" id="drawerHead" style="display:none">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="font-weight:950" id="drawerTitle">Play</div>
-            <button class="drawerToggle" id="drawerToggle">▼</button>
-          </div>
-          <button class="btn small ghost" id="drawerClose">✖️</button>
-        </div>
+    <div id="panel_quests" class="overlay-panel">
+      <h2>Aufträge</h2>
+      <div id="questList"></div>
+    </div>
 
-        <div class="drawerBody pad" id="drawerBody">
-          <div id="panelPlay">
-            <div class="stats">
-              <div class="stat">
-                <div class="k">Wasser</div>
-                <div class="v"><span id="waterV">0</span>/100</div>
-                <div class="barwrap">
-                  <div class="bar"><i id="waterB"></i></div>
-                  <div class="ideal" id="waterIdeal">
-                    <div class="zone" id="idealZone"></div>
-                    <div class="tick" id="idealMinTick"></div>
-                    <div class="tick" id="idealMaxTick"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="stat">
-                <div class="k">Gesundheit</div>
-                <div class="v"><span id="hpV">0</span>/100</div>
-                <div class="barwrap"><div class="bar"><i id="hpB"></i></div></div>
-              </div>
-              <div class="stat">
-                <div class="k">Krone</div>
-                <div class="v"><span id="canV">0</span>/100</div>
-                <div class="barwrap"><div class="bar"><i id="canB"></i></div></div>
-              </div>
-              <div class="stat">
-                <div class="k">Form</div>
-                <div class="v"><span id="shapeV">0</span>/100</div>
-                <div class="barwrap"><div class="bar"><i id="shapeB"></i></div></div>
-              </div>
-            </div>
-
-            <div class="btns">
-              <button class="btn" id="waterBtn">💧 Gießen</button>
-              <button class="btn" id="pruneBtn">✂️ Schneiden</button>
-              <button class="btn" id="bendBtn">🧵 Biegen</button>
-              <button class="btn" id="bundleBtn">🧷 Bundle: <span id="bundleState">Aus</span></button>
-              <button class="btn" id="zoomBtn">🔍 Zoom</button>
-              <button class="btn" id="photoBtn">📷 Foto</button>
-            </div>
-
-            <div class="field" id="zoomPanel" style="display:none;margin-top:10px">
-              <label>Zoom</label>
-              <input type="range" id="rngZoom" min="0.55" max="2.80" step="0.01">
-              <div class="rangeVal"><span>Weit</span><span id="valZoom">—</span><span>Nah</span></div>
-              <div class="mini" style="margin-top:6px">Zoom bleibt pro Baum gespeichert.</div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
-                <button class="btn small" id="zoomReset">Reset</button>
-                <button class="btn small ghost" id="zoomClose">Schließen</button>
-              </div>
-            </div>
-
-            <div class="diag" id="diag"></div>
-            <div class="fact" id="fact"></div>
-
-            <div class="sep"></div>
-            <div class="pill" style="justify-content:center">
-              Upgrades:
-              Kanne <b id="uCan">1</b> · Schere <b id="uShear">1</b> · Draht <b id="uWire">1</b>
-            </div>
-            <div class="mini" style="margin-top:8px">
-              Tipp: <span class="kbd">W</span> Gießen · <span class="kbd">P</span> Schneiden · <span class="kbd">B</span> Biegen · <span class="kbd">Esc</span> Abbrechen
-              <br>
-              Bundle: aktivieren → mehrere Äste antippen → Drag biegen.
-            </div>
-          </div>
-
-          <div id="panelCollection" style="display:none">
-            <div style="font-weight:950">Sammlung</div>
-            <div class="mini">Jeder Baum lebt separat. Arten schalten sich durch Fortschritt frei.</div>
-            <div class="sep"></div>
-            <div class="grid" id="collectionGrid"></div>
-          </div>
-
-          <div id="panelShop" style="display:none">
-            <div style="font-weight:950">Shop</div>
-            <div class="mini">Coins-only. Töpfe/Erden geben kleine Boni.</div>
-            <div class="sep"></div>
-            <div class="row2">
-              <div>
-                <div style="font-weight:950;margin-bottom:8px">Töpfe</div>
-                <div class="grid" id="potsGrid" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
-              </div>
-              <div>
-                <div style="font-weight:950;margin-bottom:8px">Erden</div>
-                <div class="grid" id="soilsGrid" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
-              </div>
-            </div>
-            <div class="sep"></div>
-            <div style="font-weight:950;margin-bottom:8px">Upgrades</div>
-            <div class="grid" id="upgGrid"></div>
-          </div>
-
-          <div id="panelPhotos" style="display:none">
-            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
-              <div style="font-weight:950">Foto-Galerie</div>
-              <div class="mini">Lokal gespeichert.</div>
-            </div>
-            <div style="height:10px"></div>
-            <div class="gallery" id="gallery"></div>
-          </div>
-
-          <div id="panelQuests" style="display:none">
-            <div style="font-weight:950">Quests</div>
-            <div class="mini">Daily Tasks reset pro Tag. Meilensteine sind claimbar.</div>
-            <div class="sep"></div>
-            <div style="font-weight:950;margin-bottom:6px">Daily Tasks</div>
-            <div class="grid" id="dailyGrid"></div>
-            <div class="sep"></div>
-            <div style="font-weight:950;margin-bottom:6px">Meilensteine</div>
-            <div class="grid" id="milestoneGrid"></div>
-            <div class="sep"></div>
-            <div style="font-weight:950;margin-bottom:6px">Badges</div>
-            <div class="grid" id="badgeGrid"></div>
-          </div>
-
-        </div>
+    <div id="panel_settings" class="overlay-panel">
+      <h2>System & Dev</h2>
+      <div id="settingsGrid">
+        <label>Tempo (Sekunden pro Tag)</label><input type="range" id="inpSecPerDay" min="1" max="120" value="60">
+        <label>Wachstums-Speed</label><input type="range" id="inpGrowMult" min="0" max="20" step="0.5" value="1">
+        <label>Max. Blätter (Dichte)</label><input type="range" id="inpLeafLimit" min="5" max="100" value="30">
+        <label>Windstärke</label><input type="range" id="inpWind" min="0" max="3" step="0.1" value="1">
       </div>
+      <br><button class="btn" onclick="hardReset()" style="width:100%; background:#ef4444; color:#fff">Spielstand Löschen</button>
+    </div>
+    
+    <div id="toast" class="toast">Nachricht</div>
+  </div>
+
+  <div class="sidebar">
+    <div style="text-align:center; margin-bottom:10px">
+      <div id="uiTreeName" style="font-size:18px; font-weight:700">Baum</div>
+      <div id="uiSpeciesName" style="color:var(--text-muted); font-size:12px;">Spezies</div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-row"><span>Alter</span> <span id="uiDay" style="color:var(--text)">Tag 1</span></div>
+      <div class="stat-row"><span>Saison</span> <span id="uiSeason" style="color:var(--accent)">Sommer</span></div>
+      
+      <div style="margin-top:10px" class="stat-row"><span>Wasser</span> <span id="uiWaterVal">100%</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="barWater" style="background:var(--accent); width:100%"></div></div>
+      
+      <div style="margin-top:8px" class="stat-row"><span>Vitalität</span> <span id="uiHpVal">100%</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="barHp" style="background:var(--success); width:100%"></div></div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <h2>Werkzeuge</h2>
+    <div class="btn-grid">
+      <button class="btn" id="toolWater">💧 Gießen</button>
+      <button class="btn" id="toolPrune">✂️ Schnitt</button>
+      <button class="btn" id="toolGraft">🧬 Veredeln</button>
+      <button class="btn" id="toolBend">🧵 Biegen</button>
     </div>
   </div>
-</div>
 
-<div class="mobileTabs" id="tabsMobile">
-  <button class="tab active" data-tab="play">Play</button>
-  <button class="tab" data-tab="collection">Sammlung</button>
-  <button class="tab" data-tab="shop">Shop</button>
-  <button class="tab" data-tab="photos">Fotos</button>
-  <button class="tab" data-tab="quests">Quests</button>
-</div>
-
-<div class="modal" id="modalPhoto">
-  <div class="box">
-    <div class="head">
-      <div style="font-weight:950">Foto</div>
-      <button class="btn small ghost" id="closePhoto">✖️ Schließen</button>
-    </div>
-    <div class="body">
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
-        <img id="photoPreviewImg" alt="photo" style="width:min(720px, 100%); border-radius:16px; border:1px solid rgba(28,42,58,.9); background:#06090e"/>
-        <div style="flex:1 1 240px">
-          <div class="tile">
-            <h3>Details</h3>
-            <div class="sub" id="photoMetaText">—</div>
-            <div style="height:10px"></div>
-            <button class="btn small" id="photoDownload">⬇️ Download</button>
-          </div>
-          <div class="mini" style="margin-top:10px">Tipp: Rechtsklick → Speichern geht auch.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="modalSettings">
-  <div class="box">
-    <div class="head">
-      <div style="font-weight:950">Einstellungen</div>
-      <button class="btn small ghost" id="closeSettings">✖️ Schließen</button>
-    </div>
-    <div class="body">
-      <div class="row2">
-        <div class="field">
-          <label>Modus</label>
-          <select id="modeSel">
-            <option value="normal">Normal</option>
-            <option value="test">Test</option>
-            <option value="real">Real-Time</option>
-          </select>
-          <div class="mini" id="modeHelp" style="margin-top:8px"></div>
-        </div>
-        <div class="field">
-          <label>Sprache</label>
-          <select id="langSel">
-            <option value="de">Deutsch</option>
-            <option value="en">English</option>
-          </select>
-          <div class="mini" style="margin-top:8px">Real-Time nutzt Monats-Saisons.</div>
-        </div>
-      </div>
-
-      <div class="sep"></div>
-
-      <div id="testOptions" style="display:none">
-        <div style="font-weight:950">Test-Optionen</div>
-        <div class="mini">Passe Speed & Multiplikatoren an.</div>
-        <div style="height:8px"></div>
-
-        <div class="row2">
-          <div class="field">
-            <label>Zeitfaktor (Sim-Sekunden pro Real-Sekunde)</label>
-            <input type="range" id="rngTimeScale" min="0.25" max="30" step="0.25">
-            <div class="rangeVal"><span>Slow</span><span id="valTimeScale">—</span><span>Fast</span></div>
-          </div>
-          <div class="field">
-            <label>Wachstum-Multiplikator</label>
-            <input type="range" id="rngGrowthMul" min="0.25" max="3" step="0.05">
-            <div class="rangeVal"><span>0.25×</span><span id="valGrowthMul">—</span><span>3×</span></div>
-          </div>
-          <div class="field">
-            <label>Wasserverbrauch-Multiplikator</label>
-            <input type="range" id="rngThirstMul" min="0.25" max="3" step="0.05">
-            <div class="rangeVal"><span>0.25×</span><span id="valThirstMul">—</span><span>3×</span></div>
-          </div>
-          <div class="field">
-            <label>Regeneration-Multiplikator</label>
-            <input type="range" id="rngRecoverMul" min="0.25" max="3" step="0.05">
-            <div class="rangeVal"><span>0.25×</span><span id="valRecoverMul">—</span><span>3×</span></div>
-          </div>
-        </div>
-
-        <div class="sep"></div>
-      </div>
-
-      <div class="field">
-        <label>Save Export/Import</label>
-        <div class="mini">Export: JSON kopieren. Import: JSON einfügen → Import.</div>
-        <div style="height:8px"></div>
-        <textarea id="saveText" placeholder="(Export/Import JSON)"></textarea>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
-          <button class="btn small" id="doExport">Export</button>
-          <button class="btn small" id="doImport">Import</button>
-          <button class="btn small" id="doReset">Reset Save</button>
-        </div>
-      </div>
-
-      <div class="sep"></div>
-      <button class="btn small" id="applySettingsBtn">✅ Anwenden</button>
-    </div>
-  </div>
-</div>
-
-<div class="start" id="startMenu" style="display:flex">
-  <div class="panel">
-    <div class="hero">
-      <div>
-        <h2>Balkon-Bonsai</h2>
-        <p>Ein belohnendes Bonsai-Game: starte klein, biege ihn in Form, schneide präzise, halte ihn gesund, verdiene Coins mit Quests und baue ein Foto-Album. Jeder Baum hat sein eigenes Leben.</p>
-      </div>
-      <div class="actions">
-        <button class="btn" id="menuPlay" onclick="window.hideMenu && window.hideMenu()">▶️ Spielen</button>
-        <button class="btn" id="menuSettings" onclick="window.openSettings && window.openSettings()">⚙️ Einstellungen</button>
-      </div>
-    </div>
-    <div class="content">
-      <div class="cols">
-        <div class="cardMini">
-          <div style="font-weight:950">How it works</div>
-          <div class="mini" style="margin-top:8px">
-            • Wachstum erzeugt organische Triebe (links/rechts, bonsai-typisch).<br>
-            • <b>Biegen</b>: Stamm-Handles alle 20% + Ast-Drag (Bundle möglich).<br>
-            • <b>Schneiden</b>: Cut löscht alles oberhalb (inkl. Subtree). Stamm-Cut → 2 neue Leader.<br>
-            • Blätter nur an Ästen (kein “Floating”). Bis 200/Branch.<br>
-            • Background: Berge + 24h-Cycle + Wolken + Vögel.
-          </div>
-        </div>
-        <div class="cardMini">
-          <div style="font-weight:950">Controls</div>
-          <div class="mini" style="margin-top:8px">
-            Tools: <span class="kbd">W</span> water · <span class="kbd">P</span> prune · <span class="kbd">B</span> bend · <span class="kbd">Esc</span> cancel<br><br>
-            Bend: Stamm-Punkte ziehen oder Ast antippen + ziehen.<br>
-            Prune: Auf Ast/Stamm tippen → schneidet exakt dort (Preview).
-          </div>
-        </div>
-      </div>
-      <div class="mini" style="margin-top:12px">Zum Schließen: Tab/Fenster schließen.</div>
-    </div>
+  <div class="bottom-bar">
+    <button class="tab-btn" data-target="panel_collection">🌲</button>
+    <button class="tab-btn" data-target="panel_shop">🛒</button>
+    <button class="tab-btn" data-target="panel_quests">📜</button>
+    <button class="tab-btn" data-target="panel_settings">⚙️</button>
+    <div style="width:20px"></div>
+    <button class="tab-btn" id="btnPhoto" style="font-size:14px; width:auto; padding:0 20px; border-radius:20px;">📸 SNAP</button>
   </div>
 </div>
 
 <script>
-const LEAF_BINS = 12;
-const LEAF_BIN_MAX = 3;
-const LEAF_PADS = 2;      // leaf groups per branch
-const PAD_LEAF_COUNT = 1; // base, actual per-branch is dynamic
-  const LEAF_MIN_LEN = 10;     // first leaf appears
-  const LEAF_LEN_STEP = 34;    // add another leaf every N px
-  const LEAF_MAX_PER_BRANCH = 5; // perf cap
-(() => {
-  "use strict";
-
-  // ------------------------------------------------------------
-  // Helpers
-  // ------------------------------------------------------------
-  const $ = (id)=>document.getElementById(id);
-  
-
-
-
-
-// ---- STORAGE SAFETY ----
-let STORAGE_DISABLED=false;
-function safeSetItem(k,v){
-  if(STORAGE_DISABLED) return false;
-  try{
-    localStorage.setItem(k,v);
-    return true;
-  }catch(e){
-    try{ console.error("storage setItem failed:", e && (e.name||e.message||e)); }catch(_){}
-    // attempt cleanup of older/larger keys
-    try{
-      const ks=[];
-      for(let i=0;i<localStorage.length;i++){
-        const key=localStorage.key(i);
-        if(!key) continue;
-        if(key.startsWith("bonsai_save_") || key.startsWith("bonsai_photo_") || key.startsWith("bonsai_snap_") || key.startsWith("bonsai_save_v")){
-          ks.push(key);
-        }
-      }
-      ks.sort((a,b)=> (localStorage.getItem(b)||"").length - (localStorage.getItem(a)||"").length);
-      for(let i=0;i<Math.min(12, ks.length);i++){
-        if(ks[i]!==k) localStorage.removeItem(ks[i]);
-      }
-      localStorage.setItem(k,v);
-      return true;
-    }catch(_e){
-      STORAGE_DISABLED=true;
-      return false;
-    }
-  }
-}
-function safeGetItem(k){
-  try{ return localStorage.getItem(k); }catch(_){ return null; }
-}
-// ------------------------
-// ---------------- DEBUG ----------------
-const DEBUG = true;
-const DBG = {
-  t0: performance.now(),
-  lines: [],
-  max: 160,
-  lastErr: null,
-  lastRej: null
-};
-
-function dbgShow(){ const el=$("dbg"); if(el) el.style.display="block"; }
-function dbgHide(){ const el=$("dbg"); if(el) el.style.display="none"; }
-
-function dbgLine(s){
-  const ts=((performance.now()-DBG.t0)/1000).toFixed(2);
-  const line=`[${ts}s] ${s}`;
-  DBG.lines.push(line);
-  if(DBG.lines.length>DBG.max) DBG.lines.shift();
-  const log=$("dbgLog");
-  if(log) log.textContent = DBG.lines.join("\n");
-}
-
-function dbgState(){
-  const sm=$("startMenu");
-  let tree="no";
-  let leafApprox=0;
-  let branchesAlive=0, branchesSpawned=0, leafPadsNow=0, leafPadsSpawned=0, leavesNow=0, leavesSpawned=0;
-  try{
-    if(typeof activeTree==="function"){
-      const T=activeTree();
-      if(T){
-        tree="yes";
-        leafApprox=(T.leafCountApprox||0);
-        if(T.stats){
-          branchesAlive=(T.stats.branchesAlive||0);
-          branchesSpawned=(T.stats.branchesSpawned||0);
-          leafPadsNow=(T.stats.leafPadsNow||0);
-          leafPadsSpawned=(T.stats.leafPadsSpawned||0);
-          leavesNow=(T.stats.leavesNowApprox||0);
-          leavesSpawned=(T.stats.leavesSpawnedApprox||0);
-        }else{
-          branchesAlive=(T.branches||[]).filter(b=>b&&b.alive).length;
-          branchesSpawned=(T.branches||[]).length;
-        }
-      }
-    }
-  }catch(_){}
-  const st=[
-    `isRunning=${(typeof isRunning!=="undefined") ? isRunning : "?"}`,
-    `menuDisplay=${sm ? sm.style.display : "?"}`,
-    `menuClass=${document.body.classList.contains("menuOpen")}`,
-    `tree=${tree}`,
-    `branchesAlive=${branchesAlive}`,
-    `branchesSpawned=${branchesSpawned}`,
-    `leafPadsNow=${leafPadsNow}`,
-    `leafPadsSpawned=${leafPadsSpawned}`,
-    `leavesNow≈${leavesNow}`,
-    `leavesSpawned≈${leavesSpawned}`,
-    `leafApprox=${leafApprox}`,
-    `lastErr=${DBG.lastErr ? DBG.lastErr : "none"}`,
-    `lastRej=${DBG.lastRej ? DBG.lastRej : "none"}`
-  ].join("\n");
-  const el=$("dbgState");
-  if(el) el.textContent=st;
-}
-
 (function(){
-  const olog=console.log.bind(console);
-  const owarn=console.warn.bind(console);
-  const oerr=console.error.bind(console);
-  console.log=(...a)=>{ try{ dbgLine("LOG  "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; olog(...a); };
-  console.warn=(...a)=>{ try{ dbgLine("WARN "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; owarn(...a); };
-  console.error=(...a)=>{ try{ dbgLine("ERR  "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; oerr(...a); };
-})();
-
-window.addEventListener("error",(e)=>{
-  try{
-    DBG.lastErr = `${e.message} @ ${e.filename}:${e.lineno}:${e.colno}`;
-    dbgShow();
-    dbgLine("UNCAUGHT "+DBG.lastErr);
-    dbgState();
-  }catch(_){}
-});
-
-window.addEventListener("unhandledrejection",(e)=>{
-  try{
-    DBG.lastRej = String(e.reason||"unhandledrejection");
-    dbgShow();
-    dbgLine("REJECT "+DBG.lastRej);
-    dbgState();
-  }catch(_){}
-});
-
-window.addEventListener("keydown",(e)=>{ if(e.key==="d"||e.key==="D"){ dbgShow(); dbgState(); } });
-
-let __dbgTap=0, __dbgTapT=0;
-window.addEventListener("pointerdown",(e)=>{
-  const now=performance.now();
-  if(now-__dbgTapT>600){ __dbgTap=0; }
-  __dbgTapT=now;
-  __dbgTap++;
-  if(__dbgTap>=5){
-    __dbgTap=0;
-    dbgShow();
-    dbgLine("DEBUG OPEN (5 taps)");
-    dbgState();
-  }
-}, {capture:true, passive:true});
-
-function dbgInitUI(){
-  const b1=$("dbgHide"); if(b1) b1.addEventListener("click",()=>dbgHide());
-  const b2=$("dbgCopy"); if(b2) b2.addEventListener("click",async ()=>{
-    const payload = ["STATE", $("dbgState")?.textContent||"", "", "LOG", $("dbgLog")?.textContent||""].join("\n");
-    try{ await navigator.clipboard.writeText(payload); dbgLine("copied to clipboard"); }catch(_){ dbgLine("clipboard failed"); }
-  });
-}
-// ---------------------------------------
-
-function bindTap(id, fn){
-  const el=$(id);
-  if(!el) return;
-  const handler=(e)=>{ try{ e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation) e.stopImmediatePropagation(); }catch(_){} fn(); };
-  el.addEventListener("pointerup", handler, {passive:false, capture:true});
-  el.addEventListener("touchend", handler, {passive:false, capture:true});
-  el.addEventListener("click", handler);
-  el.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ handler(e); } });
-}
-const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-  const clamp01 = (x)=>clamp(x,0,1);
-  const lerp = (a,b,t)=>a+(b-a)*t;
-  const fmt = (n)=>Math.round(n);
-  const smoothstep = (t)=>{ t=clamp01(t); return t*t*(3-2*t); };
-
-  function mulberry32(seed){
-    let a = seed >>> 0;
-    return function(){
-      a |= 0; a = (a + 0x6D2B79F5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-// alias used by some subsystems
-function makeRng(seed){ return mulberry32(seed>>>0); }
-
-
-// poly sampling helpers (t in [0..1] along polyline length)
-function polyTotalLen(poly){
-  let L=0;
-  for(let i=1;i<poly.length;i++){
-    const a=poly[i-1], b=poly[i];
-    const dx=b.x-a.x, dy=b.y-a.y;
-    L += Math.hypot(dx,dy);
-  }
-  return Math.max(1e-6, L);
-}
-function pointOnPoly(poly, t){
-  t = Math.max(0, Math.min(1, t||0));
-  const total = polyTotalLen(poly);
-  let target = total * t;
-  for(let i=1;i<poly.length;i++){
-    const a=poly[i-1], b=poly[i];
-    const dx=b.x-a.x, dy=b.y-a.y;
-    const seg = Math.hypot(dx,dy);
-    if(target <= seg || i===poly.length-1){
-      const u = seg>1e-6 ? (target/seg) : 0;
-      return {x: a.x + dx*u, y: a.y + dy*u};
-    }
-    target -= seg;
-  }
-  const last = poly[poly.length-1];
-  return {x:last.x, y:last.y};
-}
-function normalOnPoly(poly, t){
-  t = Math.max(0, Math.min(1, t||0));
-  const total = polyTotalLen(poly);
-  let target = total * t;
-  for(let i=1;i<poly.length;i++){
-    const a=poly[i-1], b=poly[i];
-    const dx=b.x-a.x, dy=b.y-a.y;
-    const seg = Math.hypot(dx,dy);
-    if(target <= seg || i===poly.length-1){
-      const inv = seg>1e-6 ? (1/seg) : 0;
-      // perpendicular unit normal
-      return {x: -dy*inv, y: dx*inv};
-    }
-    target -= seg;
-  }
-  return {x:0, y:-1};
-}
-
-
-  const mix = (a,b,t)=>[a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
-  const mixCol = (a,b,t)=>mix(a,b,clamp(t,0,1));
-  const rgba = (c,a)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
-
-  function dist(ax,ay,bx,by){ const dx=bx-ax, dy=by-ay; return Math.sqrt(dx*dx+dy*dy); }
-  function norm(x,y){ const d=Math.sqrt(x*x+y*y)||1; return {x:x/d,y:y/d}; }
-
-  function projOnSeg(px,py, ax,ay, bx,by){
-    const vx=bx-ax, vy=by-ay;
-    const wx=px-ax, wy=py-ay;
-    const vv=vx*vx+vy*vy;
-    if(vv<=1e-9) return {t:0,x:ax,y:ay,d2:(px-ax)**2+(py-ay)**2};
-    let t=(wx*vx+wy*vy)/vv;
-    t=clamp(t,0,1);
-    const x=ax+vx*t, y=ay+vy*t;
-    const dx=px-x, dy=py-y;
-    return {t,x,y,d2:dx*dx+dy*dy};
-  }
-
-  // Simple value noise (cheap texture)
-  function hash2i(x,y,seed){
-    let n = (x*374761393 + y*668265263 + seed*1442695041) | 0;
-    n = (n ^ (n >>> 13)) | 0;
-    return (Math.imul(n, 1274126177) ^ (n >>> 16)) >>> 0;
-  }
-  function noise2(x,y,seed){
-    const xi=Math.floor(x), yi=Math.floor(y);
-    const xf=x-xi, yf=y-yi;
-    const h00=hash2i(xi,yi,seed),   h10=hash2i(xi+1,yi,seed);
-    const h01=hash2i(xi,yi+1,seed), h11=hash2i(xi+1,yi+1,seed);
-    const v00=(h00/4294967295), v10=(h10/4294967295), v01=(h01/4294967295), v11=(h11/4294967295);
-    const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
-    const a=lerp(v00,v10,u);
-    const b=lerp(v01,v11,u);
-    return lerp(a,b,v);
-  }
-
-  // Catmull-Rom spline sampling
-  function catmullRom(p0,p1,p2,p3,t){
-    const t2=t*t, t3=t2*t;
-    return {
-      x: 0.5*((2*p1.x) + (-p0.x+p2.x)*t + (2*p0.x-5*p1.x+4*p2.x-p3.x)*t2 + (-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
-      y: 0.5*((2*p1.y) + (-p0.y+p2.y)*t + (2*p0.y-5*p1.y+4*p2.y-p3.y)*t2 + (-p0.y+3*p1.y-3*p2.y+p3.y)*t3),
-    };
-  }
-
-  // ------------------------------------------------------------
-  // Content
-  // ------------------------------------------------------------
-  const SPECIES = [
-    { id:"ficus",   name:{de:"Ficus microcarpa", en:"Ficus microcarpa"}, growth:1.00, thirst:0.85, tolerance:0.70, leaf:"broad",
-      unlock:{crown:0, shape:0, hp:0},
-      facts:{ de:["Ficus ist sehr schnittverträglich – perfekt zum Üben.","Gleichmäßiges Licht sorgt für kompaktere Triebe.","Konstanter Wasserhaushalt reduziert Stress."],
-              en:["Ficus is forgiving and great for practice.","Even light helps compact growth.","Stable watering reduces stress."]}},
-    { id:"elm",     name:{de:"Chinesische Ulme", en:"Chinese Elm"}, growth:1.05, thirst:0.92, tolerance:0.78, leaf:"broadFine",
-      unlock:{crown:25, shape:15, hp:0},
-      facts:{ de:["Ulmen treiben nach Schnitt schnell neu aus.","Feine Verzweigung entsteht durch kurze Schnitte.","Sehr dankbar bei Bonsai-Formen."],
-              en:["Elms back-bud well after pruning.","Fine ramification comes from short cuts.","Very rewarding as bonsai."]}},
-    { id:"juniper", name:{de:"Wacholder", en:"Juniper"}, growth:0.85, thirst:0.80, tolerance:0.55, leaf:"scale",
-      unlock:{crown:35, shape:25, hp:0},
-      facts:{ de:["Wacholder wird stark über Drahten geformt.","Staunässe ist riskanter als kurze Trockenheit.","Viel Licht hilft."],
-              en:["Junipers are shaped via wiring.","Waterlogging is worse than short dryness.","They love light."]}},
-    { id:"maple",   name:{de:"Ahorn", en:"Maple"}, growth:0.92, thirst:1.02, tolerance:0.50, leaf:"palmate",
-      unlock:{crown:50, shape:20, hp:70},
-      facts:{ de:["Ahorn ist bekannt für Herbstfärbung.","Im Sommer sensibel bei Trockenstress.","Ruhiger Aufbau wirkt am besten."],
-              en:["Maples are loved for autumn color.","Summer drought stress hits fast.","Slow steady care works best."]}},
-    { id:"pine",    name:{de:"Kiefer", en:"Pine"}, growth:0.72, thirst:0.78, tolerance:0.45, leaf:"needle",
-      unlock:{crown:55, shape:45, hp:65},
-      facts:{ de:["Kiefern belohnen Geduld.","Gute Drainage ist entscheidend.","Biegen formt die Silhouette stark."],
-              en:["Pines reward patience.","Good drainage is critical.","Bending defines silhouette strongly."]}},
-    { id:"olive",   name:{de:"Olive", en:"Olive"}, growth:0.86, thirst:0.82, tolerance:0.62, leaf:"narrow",
-      unlock:{crown:45, shape:30, hp:50},
-      facts:{ de:["Oliven wirken schnell knorrig.","Staunässe vermeiden.","Licht & Luftbewegung helfen."],
-              en:["Olives develop gnarly character.","Avoid waterlogging.","Light and airflow help."]}},
-  ];
-
-  const SEASONS = [
-    { id:"spring", name:{de:"Frühling", en:"Spring"}, growMul:1.25, thirstMul:0.95, shapeMul:1.06, recover:0.07 },
-    { id:"summer", name:{de:"Sommer",   en:"Summer"}, growMul:1.12, thirstMul:1.08, shapeMul:1.00, recover:0.03 },
-    { id:"autumn", name:{de:"Herbst",   en:"Autumn"}, growMul:0.95, thirstMul:0.90, shapeMul:1.12, recover:0.10 },
-    { id:"winter", name:{de:"Winter",   en:"Winter"}, growMul:0.55, thirstMul:0.70, shapeMul:1.02, recover:0.14 }
-  ];
-
-  const POTS = [
-    {id:"basic", name:{de:"Schlichter Topf", en:"Plain pot"}, price:0,   waterCap:0,  shapeMul:1.00, note:{de:"Neutral.", en:"Neutral."}},
-    {id:"clay",  name:{de:"Ton-Topf", en:"Clay pot"},       price:80,  waterCap:+6, shapeMul:1.00, note:{de:"+ Wasserpuffer.", en:"+ Water buffer."}},
-    {id:"glaze", name:{de:"Glasur-Topf", en:"Glazed pot"},  price:120, waterCap:+8, shapeMul:1.02, note:{de:"+ Puffer + minimal Form.", en:"+ buffer + tiny form."}},
-    {id:"wide",  name:{de:"Breit-Schale", en:"Wide tray"},  price:180, waterCap:+4, shapeMul:1.05, note:{de:"+ Form-Bonus.", en:"+ form."}},
-    {id:"deep",  name:{de:"Tief-Schale", en:"Deep pot"},    price:190, waterCap:+12, shapeMul:0.99, note:{de:"+ viel Puffer.", en:"+ big buffer."}},
-  ];
-  const SOILS = [
-    {id:"standard", name:{de:"Standard-Substrat", en:"Standard mix"}, price:0,   drainage:+0, buffer:+0,  recover:+0.00, note:{de:"Neutral.", en:"Neutral."}},
-    {id:"drain",    name:{de:"Drainage-Mix", en:"Drainage mix"},     price:90,  drainage:+8, buffer:-2,  recover:+0.00, note:{de:"+ weniger Staunässe.", en:"+ less waterlogging."}},
-    {id:"retain",   name:{de:"Wasserhalte-Mix", en:"Retention mix"}, price:90,  drainage:-2, buffer:+8,  recover:+0.00, note:{de:"+ weniger Trockenstress.", en:"+ less drought stress."}},
-    {id:"premium",  name:{de:"Premium-Mix", en:"Premium mix"},       price:220, drainage:+5, buffer:+5,  recover:+0.05, note:{de:"+ Balance + Regeneration.", en:"+ balance + recovery."}},
-  ];
-
-  const DAILY_POOL = [
-    {id:"d_water_2",  desc:{de:"Gieße 2×", en:"Water 2×"}, type:"water", goal:2, reward:22},
-    {id:"d_prune_2",  desc:{de:"Schneide 2×", en:"Prune 2×"}, type:"prune", goal:2, reward:24},
-    {id:"d_bend_2",   desc:{de:"Biege 2×", en:"Bend 2×"}, type:"bend", goal:2, reward:24},
-    {id:"d_photo_1",  desc:{de:"Speichere 1 Foto", en:"Save 1 photo"}, type:"photo", goal:1, reward:30},
-    {id:"d_hp_80",    desc:{de:"Erreiche HP ≥ 80", en:"Reach HP ≥ 80"}, type:"stat_hp", goal:80, reward:32},
-    {id:"d_shape_45", desc:{de:"Erreiche Form ≥ 45", en:"Reach Form ≥ 45"}, type:"stat_shape", goal:45, reward:32},
-    {id:"d_can_45",   desc:{de:"Erreiche Krone ≥ 45", en:"Reach Crown ≥ 45"}, type:"stat_canopy", goal:45, reward:32},
-  ];
-
-  // ------------------------------------------------------------
-  // Storage keys
-  // ------------------------------------------------------------
-  const SETTINGS_KEY="bonsai_settings_v4";
-  const SAVE_KEY="bonsai_save_v4";
-
-  // ------------------------------------------------------------
-  // Settings
-  // ------------------------------------------------------------
-  const defaultSettings=()=>({
-    lang:"de",
-    mode:"normal", // normal|test|real
-    test:{ timeScale:1.0, growthMul:1.0, thirstMul:1.0, recoverMul:1.0 }
-  });
-
-  function loadSettings(){
-    try{
-      const raw=safeGetItem(SETTINGS_KEY);
-      if(!raw) return defaultSettings();
-      const obj=JSON.parse(raw);
-      const base=defaultSettings();
-      return {...base,...obj,test:{...base.test,...(obj.test||{})}};
-    }catch{ return defaultSettings(); }
-  }
-  function saveSettings(){ 
-safeSetItem(SETTINGS_KEY, JSON.stringify(settings)); }
-
-  // ------------------------------------------------------------
-  // Tree data model (stable trunk length + trunk control points)
-  // ------------------------------------------------------------
-  function spById(id){ return SPECIES.find(s=>s.id===id) || SPECIES[0]; }
-  function seasonFromMode(mode, seasonIdx){
-    if(mode==="real"){
-      const m=new Date().getMonth();
-      if(m===11||m===0||m===1) return SEASONS.find(x=>x.id==="winter");
-      if(m>=2&&m<=4) return SEASONS.find(x=>x.id==="spring");
-      if(m>=5&&m<=7) return SEASONS.find(x=>x.id==="summer");
-      return SEASONS.find(x=>x.id==="autumn");
-    }
-    return SEASONS[seasonIdx % SEASONS.length];
-  }
-
-  function uid(prefix="id"){
-    return prefix+"_"+Math.random().toString(16).slice(2)+"_"+(Date.now()&0xfffff).toString(16);
-  }
-
-  function defaultBranch(seed, parentId="trunk", attachT=0.75, baseAngle=-0.55, maxLen=90, radius=6, isLeader=false, alive=true){
-    const rng=mulberry32(seed>>>0);
-    return {
-      id: uid("br"),
-      seed: seed|0,
-      parentId,          // "trunk" or branchId
-      attachT,           // 0..1 along parent curve (stable)
-      alive: !!alive,
-      regrow: (!alive) ? {t: 10.0} : null,
-
-      isLeader: !!isLeader, // leader stems after trunk prune
-
-      // growth
-      age: 0,
-      vigor: clamp(0.75 + rng()*0.35, 0.35, 1.0),
-
-      // geometry params (persistent)
-      angle: baseAngle,      // direction
-      bend: (rng()-0.5)*0.28, // lateral bend (more organic)
-      arc:  (rng()-0.5)*0.85, // curvature (more organic)
-      maxLen: maxLen,        // target length (changes with growth)
-      len: Math.max(14, maxLen*0.18),
-      radius: radius,        // thickness (changes with growth)
-
-      // cached points + leaves
-      points: [],
-      leaves: [], // {t, side, rot, w, h, tint, jitter}
-      children: [],
-    };
-  }
-
-  function defaultTrunkCtrl(){
-    // Handles every 20% except base (base is fixed point)
-    const tList=[0.2,0.4,0.6,0.8,1.0];
-    return tList.map(t=>({t, ox:0, oy:0}));
-  }
-
-  function defaultTree(seed){
-    const rng=mulberry32(seed>>>0);
-    return {
-      seed: seed|0,
-      speciesId:"ficus",
-      name: "Bonsai " + (Math.floor(rng()*900)+100),
-
-      // core stats
-      water: 70,
-      hp: 90,
-      crown: 18,   // foliage density / “Krone”
-      shape: 6,
-
-      seasonIdx: 0,
-
-      upgrades:{ can:1, shear:1, wire:1 },
-      ownedPots:{ basic:true },
-      ownedSoils:{ standard:true },
-      equipped:{ pot:"basic", soil:"standard" },
-      unlockedSpecies:{ ficus:true },
-
-      photos: [],
-      cam:{ zoom: 1.20, panX: 0, panY: 0 },
-
-      env:{
-        timeOfDay: 0.35,
-        cloudT: 0,
-        birdT: 0
-      },
-
-      meta:{
-        day: 1,
-        dayFrac: 0,
-        coins: 0,
-        // “rewarding” chain without header spam:
-        zen: 0,
-        lastActiveTs: Date.now(),
-        lastDailyDay: 1,
-        dayActions:{ water:0, prune:0, bend:0, photo:0, newTree:0 },
-        daily: [],
-        milestonesClaimed:{}
-      },
-
-      // persistent trunk (does NOT shrink on pruning, only on trunk cut)
-      trunk:{
-        len: 190,         // grows gradually
-        baseRadius: 18,   // thickening over time
-        ctrl: defaultTrunkCtrl(), // handles every 20%
-      },
-
-      // phyllotaxis-ish for branching directions
-      phyllo: { a: 0.0 },
-
-        branches: [
-    // sproutling with a small crown: 3 starter branches near top
-    defaultBranch(seed^0xA5A5A5A5, "trunk", 0.70, -0.65, 120, 6.5, true, true),
-    defaultBranch(seed^0x1A2B3C4D, "trunk", 0.76,  0.35, 105, 5.8, false, true),
-    defaultBranch(seed^0xBEEF0042, "trunk", 0.82, -0.05,  90, 5.2, false, true),
-  ],
-}
-;
-
-  }
-
-  function defaultSave(){
-    const seed=(Math.random()*1e9)|0;
-    const t0=defaultTree(seed);
-    t0.name="Bonsai 1";
-    return {
-      v:4,
-      activeTreeId: 0,
-      trees:[t0]
-    };
-  }
-
-  function loadSave(){
-    try{
-      const raw=safeGetItem(SAVE_KEY);
-      if(!raw) return defaultSave();
-      const obj=JSON.parse(raw);
-      const base=defaultSave();
-      const merged={...base,...obj};
-      if(!Array.isArray(merged.trees) || merged.trees.length===0) merged.trees=base.trees;
-      merged.activeTreeId = clamp(Number(merged.activeTreeId||0), 0, merged.trees.length-1);
-      merged.trees = merged.trees.map((t,idx)=>normalizeTree({...defaultTree((Math.random()*1e9)|0), ...t}, idx));
-      return merged;
-    }catch{
-      return defaultSave();
-    }
-  }
-
-  function normalizeTree(T, idx){
-    // minimal migrations/safety
-    if(!T.meta) T.meta=defaultTree(0).meta;
-    if(!T.meta.dayActions) T.meta.dayActions={ water:0, prune:0, bend:0, photo:0, newTree:0 };
-    if(!T.meta.milestonesClaimed) T.meta.milestonesClaimed={};
-    if(!Array.isArray(T.meta.daily)) T.meta.daily=[];
-    if(!Array.isArray(T.photos)) T.photos=[];
-    if(!T.cam) T.cam={zoom:1.20};
-    if(!T.env) T.env={timeOfDay:0.35, cloudT:0, birdT:0};
-
-    T.water=clamp(T.water,0,100);
-    T.hp=clamp(T.hp,0,100);
-    T.crown=clamp(T.crown,0,100);
-    T.shape=clamp(T.shape,0,100);
-    T.cam.zoom=clamp(T.cam.zoom,0.55,2.80);
-
-    if(!T.upgrades) T.upgrades={can:1,shear:1,wire:1};
-    if(!T.ownedPots) T.ownedPots={basic:true};
-    if(!T.ownedSoils) T.ownedSoils={standard:true};
-    if(!T.equipped) T.equipped={pot:"basic", soil:"standard"};
-    if(!T.unlockedSpecies) T.unlockedSpecies={ficus:true};
-    if(!T.speciesId) T.speciesId="ficus";
-    if(!T.name) T.name="Bonsai "+(idx+1);
-
-    if(!T.trunk) T.trunk={len:190, baseRadius:18, ctrl: defaultTrunkCtrl()};
-    if(!Array.isArray(T.trunk.ctrl) || T.trunk.ctrl.length<5) T.trunk.ctrl=defaultTrunkCtrl();
-    T.trunk.len = clamp(T.trunk.len||190, 120, 520);
-    T.trunk.baseRadius = clamp(T.trunk.baseRadius||18, 10, 52);
-    for(const c of T.trunk.ctrl){
-      c.t = clamp(Number(c.t||0.2), 0.2, 1.0);
-      c.ox = clamp(Number(c.ox||0), -1.0, 1.0);
-      c.oy = clamp(Number(c.oy||0), -1.0, 1.0);
-    }
-
-    if(!T.phyllo) T.phyllo={a:0};
-
-    if(!Array.isArray(T.branches) || T.branches.length===0){
-      T.branches=[ defaultBranch(T.seed^0xA5A5A5A5, "trunk", 0.72, -0.65, 70, 6, true, true) ];
-    }
-
-    // rebuild children lists
-    const map=new Map(T.branches.map(b=>[b.id,b]));
-    T.branches.forEach(b=>{ b.children=[]; });
-    for(const b of T.branches){
-      b.alive = (b.alive!==false);
-      b.attachT = clamp(Number(b.attachT??0.75), 0.05, 0.95);
-      b.age = Number(b.age||0);
-      b.vigor = clamp(Number(b.vigor??1), 0.2, 1.0);
-      b.angle = clamp(Number(b.angle||0), -2.5, 2.5);
-      b.bend = clamp(Number(b.bend||0), -1, 1);
-      b.arc  = clamp(Number(b.arc||0), -1, 1);
-      b.maxLen = clamp(Number(b.maxLen||90), 20, 520);
-      b.len    = clamp(Number(b.len||20), 10, b.maxLen);
-      b.radius = clamp(Number(b.radius||6), 1, 36);
-      if(!Array.isArray(b.points)) b.points=[];
-      if(!Array.isArray(b.leaves)) b.leaves=[];
-      if(b.parentId !== "trunk" && map.has(b.parentId)){
-        map.get(b.parentId).children.push(b.id);
-      }
-    }
-    return T;
-  }
-
-  // ------------------------------------------------------------
-  // Save
-  // ------------------------------------------------------------
-  let settings=loadSettings();
-  let SAVE=loadSave();
-  function activeTree(){ return SAVE.trees[SAVE.activeTreeId]; }
-  function saveNow(){ safeSetItem(SAVE_KEY, JSON.stringify(SAVE)); }
-
-  // ------------------------------------------------------------
-  // SIM config
-  // ------------------------------------------------------------
-  const SIM={
-    tickHz:30,
-    hudHz:6,
-    maxOfflineSeconds: 7*24*3600,
-    daySeconds: 6*3600,
-    timeScale:1.0,
-    growthMul:1.0,
-    thirstMul:1.0,
-    recoverMul:1.0
-  };
-  function applyModeToSim(){
-    if(settings.mode==="real"){
-      SIM.daySeconds=24*3600;
-      SIM.timeScale=1.0;
-      SIM.growthMul=1.0;
-      SIM.thirstMul=1.0;
-      SIM.recoverMul=1.0;
-    }else if(settings.mode==="test"){
-      SIM.daySeconds=6*3600;
-      SIM.timeScale=settings.test.timeScale;
-      SIM.growthMul=settings.test.growthMul;
-      SIM.thirstMul=settings.test.thirstMul;
-      SIM.recoverMul=settings.test.recoverMul;
-    }else{
-      SIM.daySeconds=6*3600;
-      SIM.timeScale=1.0;
-      SIM.growthMul=1.0;
-      SIM.thirstMul=1.0;
-      SIM.recoverMul=1.0;
-    }
-  }
-
-  // ------------------------------------------------------------
-  // Balance
-  // ------------------------------------------------------------
-  function pot(T){ return POTS.find(p=>p.id===T.equipped.pot) || POTS[0]; }
-  function soil(T){ return SOILS.find(s=>s.id===T.equipped.soil) || SOILS[0]; }
-
-  function waterAmount(T){ return 18 + (T.upgrades.can-1)*7; }
-  function pruneShapeGain(T){ return 2.4 + (T.upgrades.shear-1)*1.05; }
-  function pruneCrownLoss(T){ return 5.2 - Math.min(2.6, (T.upgrades.shear-1)*0.85); }
-  function bendShapeGain(T){ return 9.2 + (T.upgrades.wire-1)*1.9; }
-  function bendStress(T){ return 0.28 + 0.030*(T.upgrades.wire-1); }
-
-// trunk handle movement radius in world units (higher = more flexible)
-function trunkCtrlRadius(T, t){
-  const L=T.trunk.len;
-  // smaller radius => easier to reach max bend with normal finger drag
-  return (12 + L*0.14) * (0.50 + t*0.75);
-}
-
-
-  function idealRange(T){
-    const sp=spById(T.speciesId);
-    const p=pot(T);
-    const so=soil(T);
-    const buffer=(p.waterCap*0.7)+so.buffer;
-    const drainage=so.drainage;
-    const min=clamp(36 + (1-sp.tolerance)*18 - buffer, 0, 100);
-    const max=clamp(82 - (1-sp.tolerance)*10 + drainage, 0, 100);
-    return {min:Math.min(min,max), max:Math.max(min,max)};
-  }
-
-  // ------------------------------------------------------------
-  // Quests / unlocks
-  // ------------------------------------------------------------
-  function resetDayActions(T){ T.meta.dayActions={water:0,prune:0,bend:0,photo:0,newTree:0}; }
-  function genDaily(dayNumber){
-    const rng=mulberry32((dayNumber*2654435761)>>>0);
-    const pool=DAILY_POOL.slice();
-    const pick=()=>pool.splice(Math.floor(rng()*pool.length),1)[0];
-    const a=pick(),b=pick(),c=pick();
-    return [a,b,c].map(x=>({id:x.id,desc:x.desc,type:x.type,goal:x.goal,reward:x.reward,claimed:false}));
-  }
-  function ensureDaily(T){
-    if(T.meta.lastDailyDay!==T.meta.day || !Array.isArray(T.meta.daily) || T.meta.daily.length!==3){
-      T.meta.daily=genDaily(T.meta.day);
-      T.meta.lastDailyDay=T.meta.day;
-      resetDayActions(T);
-    }
-  }
-  function incAction(T,k){ T.meta.dayActions[k]=(T.meta.dayActions[k]||0)+1; }
-
-  function dailyProgress(T,task){
-    const A=T.meta.dayActions;
-    if(task.type==="water") return Math.min(task.goal, A.water);
-    if(task.type==="prune") return Math.min(task.goal, A.prune);
-    if(task.type==="bend")  return Math.min(task.goal, A.bend);
-    if(task.type==="photo") return Math.min(task.goal, A.photo);
-    if(task.type==="stat_hp") return Math.min(task.goal, fmt(T.hp));
-    if(task.type==="stat_shape") return Math.min(task.goal, fmt(T.shape));
-    if(task.type==="stat_canopy") return Math.min(task.goal, fmt(T.crown));
-    return 0;
-  }
-  function dailyComplete(T,task){ return dailyProgress(T,task)>=task.goal; }
-  function claimDaily(T,id){
-    const t=T.meta.daily.find(x=>x.id===id);
-    if(!t || t.claimed || !dailyComplete(T,t)) return;
-    t.claimed=true;
-    T.meta.coins += t.reward;
-    // reward feels good:
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 2);
-  }
-
-  function checkSpeciesUnlocks(T){
-    for(const sp of SPECIES){
-      if(T.unlockedSpecies[sp.id]) continue;
-      const u=sp.unlock;
-      const ok=(T.crown>=u.crown && T.shape>=u.shape && T.hp>=u.hp);
-      if(ok){
-        T.unlockedSpecies[sp.id]=true;
-        T.meta.coins += 50;
-      }
-    }
-  }
-
-  function milestoneDefs(T){
-    const total=SPECIES.length;
-    const unlockedCount=Object.values(T.unlockedSpecies).filter(Boolean).length;
-    const ownedPots=Object.values(T.ownedPots).filter(Boolean).length;
-    const ownedSoils=Object.values(T.ownedSoils).filter(Boolean).length;
-    return [
-      {id:"m_crown_50", name:"Krone 50", desc:`Krone ≥ 50`, done:T.crown>=50, reward:70},
-      {id:"m_shape_50", name:"Form 50", desc:`Form ≥ 50`, done:T.shape>=50, reward:80},
-      {id:"m_hp_90", name:"Gesund 90", desc:`HP ≥ 90`, done:T.hp>=90, reward:80},
-      {id:"m_unlock_5", name:"5 Arten", desc:`5 Arten freischalten (${unlockedCount}/5)`, done:unlockedCount>=5, reward:100},
-      {id:"m_unlock_all", name:"Alle Arten", desc:`Alle Arten freischalten (${unlockedCount}/${total})`, done:unlockedCount>=total, reward:180},
-      {id:"m_variety", name:"Variety", desc:`3 Töpfe + 3 Erden (${ownedPots}/${ownedSoils})`, done:(ownedPots>=3 && ownedSoils>=3), reward:100},
-      {id:"m_photos_6", name:"Dokumentation", desc:`6 Fotos speichern (${T.photos.length}/6)`, done:T.photos.length>=6, reward:80},
-    ];
-  }
-  function milestoneClaimed(T,id){ return !!T.meta.milestonesClaimed[id]; }
-  function claimMilestone(T,id){
-    const m=milestoneDefs(T).find(x=>x.id===id);
-    if(!m || !m.done || milestoneClaimed(T,id)) return;
-    T.meta.milestonesClaimed[id]=true;
-    T.meta.coins += m.reward;
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 3);
-  }
-  function badgeTier(v,b,s,g){ return v>=g?"GOLD":v>=s?"SILVER":v>=b?"BRONZE":"—"; }
-  function badges(T){
-    const unlockedCount=Object.values(T.unlockedSpecies).filter(Boolean).length;
-    return [
-      {name:"Krone", desc:"Krone Tier", tier: badgeTier(T.crown,35,65,90)},
-      {name:"Form", desc:"Form Tier", tier: badgeTier(T.shape,35,65,90)},
-      {name:"Gesundheit", desc:"HP Tier", tier: badgeTier(T.hp,60,80,95)},
-      {name:"Album", desc:"Fotos Tier", tier: badgeTier(T.photos.length,3,8,16)},
-      {name:"Sammlung", desc:"Arten Tier", tier: (unlockedCount>=SPECIES.length)?"GOLD":(unlockedCount>=4)?"SILVER":(unlockedCount>=2)?"BRONZE":"—"}
-    ];
-  }
-
-  // ------------------------------------------------------------
-  // Shop
-  // ------------------------------------------------------------
-  function upgCost(key,lvl){
-    const base=(key==="can")?85:(key==="shear")?95:115;
-    return base+(lvl-1)*85;
-  }
-  function upgCap(){ return 8; }
-  function buyUpgrade(T,key){
-    const lvl=T.upgrades[key];
-    if(lvl>=upgCap()) return;
-    const cost=upgCost(key,lvl);
-    if(T.meta.coins<cost) return;
-    T.meta.coins-=cost;
-    T.upgrades[key]=lvl+1;
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 1);
-  }
-
-  // ------------------------------------------------------------
-  // UI state
-  // ------------------------------------------------------------
-  let dirty={hud:true, play:true, quests:true, collection:true, shop:true, photos:true};
-  const markDirty=(k)=>dirty[k]=true;
-
-  function seasonObj(T){ return seasonFromMode(settings.mode, T.seasonIdx); }
-  function seasonName(T){
-    const sea=seasonObj(T);
-    return (settings.lang==="en") ? (sea.name.en) : (sea.name.de);
-  }
-
-  function bar(el,v){
-    const pct=clamp(v,0,100);
-    el.style.width=pct+"%";
-    if(pct>=66) el.style.background="var(--good)";
-    else if(pct>=33) el.style.background="var(--warn)";
-    else el.style.background="var(--bad)";
-  }
-
-  function updateIdealOverlay(T){
-    const {min,max}=idealRange(T);
-    $("idealZone").style.left=min+"%";
-    $("idealZone").style.width=Math.max(0,max-min)+"%";
-    $("idealMinTick").style.left=min+"%";
-    $("idealMaxTick").style.left=max+"%";
-  }
-
-  let lastFact={id:"",idx:0};
-  function pickFact(T){
-    const sp=spById(T.speciesId);
-    const arr=(sp.facts && sp.facts[settings.lang]) ? sp.facts[settings.lang] : sp.facts.de;
-    if(!arr || !arr.length) return "";
-    if(lastFact.id!==sp.id){ lastFact.id=sp.id; lastFact.idx=Math.floor(Math.random()*arr.length); }
-    else if(Math.random()<0.06){ lastFact.idx=(lastFact.idx+1)%arr.length; }
-    return "Fun Fact: " + arr[lastFact.idx];
-  }
-
-  let lastHpDelta=0;
-  function diagnosis(T){
-    const {min,max}=idealRange(T);
-    const w=T.water;
-    let state="Ideal";
-    if(w<min) state=(settings.lang==="en")?"Too dry":"Zu trocken";
-    if(w>max) state=(settings.lang==="en")?"Too wet":"Zu nass";
-
-    const trend=(lastHpDelta>0.02)?((settings.lang==="en")?"HP rising":"HP steigt"):
-                (lastHpDelta<-0.02)?((settings.lang==="en")?"HP falling":"HP fällt"):
-                                    ((settings.lang==="en")?"HP stable":"HP stabil");
-
-    const line1=((settings.lang==="en")?"Ideal water":"Ideal Wasser")+`: ${fmt(min)}–${fmt(max)} (${(settings.lang==="en")?"Now":"Jetzt"}: ${fmt(w)} · ${state})`;
-    const line2=((settings.lang==="en")?"Trend":"Trend")+`: ${trend}`;
-    const line3=(settings.lang==="en") ? "Tip: prune + bend gives coins via quests/milestones." : "Tipp: Schneiden + Biegen gibt Coins über Quests/Meilensteine.";
-    return `${line1}\n${line2}\n${line3}`;
-  }
-
-  function rebuildTreeSelect(){
-    const sel=$("treeSel");
-    const T=activeTree();
-    sel.innerHTML="";
-    SAVE.trees.forEach((t,idx)=>{
-      const o=document.createElement("option");
-      o.value=String(idx);
-      const sp=spById(t.speciesId);
-      o.textContent = `${t.name} · ${sp.name[settings.lang]||sp.name.de}`;
-      sel.appendChild(o);
-    });
-    sel.value=String(SAVE.activeTreeId);
-    $("treeNameTop").textContent = `${T.name}`;
-  }
-
-  // Panels
-  const panels={
-    play:$("panelPlay"),
-    collection:$("panelCollection"),
-    shop:$("panelShop"),
-    photos:$("panelPhotos"),
-    quests:$("panelQuests")
-  };
-  let currentTab="play";
-  function setTab(name){
-    currentTab=name;
-    for(const k in panels) panels[k].style.display = (k===name)?"block":"none";
-    document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
-    if(window.matchMedia("(max-width: 980px)").matches){
-      $("drawerHead").style.display="flex";
-      $("drawerTitle").textContent = name[0].toUpperCase()+name.slice(1);
-    }
-    if(name==="quests") dirty.quests=true;
-    if(name==="collection") dirty.collection=true;
-    if(name==="shop") dirty.shop=true;
-    if(name==="photos") dirty.photos=true;
-  }
-  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click", ()=>setTab(b.dataset.tab)));
-  $("tabsMobile").querySelectorAll(".tab").forEach(b=>b.addEventListener("click", ()=>setTab(b.dataset.tab)));
-  $("drawerClose").addEventListener("click", ()=>setTab("play"));
-
-  // ------------------------------------------------------------
-  // Canvas responsive + DPR
-  // ------------------------------------------------------------
-  const cv=$("cv");
-  const g=cv.getContext("2d", { alpha:true });
-
-  let viewW=1000, viewH=600, dpr=1;
-
-  function updateCanvasSize(){
-    const rect=cv.getBoundingClientRect();
-    const ndpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = Math.max(320, rect.width);
-    const h = Math.max(320, rect.height);
-    dpr=ndpr;
-    viewW=w; viewH=h;
-    cv.width = Math.round(w*dpr);
-    cv.height= Math.round(h*dpr);
-  }
-
-  const ro = new ResizeObserver(()=>{ updateCanvasSize(); markDirty("play"); });
-  ro.observe(cv);
-
-  function beginFrame(){
-    // hard reset of canvas state (prevents "stuck alpha" and other state leaks on mobile)
-    g.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
-    g.globalAlpha=1;
-    g.globalCompositeOperation="source-over";
-    g.setLineDash([]);
-    g.lineCap="butt";
-    g.lineJoin="miter";
-    g.shadowColor="rgba(0,0,0,0)";
-    g.shadowBlur=0;
-    g.shadowOffsetX=0;
-    g.shadowOffsetY=0;
-
-    g.clearRect(0,0,viewW,viewH);
-  }
-
-  // camera
-  const CAM_Z_MIN=0.35, CAM_Z_MAX=4.0;
-
-  const cam={
-    anchorX:()=>viewW*0.5,
-    anchorY:()=>viewH*0.60,
-    zoom:()=> (activeTree().cam.zoom ?? 1),
-    panX:()=> (activeTree().cam.panX ?? 0),
-    panY:()=> (activeTree().cam.panY ?? 0)
-  };
-    function withCamera(ctx, fn){
-    ctx.save();
-    const ax=cam.anchorX(), ay=cam.anchorY();
-    const z=cam.zoom();
-    const px=cam.panX(), py=cam.panY();
-    ctx.translate(px, py);
-    ctx.translate(ax, ay);
-    ctx.scale(z, z);
-    ctx.translate(-ax, -ay);
-    fn();
-    ctx.restore();
-  }
-  
-  function screenToWorld(cx,cy){
-    const r=cv.getBoundingClientRect();
-    const sx=(cx-r.left);
-    const sy=(cy-r.top);
-    const ax=cam.anchorX(), ay=cam.anchorY();
-    const z=cam.zoom();
-    const px=cam.panX(), py=cam.panY();
-    const wx=((sx-px)-ax)/z + ax;
-    const wy=((sy-py)-ay)/z + ay;
-    return {sx,sy,x:wx,y:wy, ax,ay, z, px,py};
-  }
-
-  // ------------------------------------------------------------
-  // Hit containers + selection
-  // ------------------------------------------------------------
-  const hit={
-    pot:null,
-    segs:[],      // {id, type:"trunk"|"branch", ax,ay,bx,by, cum0, segLen, totalLen}
-    trunkHandles:[], // {i, t, x,y, r, kind:"ctrl"}
-  };
-
-  const bendSel = {
-    bundle:false,
-    selected:new Set(), // branch IDs
-    lastPicked:null
-  };
-
-  function clearSelection(){
-    bendSel.selected.clear();
-    bendSel.lastPicked=null;
-  }
-
-  // ------------------------------------------------------------
-  // Background (sky + mountains + balcony + clouds + birds)
-  // ------------------------------------------------------------
-  function drawSky(w,h,T){
-    const tod=T.env.timeOfDay;
-    const dayF=smoothstep(Math.sin(tod*2*Math.PI - Math.PI/2)*0.5 + 0.5);
-    const nightF=1-dayF;
-
-    const sea=seasonObj(T).id;
-    const skyDayTop = sea==="winter"?[26,42,70] : sea==="autumn"?[32,36,56] : sea==="summer"?[18,55,90] : [26,48,78];
-    const skyDayBot = sea==="winter"?[9,12,20]  : sea==="autumn"?[9,10,16]  : sea==="summer"?[6,8,12]  : [7,8,12];
-    const skyNightTop=[5,9,16], skyNightBot=[2,4,8];
-
-    const top=mix(skyNightTop, skyDayTop, dayF);
-    const bot=mix(skyNightBot, skyDayBot, dayF);
-
-    const grd=g.createLinearGradient(0,0,0,h);
-    grd.addColorStop(0, rgba(top,1));
-    grd.addColorStop(1, rgba(bot,1));
-    g.fillStyle=grd; g.fillRect(0,0,w,h);
-
-    if(nightF>0.25){
-      const rng=mulberry32(((T.seed*99991)^0xA53)>>>0);
-      g.save();
-      g.globalAlpha=0.35*nightF;
-      g.fillStyle="rgba(220,235,255,0.9)";
-      for(let i=0;i<120;i++){
-        const x=rng()*w, y=rng()*h*0.55, r=0.6+rng()*1.4;
-        g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill();
-      }
-      g.restore();
-    }
-
-    const sunX = w*(0.12 + 0.76*tod);
-    const sunY = h*(0.18 + 0.10*Math.sin(tod*2*Math.PI));
-    const moonX= w*(0.12 + 0.76*((tod+0.5)%1));
-    const moonY= h*(0.18 + 0.10*Math.sin(((tod+0.5)%1)*2*Math.PI));
-
-    g.save();
-    g.globalAlpha=0.22*dayF;
-    let rg=g.createRadialGradient(sunX,sunY,0,sunX,sunY,w*0.25);
-    rg.addColorStop(0,"rgba(255,255,255,0.65)");
-    rg.addColorStop(1,"rgba(255,255,255,0)");
-    g.fillStyle=rg; g.fillRect(0,0,w,h);
-    g.restore();
-
-    g.save();
-    g.globalAlpha=0.18*nightF;
-    rg=g.createRadialGradient(moonX,moonY,0,moonX,moonY,w*0.22);
-    rg.addColorStop(0,"rgba(210,230,255,0.55)");
-    rg.addColorStop(1,"rgba(210,230,255,0)");
-    g.fillStyle=rg; g.fillRect(0,0,w,h);
-    g.restore();
-
-    // clouds
-    const cloudBaseA=mix([210,225,245],[120,140,170],nightF*0.65);
-    const cloudBaseB=mix([255,255,255],[150,170,200],nightF*0.65);
-
-    const ct=T.env.cloudT;
-    function cloud(cx,cy,scale,alpha){
-  g.save();
-  g.globalAlpha=alpha;
-
-  const cg=g.createLinearGradient(cx-90*scale, cy-24*scale, cx+90*scale, cy+44*scale);
-  cg.addColorStop(0, rgba(cloudBaseA,0.85));
-  cg.addColorStop(1, rgba(cloudBaseB,0.85));
-  g.fillStyle=cg;
-
-  const w=170*scale, h2=70*scale;
-  const x0=cx-w*0.5, y0=cy-h2*0.5;
-
-  // closed bezier cloud (no ellipse seams -> no arrow artifacts)
-  g.beginPath();
-  g.moveTo(x0+w*0.18, y0+h2*0.64);
-  g.bezierCurveTo(x0+w*0.05, y0+h2*0.62, x0+w*0.04, y0+h2*0.40, x0+w*0.18, y0+h2*0.38);
-  g.bezierCurveTo(x0+w*0.18, y0+h2*0.20, x0+w*0.30, y0+h2*0.08, x0+w*0.44, y0+h2*0.16);
-  g.bezierCurveTo(x0+w*0.50, y0+h2*0.03, x0+w*0.66, y0+h2*0.06, x0+w*0.70, y0+h2*0.20);
-  g.bezierCurveTo(x0+w*0.84, y0+h2*0.18, x0+w*0.94, y0+h2*0.30, x0+w*0.88, y0+h2*0.44);
-  g.bezierCurveTo(x0+w*0.96, y0+h2*0.52, x0+w*0.90, y0+h2*0.70, x0+w*0.76, y0+h2*0.66);
-  g.bezierCurveTo(x0+w*0.66, y0+h2*0.82, x0+w*0.40, y0+h2*0.82, x0+w*0.36, y0+h2*0.68);
-  g.bezierCurveTo(x0+w*0.30, y0+h2*0.74, x0+w*0.22, y0+h2*0.74, x0+w*0.18, y0+h2*0.64);
-  g.closePath();
-  g.fill();
-
-  g.restore();
-}
-
-    g.save();
-    g.globalAlpha = 0.55*dayF + 0.25;
-    const l1=(ct*0.4)%1, l2=(ct*0.65+0.31)%1, l3=(ct*0.90+0.62)%1;
-    cloud(w*l1-120, h*0.18, 1.05, 0.16);
-    cloud(w*l1+260, h*0.22, 0.90, 0.13);
-    cloud(w*l2-80,  h*0.28, 1.25, 0.12);
-    cloud(w*l2+320, h*0.30, 0.85, 0.10);
-    cloud(w*l3-40,  h*0.12, 0.80, 0.10);
-    cloud(w*l3+420, h*0.16, 1.10, 0.10);
-    g.restore();
-
-    const vg=g.createRadialGradient(w*0.55,h*0.35,w*0.18,w*0.55,h*0.35,w*0.92);
-    vg.addColorStop(0,"rgba(0,0,0,0)");
-    vg.addColorStop(1,"rgba(0,0,0,0.58)");
-    g.fillStyle=vg; g.fillRect(0,0,w,h);
-  }
-
-  function drawMountains(w,h,T){
-    function hill(yBase, amp, colA, colB, seed){
-      const rng=mulberry32(seed);
-      const grd=g.createLinearGradient(0,yBase-amp,0,yBase+amp);
-      grd.addColorStop(0, rgba(colA,1));
-      grd.addColorStop(1, rgba(colB,1));
-      g.fillStyle=grd;
-      g.beginPath();
-      g.moveTo(0,h);
-      g.lineTo(0,yBase);
-      const steps=16;
-      for(let i=0;i<=steps;i++){
-        const x=(i/steps)*w;
-        const y=yBase + (rng()-0.5)*amp + Math.sin(i*0.55)*amp*0.20;
-        g.lineTo(x,y);
-      }
-      g.lineTo(w,h);
-      g.closePath();
-      g.fill();
-    }
-
-    const sea=seasonObj(T).id;
-    if(sea==="winter"){
-      hill(h*0.42, 30, [18,26,42],[9,12,18], 111);
-      hill(h*0.52, 40, [16,22,32],[8,10,14], 222);
-      g.fillStyle="rgba(220,235,255,0.04)";
-      g.fillRect(0,0,w,h*0.65);
-    }else if(sea==="summer"){
-      hill(h*0.42, 26, [16,34,44],[8,14,18], 111);
-      hill(h*0.52, 38, [14,24,22],[7,10,12], 222);
-    }else if(sea==="autumn"){
-      hill(h*0.42, 26, [26,28,38],[10,12,16], 111);
-      hill(h*0.52, 38, [28,20,18],[10,10,12], 222);
-    }else{
-      hill(h*0.42, 26, [18,30,46],[8,12,18], 111);
-      hill(h*0.52, 38, [14,20,22],[7,9,12], 222);
-    }
-  }
-
-  function drawBalcony(w,h){
-    const floorY=h*0.73;
-    g.fillStyle="rgba(9,12,18,1)";
-    g.fillRect(0, floorY, w, h-floorY);
-
-    g.strokeStyle="rgba(35,48,66,0.45)";
-    g.lineWidth=1;
-    for(let i=0;i<3;i++){
-      const y=floorY + i*((h-floorY)/10);
-      g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke();
-    }
-
-    const railY=h*0.60;
-    g.fillStyle="rgba(8,12,18,0.70)";
-    g.fillRect(0, railY, w, 6);
-    g.strokeStyle="rgba(40,58,84,0.75)";
-    g.lineWidth=2;
-    g.beginPath(); g.moveTo(0,railY); g.lineTo(w,railY); g.stroke();
-
-    for(let i=0;i<12;i++){
-      const x=(i/11)*w;
-      g.strokeStyle="rgba(35,48,66,0.55)";
-      g.lineWidth=2;
-      g.beginPath();
-      g.moveTo(x, railY);
-      g.lineTo(x, railY+70);
-      g.stroke();
-    }
-  }
-
-  function drawBirds(w,h,T){
-    T.env.birdT += 0.020;
-    const t = T.env.birdT;
-    const dayF=smoothstep(Math.sin(T.env.timeOfDay*2*Math.PI - Math.PI/2)*0.5 + 0.5);
-    if(dayF<0.15) return;
-    for(let flock=0; flock<2; flock++){
-      const base = (t*0.12 + flock*0.37) % 1;
-      const x = lerp(-120, w+120, base);
-      const y = h*(0.18 + 0.12*Math.sin((base+flock)*3.4));
-      const count = 4 + flock*2;
-
-      g.save();
-      g.globalAlpha = 0.25;
-      g.strokeStyle="rgba(220,235,255,0.55)";
-      g.lineWidth=2;
-      for(let i=0;i<count;i++){
-        const ox = (i-count/2)*18;
-        const oy = Math.sin((base*6 + i)*1.2)*6;
-        g.beginPath();
-        g.moveTo(x+ox-8, y+oy);
-        g.quadraticCurveTo(x+ox, y+oy-6, x+ox+8, y+oy);
-        g.stroke();
-      }
-      g.restore();
-    }
-  }
-
-  // ------------------------------------------------------------
-  // Pot + soil
-  // ------------------------------------------------------------
-  function roundRectPath(ctx,x,y,w,h,r){
-    const rr=Math.min(r,w/2,h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+rr,y);
-    ctx.arcTo(x+w,y,x+w,y+h,rr);
-    ctx.arcTo(x+w,y+h,x,y+h,rr);
-    ctx.arcTo(x,y+h,x,y,rr);
-    ctx.arcTo(x,y,x+w,y,rr);
-    ctx.closePath();
-  }
-
-  function potColors(id){
-    const map={
-      basic:{ body:[18,22,28], rim:[28,34,44], glaze:false },
-      clay: { body:[18,30,40], rim:[30,44,60], glaze:false },
-      glaze:{ body:[14,30,52], rim:[26,50,78], glaze:true  },
-      wide: { body:[18,26,34], rim:[34,52,66], glaze:true  },
-      deep: { body:[14,26,32], rim:[28,40,50], glaze:false },
-    };
-    return map[id]||map.basic;
-  }
-  function soilColors(id){
-    const map={
-      standard:{ top:[18,16,14], grit:[42,38,32] },
-      drain:   { top:[16,15,14], grit:[62,56,50] },
-      retain:  { top:[20,18,16], grit:[44,40,34] },
-      premium: { top:[18,17,15], grit:[72,64,56] },
-    };
-    return map[id]||map.standard;
-  }
-
-  function drawPotAndSoil(w,h,T){
-    const p=pot(T);
-    const so=soil(T);
-    const pc=potColors(p.id);
-    const sc=soilColors(so.id);
-
-    const potW=Math.min(420, w*0.52);
-    const potH=Math.min(170, h*0.26);
-    const potX=w*0.5 - potW/2;
-    const potY=h*0.80 - potH/2;
-
-    hit.pot={x:potX,y:potY,w:potW,h:potH};
-
-    g.save();
-    g.globalAlpha=0.38;
-    g.fillStyle="rgba(0,0,0,0.95)";
-    g.beginPath();
-    g.ellipse(w*0.5, potY+potH*0.74, potW*0.48, potH*0.22, 0, 0, Math.PI*2);
-    g.fill();
-    g.restore();
-
-    const bodyGrd=g.createLinearGradient(potX,potY,potX+potW,potY);
-    bodyGrd.addColorStop(0, rgba(mix(pc.body,[0,0,0],0.35),1));
-    bodyGrd.addColorStop(0.20, rgba(pc.rim,1));
-    bodyGrd.addColorStop(0.55, rgba(pc.body,1));
-    bodyGrd.addColorStop(1, rgba(mix(pc.body,[0,0,0],0.55),1));
-
-    roundRectPath(g,potX,potY,potW,potH,22);
-    g.fillStyle=bodyGrd; g.fill();
-    g.strokeStyle="rgba(27,36,48,1)";
-    g.lineWidth=2.2; g.stroke();
-
-    g.save();
-    g.globalAlpha=0.20;
-    g.strokeStyle="rgba(255,255,255,0.55)";
-    g.lineWidth=2;
-    roundRectPath(g, potX+4,potY+4,potW-8,potH-8,20);
-    g.stroke();
-    g.restore();
-
-    const cavX=potX+22, cavY=potY+30, cavW=potW-44, cavH=potH-52;
-    const soilGrd=g.createLinearGradient(cavX,cavY,cavX,cavY+cavH);
-    soilGrd.addColorStop(0, rgba(sc.top,1));
-    soilGrd.addColorStop(1, "rgba(6,6,8,1)");
-    roundRectPath(g,cavX,cavY,cavW,cavH,18);
-    g.fillStyle=soilGrd; g.fill();
-    g.strokeStyle="rgba(18,20,26,1)";
-    g.lineWidth=2; g.stroke();
-
-    const rng=mulberry32(((T.seed*1717)^(so.id.length*123))>>>0);
-    g.save();
-    g.globalAlpha=0.30;
-    for(let i=0;i<120;i++){
-      const x=cavX+rng()*cavW, y=cavY+rng()*cavH, r=0.7+rng()*2.4;
-      g.fillStyle=rgba(sc.grit,0.35);
-      g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill();
-    }
-    g.restore();
-
-    if(pc.glaze){
-      g.save();
-      g.globalAlpha=0.18;
-      const hl=g.createLinearGradient(potX,potY,potX+potW,potY);
-      hl.addColorStop(0,"rgba(255,255,255,0)");
-      hl.addColorStop(0.35,"rgba(255,255,255,0.28)");
-      hl.addColorStop(1,"rgba(255,255,255,0)");
-      g.fillStyle=hl;
-      g.beginPath();
-      g.ellipse(w*0.5, potY+potH*0.46, potW*0.46, potH*0.42, 0, 0, Math.PI*2);
-      g.fill();
-      g.restore();
-    }
-
-    return {potX,potY,potW,potH,cavX,cavY,cavW,cavH, soilY: cavY+12};
-  }
-
-  // ------------------------------------------------------------
-  // Tree rendering: trunk spline + branches + textures + leaves
-  // ------------------------------------------------------------
-  function barkPalette(T){
-    const hp01=T.hp/100;
-    const sp=T.speciesId;
-    const baseA = ["juniper","pine"].includes(sp) ? [96,82,72] : [118,108,102];
-    const baseB = ["juniper","pine"].includes(sp) ? [44,40,40] : [46,44,48];
-    const stress=[72,40,38];
-    const a=mix(baseA,stress,(1-hp01)*0.45);
-    const b=mix(baseB,stress,(1-hp01)*0.45);
-    return {a,b};
-  }
-
-  function leafPalette(T){
-    const sea=seasonObj(T).id;
-    const hp01=T.hp/100;
-    const spId=T.speciesId;
-    const spec=spById(spId);
-    // base palette per species
-    const base={
-      ficus: {a:[80,190,135], b:[130,235,170]},
-      elm:   {a:[72,182,128], b:[126,228,162]},
-      juniper:{a:[52,122,96], b:[76,146,112]},
-      maple: {a:[88,202,142], b:[140,236,170]},
-      pine:  {a:[58,128,94], b:[86,154,116]},
-      olive: {a:[88,156,120], b:[130,180,146]},
-    }[spId] || {a:[80,190,135], b:[130,235,170]};
-
-    let a=base.a.slice(), b=base.b.slice();
-    const deciduous=(spec.leaf==="broad"||spec.leaf==="broadFine"||spec.leaf==="palmate") && !["olive","ficus"].includes(spId);
-
-    if(sea==="winter"){
-      if(deciduous){
-        a=mix(a,[92,96,112],0.70);
-        b=mix(b,[112,124,142],0.70);
-      }else{
-        a=mix(a,[120,140,160],0.35);
-        b=mix(b,[140,160,185],0.35);
-      }
-    }
-    if(sea==="autumn" && deciduous){
-      a=mix(a,[210,138,62],0.85);
-      b=mix(b,[248,152,64],0.85);
-    }
-    if(sea==="summer"){
-      a=mix(a,[55,175,115],0.12);
-      b=mix(b,[86,198,128],0.12);
-    }
-    const stress=[245,85,78];
-    a=mix(a,stress,(1-hp01)*0.45);
-    b=mix(b,stress,(1-hp01)*0.45);
-    return {a,b,deciduous,kind:spec.leaf};
-  }
-
-  function drawTaperedPolyline(points, thick0, colA, colB, seedTex, highlight=false, shadowOn=true){
-    // optional shadow pass
-    if(shadowOn){
-      g.save();
-      g.globalAlpha=0.18;
-      g.strokeStyle="rgba(0,0,0,0.92)";
-      g.lineWidth=thick0*1.06;
-      g.lineCap="round";
-      g.beginPath();
-      g.moveTo(points[0].x+4, points[0].y+3);
-      for(let i=1;i<points.length;i++) g.lineTo(points[i].x+4, points[i].y+3);
-      g.stroke();
-      g.restore();
-    }
-
-    g.save();
-    g.lineCap="round";
-    for(let i=0;i<points.length-1;i++){
-      const t=i/(points.length-1);
-      // keep a minimum taper so tips don't become hair-thin
-      const taper = Math.max(0.38, 1 - t);
-      const thick = Math.max(0.9, thick0 * taper);
-
-      let col=mix(colA,colB, t*0.7);
-
-      // subtle bark texture (noise)
-      const n = noise2(points[i].x*0.03, points[i].y*0.03, seedTex) - 0.5;
-      col = mix(col, [col[0]*0.85, col[1]*0.80, col[2]*0.90], Math.abs(n)*0.25);
-
-      g.strokeStyle=rgba(col,0.98);
-      g.lineWidth=thick;
-      g.beginPath();
-      g.moveTo(points[i].x,points[i].y);
-      g.lineTo(points[i+1].x,points[i+1].y);
-      g.stroke();
-
-      // highlight edge
-      g.save();
-      g.globalAlpha=0.08;
-      g.strokeStyle="rgba(255,255,255,0.55)";
-      g.lineWidth=Math.max(0.8, thick*0.20);
-      g.beginPath();
-      g.moveTo(points[i].x-1.1,points[i].y-0.9);
-      g.lineTo(points[i+1].x-1.1,points[i+1].y-0.9);
-      g.stroke();
-      g.restore();
-    }
-
-    // selection highlight
-    if(highlight){
-      g.save();
-      g.globalAlpha=0.35;
-      g.strokeStyle="rgba(118,228,255,0.65)";
-      g.lineWidth=Math.max(2.2, thick0*0.18);
-      g.setLineDash([8,6]);
-      g.beginPath();
-      g.moveTo(points[0].x, points[0].y);
-      for(let i=1;i<points.length;i++) g.lineTo(points[i].x, points[i].y);
-      g.stroke();
-      g.restore();
-    }
-    g.restore();
-  }
-
-  function drawLeafShape(kind, x,y, rot, w,h, colA, colB, alpha, seed){
-    g.save();
-    g.translate(x,y);
-    g.rotate(rot);
-    g.globalAlpha=alpha;
-    const lod=((G_T&&G_T.leafCountApprox)||0);
-
-    const grd=g.createLinearGradient(-w,-h,w,h);
-    grd.addColorStop(0, rgba(colA,0.95));
-    grd.addColorStop(1, rgba(colB,0.95));
-    g.fillStyle=grd;
-
-    if(kind==="palmate"){
-      // simple maple star
-      g.beginPath();
-      const spikes=5;
-      for(let i=0;i<spikes*2;i++){
-        const a=i*Math.PI/spikes;
-        const rr=(i%2===0)?w: w*0.45;
-        const yy=(i%2===0)?h: h*0.55;
-        g.lineTo(Math.cos(a)*rr, Math.sin(a)*yy);
-      }
-      g.closePath();
-      g.fill();
-    }else{
-      // ellipse
-      g.beginPath();
-      g.ellipse(0,0,w,h,0,0,Math.PI*2);
-      g.fill();
-    }
-
-        if(lod < 320){
-// vein + texture speckles
-    g.globalAlpha*=0.20;
-    g.strokeStyle="rgba(255,255,255,0.65)";
-    g.lineWidth=Math.max(0.6,w*0.10);
-    g.beginPath();
-    g.moveTo(-w*0.55,0);
-    g.quadraticCurveTo(0,-h*0.15,w*0.55,0);
-    g.stroke();
-    }
-
-    // micro texture (skip when many leaves)
-if(((G_T && G_T.leafCountApprox)||0) < 380){
-    g.globalAlpha*=0.55;
-    for(let i=0;i<3;i++){
-      const nx=(noise2(i*1.7, seed*0.001+i, seed|0)-0.5)*w*1.2;
-      const ny=(noise2(i*2.3, seed*0.002+i, seed|0)-0.5)*h*1.2;
-      g.fillStyle="rgba(0,0,0,0.12)";
-      g.beginPath(); g.arc(nx,ny,0.6,0,Math.PI*2); g.fill();
-    }
-    }
-
-        if(lod < 320){
-// shadow edge
-    g.globalAlpha=alpha*0.14;
-    g.strokeStyle="rgba(0,0,0,0.55)";
-    g.lineWidth=Math.max(0.7,w*0.12);
-    g.beginPath();
-    if(kind==="palmate"){
-      const spikes=5;
-      for(let i=0;i<spikes*2;i++){
-        const a=i*Math.PI/spikes;
-        const rr=(i%2===0)?w: w*0.45;
-        const yy=(i%2===0)?h: h*0.55;
-        g.lineTo(Math.cos(a)*rr, Math.sin(a)*yy);
-      }
-      g.closePath();
-    }else{
-      g.ellipse(0,0,w*1.02,h*1.02,0,0,Math.PI*2);
-    }
-    g.stroke();
-    }
-
-    g.restore();
-  }
-
-  function drawNeedles(x,y, rot, r, palA, palB, alpha, seed){
-    g.save();
-    g.translate(x,y);
-    g.rotate(rot);
-    g.globalAlpha=alpha*0.85;
-    for(let i=0;i<36;i++){
-      const a=(i/36)*Math.PI*2;
-      const len= r*(0.55 + noise2(i*0.7, seed*0.01, seed)*0.65);
-      const c=mix(palA,palB, noise2(i*0.4, seed*0.02, seed));
-      g.strokeStyle=rgba(c,0.75);
-      g.lineWidth=1;
-      g.beginPath();
-      g.moveTo(0,0);
-      g.lineTo(Math.cos(a)*len, Math.sin(a)*len*0.6);
-      g.stroke();
-    }
-    g.restore();
-  }
-
-  
-function ensureStarterCrown(T){
-  if(T._starterCrown) return;
-  T._starterCrown = true;
-  T.trunkLeafPads = [];
-  const rng = makeRng((T.seed^0xC0FFEE)>>>0);
-  const pads = 3;
-  for(let i=0;i<pads;i++){
-    const side = (i%2===0)?1:-1;
-    const rot  = (rng()-0.5)*0.8;
-    const tint = rng();
-    const t = 0.86 + rng()*0.10; // near tip
-    T.trunkLeafPads.push({t, side, rot, tint, g:1, seed:(T.seed^(i*1337))});
-  }
-}
-
-function ensureLeaves(T, b, dt){
-  const hp01=T.hp/100;
-  const crown01=T.crown/100;
-
-  // 2 leaf-groups per branch, not hundreds of individual leaves
-  const budget = (b.leafBudgetMul==null)?1:b.leafBudgetMul;
-  const target = Math.max(0, Math.min(LEAF_PADS, Math.round(LEAF_PADS * budget)));
-
-  if(!b.leafPads) b.leafPads=[];
-
-      // create initial pad as soon as branch exists (leaf follows length)
-      if(b.len >= LEAF_MIN_LEN && b.leafPads.length===0){
-        const rng = makeRng(b.seed ^ 0xA11F00D);
-        const side = (rng()<0.5)?-1:1;
-        const rot  = (rng()-0.5)*0.9;
-        const tint = rng();
-        // last 20% near the tip
-        const t = 0.82 + rng()*0.14;
-        b.leafPads.push({t, side, rot, tint, g:0, seed:(b.seed^(b.leafPads.length*9973))});
-      }
-// only develop leaves when the shoot is mature enough (prevents leaf spam on tiny branches)
-if(b.len < 28 || (b.len/(b.maxLen||1)) < 0.45){
-  // still let existing pads mature slowly
-  if(b.leafPads && b.leafPads.length){
-    for(const P of b.leafPads) P.g = clamp((P.g||0) + dt*0.18, 0, 1);
-  }
-  return;
-}
-
-  b.leafAcc = (b.leafAcc||0);
-
-  // grow existing pads slowly
-  const growRate = 0.10 + crown01*0.06 + hp01*0.05;
-  for(const P of b.leafPads){
-    if(P.g==null) P.g=0;
-    P.g = Math.min(1, P.g + dt*growRate);
-  }
-
-  // global throttle
-  const leafTotal = (T.leafCountApprox||0);
-  const globalFactor = leafTotal > 80 ? 0.25 : 1.0;
-
-  // pad spawn rate
-  const spawnRate = (0.10 + crown01*0.30) * (0.40 + hp01*0.55) * globalFactor;
-  b.leafAcc += dt*spawnRate;
-
-  if(b.leafPads.length >= target) return;
-  if(b.leafAcc < 1) return;
-  b.leafAcc -= 1;
-
-  // place pads away from trunk-attach to avoid center blobs
-  const minT = 0.80; // spawn near tip (last 20%)
-  const maxT = 0.98;
-  const rng=mulberry32((b.seed ^ (b.leafPads.length*977) ^ (T.seed*131))>>>0);
-
-  const t = clamp(minT + rng()*(maxT-minT), 0.08, 0.98);
-  const side = (rng()<0.5)?-1:1;
-  const rot = (rng()-0.5)*1.0;
-  const tint = rng();
-
-  b.leafPads.push({t, side, rot, tint, g:0, seed:(b.seed^((b.leafPads.length+1)*99991))>>>0});
-}
-
-function buildTrunkPoints(T, baseX, baseY){
-    const L=T.trunk.len;
-    const ctrl=T.trunk.ctrl;
-
-    // base fixed point
-    const base={x:baseX, y:baseY};
-
-    // nominal straight positions + offsets
-    const pts=[base];
-    for(let i=0;i<ctrl.length;i++){
-      const c=ctrl[i];
-      const ny = baseY - c.t*L;
-      const nx = baseX;
-
-      // allowed radius increases upwards (bonsai freedom)
-      // allowed radius: much higher so you can make real bonsai bends
-      // keep bottom more constrained, but not stiff
-      const allow = (18 + L*0.26) * (0.65 + c.t*0.95);
-      const ox = c.ox * allow;
-      const oy = c.oy * allow * 0.82;
-
-      pts.push({x:nx+ox, y:ny+oy});
-    }
-
-    // to sample catmull, we need extra endpoints
-    const pExt=[pts[0], ...pts, pts[pts.length-1]];
-    const out=[];
-    const segments=40;
-    for(let i=0;i<=segments;i++){
-      const u=i/segments;
-      // find which span
-      const span = u*(pts.length-1);
-      const j = Math.floor(span);
-      const t = span - j;
-
-      const i0 = clamp(j,0,pts.length-1);
-      const i1 = clamp(j+1,0,pts.length-1);
-
-      // catmull indices in extended array (+1)
-      const P0=pExt[i0];
-      const P1=pExt[i0+1];
-      const P2=pExt[i1+1];
-      const P3=pExt[i1+2];
-
-      out.push(catmullRom(P0,P1,P2,P3,t));
-    }
-    return {poly: out, ctrlPts: pts}; // ctrlPts include base + handles
-  }
-
-  function buildBranchCurve(base, tip, arc, seed){
-    const dx=tip.x-base.x, dy=tip.y-base.y;
-    const len=Math.sqrt(dx*dx+dy*dy)||1;
-    const nx=-dy/len, ny=dx/len;
-
-    // organic curvature + slight seeded asymmetry
-    const rng=mulberry32((seed^0xA5A5A5A5)>>>0);
-    const arcJ = clamp(arc + (rng()-0.5)*0.25, -1, 1);
-    const a = arcJ * len * 0.22;
-
-    // small tangent/normal jitter that scales with length (keeps short shoots tidy)
-    const jN = (rng()-0.5) * Math.min(10, len*0.06);
-    const jT = (rng()-0.5) * Math.min(8,  len*0.05);
-
-    const lift = Math.min(10, len*0.08); // subtle upward "growth" bias
-
-    const c1={x: base.x + dx*0.34 + nx*(a + jN*0.8) + (dx/len)*jT,
-              y: base.y + dy*0.34 + ny*(a + jN*0.8) - lift*0.6 + (dy/len)*jT};
-    const c2={x: base.x + dx*0.72 + nx*(a*0.65 + jN*0.6),
-              y: base.y + dy*0.72 + ny*(a*0.65 + jN*0.6) - lift};
-
-    const pts=[];
-    const segs=12; // performance
-    for(let i=0;i<=segs;i++){
-      const t=i/segs;
-      const u=1-t;
-      const tt=t*t, uu=u*u;
-      const uuu=uu*u, ttt=tt*t;
-      pts.push({
-        x: uuu*base.x + 3*uu*t*c1.x + 3*u*tt*c2.x + ttt*tip.x,
-        y: uuu*base.y + 3*uu*t*c1.y + 3*u*tt*c2.y + ttt*tip.y
-      });
-    }
-    return pts;
-  }
-
-
-  function nearestPointOnPolyline(px,py, poly){
-    let best=null, bestD2=1e18, bestIdx=0, bestT=0;
-    for(let i=0;i<poly.length-1;i++){
-      const a=poly[i], b=poly[i+1];
-      const p=projOnSeg(px,py,a.x,a.y,b.x,b.y);
-      if(p.d2<bestD2){
-        bestD2=p.d2; best=p; bestIdx=i; bestT=p.t;
-      }
-    }
-    return {p:best, i:bestIdx, t:bestT, d2:bestD2};
-  }
-
-  // hover preview for prune
-  const hover = { on:false, type:null, id:null, x:0,y:0, ang:0, frac:0 };
-
-  function drawTree(w,h,geom,T){
-    hit.segs.length=0;
-    hit.trunkHandles.length=0;
-
-    const sp=spById(T.speciesId);
-    const hp01=T.hp/100;
-    const crown01=T.crown/100;
-    const shape01=T.shape/100;
-
-    const baseX=w*0.5;
-    const baseY=geom.soilY + 34;
-    T._baseX = baseX; T._baseY = baseY;
-
-    // trunk thickness grows with time + crown, does NOT shrink on prune
-    const trunkR = clamp(T.trunk.baseRadius + (T.trunk.len-180)*0.03 + crown01*8 - (1-hp01)*2, 10, 52);
-    const bark=barkPalette(T);
-    const pal=leafPalette(T);
-
-    // build trunk polyline
-    const trunk = buildTrunkPoints(T, baseX, baseY);
-
-// starter crown leaves on trunk tip
-if(T.trunkLeafPads && T.trunkLeafPads.length){
-  // approximate thickness from trunk
-  const baseS = 1.0;
-  const thick = 10;
-  for(const P of T.trunkLeafPads){
-    const p = pointOnPoly(trunk.poly, P.t);
-    const n = normalOnPoly(trunk.poly, P.t);
-    const off = (0.6 + thick*0.18) * P.side;
-    const x = p.x + n.x*off;
-    const y = p.y + n.y*off;
-    const rot = Math.atan2(trunk.poly[Math.min(trunk.poly.length-1, Math.floor(P.t*(trunk.poly.length-1)))].y - trunk.poly[Math.max(0, Math.floor(P.t*(trunk.poly.length-1))-1)].y,
-                           trunk.poly[Math.min(trunk.poly.length-1, Math.floor(P.t*(trunk.poly.length-1)))].x - trunk.poly[Math.max(0, Math.floor(P.t*(trunk.poly.length-1))-1)].x) + P.rot;
-    // small crown: 1-2 leaves
-    const dynLeaves = 2;
-    for(let k=0;k<dynLeaves;k++){
-      const ks = (k-0.5) * 1.6;
-      const xx = x + n.x*ks*0.6;
-      const yy = y + n.y*ks*0.6;
-      const w0 = 8;
-      const h0 = 5.5;
-      const colA = mix(pal.a, pal.b, (P.tint||0.5)*0.55);
-      const colB = mix(pal.b, pal.a, 0.25 + (P.tint||0.5)*0.25);
-      drawLeafShape("oval", xx, yy, rot + (k-0.5)*0.25, w0, h0, colA, colB, 0.85, P.seed^k);
-    }
-  }
-}
-
-    const trunkPoly = trunk.poly;
-
-    // trunk draw
-    drawTaperedPolyline(trunkPoly, trunkR, bark.a, bark.b, (T.seed^0x111), false);
-
-    // trunk hit segments
-    let cum=0;
-    for(let i=0;i<trunkPoly.length-1;i++){
-      const a=trunkPoly[i], b=trunkPoly[i+1];
-      const segLen=dist(a.x,a.y,b.x,b.y);
-      hit.segs.push({id:"trunk", type:"trunk", ax:a.x,ay:a.y,bx:b.x,by:b.y,cum0:cum,segLen,totalLen:0});
-      cum += segLen;
-    }
-    for(let i=hit.segs.length-(trunkPoly.length-1); i<hit.segs.length; i++){
-      hit.segs[i].totalLen = Math.max(1e-6,cum);
-    }
-
-    // trunk handles (20% points) — only in bend mode
-    if(toolMode==="bend"){
-      // ctrlPts: [base, 0.2,0.4,0.6,0.8,1.0]
-      for(let i=1;i<trunk.ctrlPts.length;i++){
-        const p=trunk.ctrlPts[i];
-        const t = trunk.ctrlPts[i] ? (i===1?0.2:i===2?0.4:i===3?0.6:i===4?0.8:1.0) : 1.0;
-        hit.trunkHandles.push({i:i-1, t, x:p.x, y:p.y, r:12});
-      }
-
-
-// draw handles (all cyan)
-for(const hnd of hit.trunkHandles){
-  const active = drag && drag.kind==="trunkCtrl" && drag.idx===hnd.i;
-  g.save();
-  g.globalAlpha = active ? 1.0 : 0.92;
-  g.fillStyle   = active ? "rgba(118,228,255,0.28)" : "rgba(118,228,255,0.18)";
-  g.strokeStyle = active ? "rgba(118,228,255,0.95)" : "rgba(118,228,255,0.70)";
-  g.lineWidth   = active ? 2.8 : 2.0;
-
-  g.beginPath(); g.arc(hnd.x,hnd.y,hnd.r,0,Math.PI*2); g.fill();
-  g.beginPath(); g.arc(hnd.x,hnd.y,hnd.r+1,0,Math.PI*2); g.stroke();
-
-  // center dot
-  g.globalAlpha = active ? 1.0 : 0.85;
-  g.fillStyle="rgba(118,228,255,0.95)";
-  g.beginPath(); g.arc(hnd.x,hnd.y,2.2,0,Math.PI*2); g.fill();
-  g.restore();
-}
-
-    }
-
-    // canopy influence area (soft constraint)
-    const top=trunkPoly[trunkPoly.length-1];
-    const canopyCX=top.x;
-    const canopyCY=top.y + Math.max(0, T.trunk.len*0.10);
-    const rx=(70 + crown01*220) * (0.95 + shape01*0.30);
-    const ry=(56 + crown01*160) * (0.92 + shape01*0.25);
-
-    // branches
-    const map=new Map(T.branches.map(b=>[b.id,b]));
-    const alive=T.branches.filter(b=>b.alive);
-
-    function parentPoint(branch){
-      if(branch.parentId==="trunk"){
-        const tt = clamp(branch.attachT, 0.06, 0.96);
-        const idx = Math.floor(tt*(trunkPoly.length-1));
-        return trunkPoly[idx];
-      }else{
-        const pb=map.get(branch.parentId);
-        if(pb && pb.alive && pb.points && pb.points.length){
-          const tt = clamp(branch.attachT, 0.06, 0.96);
-          const idx = Math.floor(tt*(pb.points.length-1));
-          return pb.points[idx];
-        }
-        // fallback
-        const idx=Math.floor(0.72*(trunkPoly.length-1));
-        return trunkPoly[idx];
-      }
-    }
-
-    // draw order: leaders first then others (nicer layering)
-    alive.sort((a,b)=>{
-      const la=a.isLeader?0:1, lb=b.isLeader?0:1;
-      if(la!==lb) return la-lb;
-      return (a.parentId==="trunk"?0:1) - (b.parentId==="trunk"?0:1);
-    });
-
-    // render branches + hits + leaves
-
-    for(const b of alive){
-
-      const base = parentPoint(b);
-
-      // branch length + thickness
-      const len = b.len;
-      const thick = clamp(b.radius, 1.2, trunkR*0.65);
-
-      // direction from angle + bend
-      const ang=b.angle;
-      const dir={x:Math.cos(ang), y:Math.sin(ang)};
-      const side={x:-dir.y, y:dir.x};
-
-      const lift = 0.35 + (shape01*0.35);
-      const upward = 0.55 + crown01*0.35;
-      const tip={
-        x: base.x + dir.x*len + side.x*(b.bend*len*0.22),
-        y: base.y + dir.y*len*lift - upward*(14 + crown01*22)
-      };
-
-      // soft clamp inside crown ellipse when large
-      if(T.crown>12){
-        const dx=tip.x-canopyCX, dy=tip.y-canopyCY;
-        const nx=dx/(rx*1.06), ny=dy/(ry*1.06);
-        const d=Math.sqrt(nx*nx+ny*ny);
-        if(d>1){
-          const s=1/d;
-          tip.x=canopyCX+dx*s;
-          tip.y=canopyCY+dy*s;
-        }
-      }
-
-      const pts=buildBranchCurve(base, tip, b.arc, b.seed^0xB00);
-      b.points=pts;
-
-      const isSelected = bendSel.selected.has(b.id);
-      drawTaperedPolyline(pts, thick, bark.a, bark.b, (b.seed^0x222), isSelected, false);
-
-      // branch hit segs (for prune + bend selection)
-      let bcum=0;
-      const baseIndex=hit.segs.length;
-      for(let i=0;i<pts.length-1;i++){
-        const a=pts[i], c=pts[i+1];
-        const segLen=dist(a.x,a.y,c.x,c.y);
-        hit.segs.push({id:b.id, type:"branch", ax:a.x,ay:a.y,bx:c.x,by:c.y,cum0:bcum,segLen,totalLen:0});
-        bcum += segLen;
-      }
-      for(let i=baseIndex;i<hit.segs.length;i++){
-        hit.segs[i].totalLen = Math.max(1e-6, bcum);
-      }
-
-      // leaves
-      const alpha=(0.50 + smoothstep(crown01)*0.35) * (0.55 + hp01*0.45);
-      const deciduous=pal.deciduous;
-      const sea=seasonObj(T).id;
-      const noLeaves = (sea==="winter" && deciduous);
-
-      if(!noLeaves){
-        // for needle/scale: draw compact pads near tips
-        const tipP=pts[pts.length-1];
-        if(pal.kind==="needle"){
-          drawNeedles(tipP.x, tipP.y, ang*0.35, 18 + crown01*30, pal.a, pal.b, alpha*0.90, b.seed^0x7A7);
-        }else if(pal.kind==="scale"){
-          // small oval clusters
-          for(let k=0;k<3;k++){
-            const t = clamp(0.55 + k*0.05,0.55,0.95);
-            const idx=Math.floor(t*(pts.length-1));
-            const p=pts[idx];
-            const w0=2.8 + crown01*2.2;
-            const h0=1.7 + crown01*1.4;
-            drawLeafShape("broadFine", p.x+(k%2?4:-4), p.y+(k%3?-2:2), (k-4)*0.25, w0,h0, pal.a,pal.b, alpha*0.65, b.seed+k);
-          }
-        }else{
-  // broad leaves as 2 small groups per branch (performance)
-  for(const P of (b.leafPads||[])){
-    const idx = Math.min(pts.length-2, Math.floor(clamp01(P.t)*(pts.length-1)));
-    const p0 = pts[idx];
-    const p1 = pts[idx+1];
-
-    let tx = p1.x-p0.x, ty = p1.y-p0.y;
-    if(Math.abs(tx)+Math.abs(ty) < 0.001){
-      tx = Math.cos(ang);
-      ty = Math.sin(ang);
-    }
-    const tdir = norm(tx,ty);
-    const n = {x:-tdir.y, y:tdir.x};
-
-    const gg = (P.g==null)?1:clamp(P.g,0,1);
-    const aL = alpha * (0.18 + 0.82*gg);
-
-    // group center offset away from branch
-    const off = (10 + thick*0.40 + crown01*6.0) * P.side;
-    const cx = p0.x + n.x*off;
-    const cy = p0.y + n.y*off;
-
-    const cA=mix(pal.a,pal.b, (P.tint||0.5)*0.55);
-    const cB=mix(pal.b,pal.a, (P.tint||0.5)*0.35);
-
-    // group scale (clamped)
-    const baseS = (0.70 + crown01*0.90) * (0.70 + thick*0.04);
-    const w0 = Math.min(14 + crown01*18, 8.0*baseS);
-    const h0 = Math.min(9  + crown01*13, 5.2*baseS);
-
-    const dynLeaves = clamp(1 + Math.floor((b.len-LEAF_MIN_LEN)/LEAF_LEN_STEP), 1, LEAF_MAX_PER_BRANCH);
-      for(let k=0;k<dynLeaves;k++){
-      const ks = (k-1) * (w0*0.55 + 2.0);
-      const jn = (k===1?0:(k===0?-1:1)) * (h0*0.10);
-      const px = cx + tdir.x*ks + n.x*jn;
-      const py = cy + tdir.y*ks + n.y*jn;
-      const rr = Math.atan2(ty,tx) + (P.rot||0) + (k-1)*0.16;
-
-      drawLeafShape(pal.kind==="palmate" ? "palmate" : "broad",
-        px,py,rr, w0*(0.25+0.75*gg), h0*(0.25+0.75*gg), cA,cB, aL, (P.seed||b.seed)+k);
-    }
-  }
-}
-      }
-    }
-
-    // prune hover preview
-    if(toolMode==="prune" && hover.on){
-      g.save();
-      g.globalAlpha=0.75;
-      g.strokeStyle="rgba(246,199,90,0.85)";
-      g.lineWidth=3;
-      g.beginPath();
-      g.moveTo(hover.x - Math.cos(hover.ang+Math.PI/2)*14, hover.y - Math.sin(hover.ang+Math.PI/2)*14);
-      g.lineTo(hover.x + Math.cos(hover.ang+Math.PI/2)*14, hover.y + Math.sin(hover.ang+Math.PI/2)*14);
-      g.stroke();
-      g.restore();
-    }
-  }
-
-  // ------------------------------------------------------------
-  // Animations: watering can + scissors at cut
-  // ------------------------------------------------------------
-  const anim={
-    water:{on:false,t:0},
-    scissor:{on:false,t:0, x:0, y:0, ang:0}
-  };
-
-  function drawWaterCan(w,h,geom){
-    if(!anim.water.on) return;
-    anim.water.t += 1/60;
-    const tt=anim.water.t;
-    const prog=clamp01(tt/0.9);
-
-    const canX=w*0.18 + (1-prog)*40;
-    const canY=h*0.46 + Math.sin(prog*Math.PI)*6;
-
-    g.save();
-    g.globalAlpha=0.90*(1-Math.max(0,(tt-0.9)/0.2));
-
-    roundRectPath(g,canX,canY,60,40,10);
-    g.fillStyle="rgba(16,28,42,0.86)";
-    g.fill();
-    g.strokeStyle="rgba(118,228,255,0.35)";
-    g.lineWidth=2; g.stroke();
-
-    g.strokeStyle="rgba(118,228,255,0.60)";
-    g.lineWidth=3;
-    g.beginPath(); g.arc(canX+15,canY+20,12,-0.8,1.1); g.stroke();
-
-    g.strokeStyle="rgba(200,220,245,0.55)";
-    g.lineWidth=4;
-    g.beginPath(); g.moveTo(canX+54,canY+16); g.lineTo(canX+88,canY+10); g.stroke();
-
-    const tx=w*0.5, ty=geom.cavY + geom.cavH*0.52;
-    const sx=canX+88, sy=canY+10;
-    g.fillStyle="rgba(118,228,255,0.65)";
-    for(let i=0;i<30;i++){
-      const u=i/29;
-      const d=clamp01((prog-u)*1.35);
-      if(d<=0) continue;
-      const x=lerp(sx,tx,u) + Math.sin((u+prog)*8)*4*(1-u);
-      const y=lerp(sy,ty,u) + u*u*30;
-      const r=1.1 + (1-u)*1.3;
-      g.globalAlpha=0.70*d;
-      g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill();
-    }
-    g.restore();
-    if(tt>1.1){ anim.water.on=false; anim.water.t=0; }
-  }
-
-  function drawScissors(){
-    if(!anim.scissor.on) return;
-    anim.scissor.t += 1/60;
-    const tt=anim.scissor.t;
-    const prog=clamp01(tt/0.55);
-    const fade = 0.85*(1-Math.max(0,(tt-0.55)/0.2));
-
-    g.save();
-    g.globalAlpha=fade;
-    g.translate(anim.scissor.x, anim.scissor.y);
-    g.rotate(anim.scissor.ang);
-
-    g.strokeStyle="rgba(245,245,255,0.72)";
-    g.lineWidth=4; g.lineCap="round";
-    const a = -0.7 + prog*1.0;
-    g.beginPath(); g.moveTo(0,0); g.lineTo(Math.cos(a)*34, Math.sin(a)*34); g.stroke();
-    g.beginPath(); g.moveTo(0,0); g.lineTo(Math.cos(-a)*34, Math.sin(-a)*34); g.stroke();
-
-    g.fillStyle="rgba(202,166,255,0.25)";
-    g.beginPath(); g.arc(0,0,9,0,Math.PI*2); g.fill();
-    g.restore();
-
-    if(tt>0.8){ anim.scissor.on=false; anim.scissor.t=0; }
-  }
-
-  // ------------------------------------------------------------
-  // Render scene
-  // ------------------------------------------------------------
-  function renderScene(noUI=false){
-    const T=activeTree();
-    beginFrame();
-
-    drawSky(viewW,viewH,T);
-    drawMountains(viewW,viewH,T);
-    drawBalcony(viewW,viewH);
-    drawBirds(viewW,viewH,T);
-
-    withCamera(g, ()=>{
-      const geom=drawPotAndSoil(viewW,viewH,T);
-      drawTree(viewW,viewH,geom,T);
-      if(!noUI) drawWaterCan(viewW,viewH,geom);
-    });
-
-    if(!noUI) drawScissors();
-  }
-  window.renderScene = renderScene;
-
-  // ------------------------------------------------------------
-  // Simulation (ONLY active tree advances)
-  // ------------------------------------------------------------
-  function dayAdvance(T){
-    T.meta.day += 1;
-
-    // daily coin reward (rewarding loop)
-    const score=(T.hp*0.40 + T.shape*0.38 + T.crown*0.22);
-    T.meta.coins += Math.max(7, Math.round(score/9));
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 1);
-
-    T.meta.lastDailyDay = T.meta.day;
-    T.meta.daily = genDaily(T.meta.day);
-    resetDayActions(T);
-  }
-
-  function killSubtree(T, rootId){
-    const map=new Map(T.branches.map(b=>[b.id,b]));
-    const stack=[rootId];
-    while(stack.length){
-      const id=stack.pop();
-      const b=map.get(id);
-      if(!b || !b.alive) continue;
-      b.alive=false;
-      for(const cid of b.children||[]) stack.push(cid);
-    }
-  }
-
-  
-// ------------------------------------------------------------
-// Anti-overlap branch spawning (prevents stacked branches on bend)
-// ------------------------------------------------------------
-const BRANCH_SLOTS = 12;          // discrete attach bins along parent
-const MIN_BASE_DIST = 24;         // px in tree-space
-const MIN_ANGLE_DIFF = 0.45;      // rad (~26°)
-const MAX_BRANCHES_TOTAL = 90;    // perf cap
-
-function slotKey(parentId, attachT){
-  const s = clamp(Math.floor(clamp(attachT,0,0.999)*BRANCH_SLOTS), 0, BRANCH_SLOTS-1);
-  return parentId + ":" + s;
-}
-
-function getTrunkPolyForSpawn(T){
-  const baseX = (T._baseX!=null)?T._baseX:0;
-  const baseY = (T._baseY!=null)?T._baseY:0;
-  return buildTrunkPoints(T, baseX, baseY).poly;
-}
-
-function attachPoint(T, parentId, attachT, trunkPoly){
-  if(parentId==="trunk"){
-    const idx = Math.floor(clamp(attachT,0.02,0.98)*(trunkPoly.length-1));
-    return trunkPoly[idx];
-  }
-  const pb = T.branches.find(x=>x && x.id===parentId);
-  if(pb && pb.points && pb.points.poly && pb.points.poly.length){
-    const poly = pb.points.poly;
-    const idx = Math.floor(clamp(attachT,0.02,0.98)*(poly.length-1));
-    return poly[idx];
-  }
-  // fallback to trunk
-  const idx = Math.floor(0.72*(trunkPoly.length-1));
-  return trunkPoly[idx];
-}
-
-function angleDiff(a,b){
-  let d = a-b;
-  while(d> Math.PI) d-=Math.PI*2;
-  while(d<-Math.PI) d+=Math.PI*2;
-  return Math.abs(d);
-}
-
-function safeAddBranch(T, b){
-  if(!b || !b.alive) return false;
-  if(T.branches.length >= MAX_BRANCHES_TOTAL) return false;
-
-  if(!T._slotTaken) T._slotTaken = Object.create(null);
-
-  const key = slotKey(b.parentId, b.attachT);
-  if(T._slotTaken[key]) return false;
-
-  // compute attach point in current tree-space (uses cached parent points if available)
-  const trunkPoly = getTrunkPolyForSpawn(T);
-  const p = attachPoint(T, b.parentId, b.attachT, trunkPoly);
-
-  // spatial minimum distance vs existing bases
-  for(const ob of T.branches){
-    if(!ob || !ob.alive) continue;
-    if(!ob.basePos) continue;
-    const d = dist(p.x,p.y, ob.basePos.x, ob.basePos.y);
-    if(d < MIN_BASE_DIST) return false;
-  }
-
-  // angle/side uniqueness inside same slot
-  const s = key;
-  for(const ob of T.branches){
-    if(!ob || !ob.alive) continue;
-    if(ob._slotKey !== s) continue;
-    if(ob.side === b.side && angleDiff(ob.angle, b.angle) < MIN_ANGLE_DIFF) return false;
-  }
-
-  b._slotKey = key;
-  b.basePos = {x:p.x, y:p.y};
-  T._slotTaken[key] = true;
-  safeAddBranch(T, b);
-  return true;
-}
-
-function addLeadersAfterTrunkCut(T, cutT){
-    const sp=spById(T.speciesId);
-    const rng=mulberry32(((T.seed^0xCAFE) ^ (Math.floor(cutT*1000)*977))>>>0);
-    const n=2;
-
-    for(let i=0;i<n;i++){
-      const side = (i===0) ? -1 : 1;
-      const ang = clamp(side*(0.55 + rng()*0.55) - 1.15, -2.2, 2.2);
-      const maxLen = clamp(90 + T.trunk.len*0.35 + rng()*70, 40, 360);
-      const rad   = clamp(6 + T.trunk.baseRadius*0.25 + rng()*2, 3, 18);
-      const b=defaultBranch(T.seed^((Math.random()*1e9)|0), "trunk", clamp(cutT,0.12,0.92), ang, maxLen, rad, true, true);
-      b.arc = clamp((rng()-0.5)*0.65, -1, 1);
-      b.bend= clamp((rng()-0.5)*0.35, -1, 1);
-      b.len = Math.max(12, maxLen*0.10);
-      safeAddBranch(T, b);
-    }
-    normalizeTree(T,0);
-  }
-
-  function pruneLeavesOnBranch(b, cutFrac, keepRatio=0.10){
-  if(!b) return;
-
-  // leaf groups: remove pads above cut, then keep at most 2
-  if(b.leafPads && b.leafPads.length){
-    b.leafPads = b.leafPads.filter(P=> (P && (P.t==null || P.t<=cutFrac)));
-    // keep only the earliest pads (spread)
-    b.leafPads.sort((a,c)=>(a.t||0)-(c.t||0));
-    const keep = Math.min(LEAF_PADS, Math.max(0, Math.round(LEAF_PADS*keepRatio)));
-    if(b.leafPads.length > keep) b.leafPads = b.leafPads.slice(0, keep);
-    // reset growth so it regrows
-    for(const P of b.leafPads){ P.g = Math.min(P.g||0, 0.35); }
-  }else{
-    b.leafPads=[];
-  }
-
-  b.leafAcc=0;
-  b.leafBudgetMul=0.10;
-  // legacy leaves off
-  if(b.leaves) b.leaves.length=0;
-}
-
-function pruneTrunkAt(T, cutFrac){
-    // cutFrac: 0..1 along trunk length (arc-length fraction)
-    cutFrac=clamp(cutFrac, 0.12, 0.98);
-
-    // trunk genuinely shortens ONLY here
-    T.trunk.len = clamp(T.trunk.len * cutFrac, 120, 520);
-
-    // reset trunk ctrl offsets above new top (keep handles but damp)
-    for(const c of T.trunk.ctrl){
-      if(c.t > cutFrac){
-        c.ox *= 0.15;
-        c.oy *= 0.15;
-      }
-    }
-
-    // kill any trunk-attached branches above cut + their subtrees
-    for(const b of T.branches){
-      if(!b.alive) continue;
-      if(b.parentId==="trunk" && b.attachT > cutFrac){
-        killSubtree(T, b.id);
-      }
-    }
-
-    // trunk cut reward and shape change
-    T.crown = clamp(T.crown - pruneCrownLoss(T)*1.15, 0, 100);
-    T.shape = clamp(T.shape + pruneShapeGain(T)*1.35, 0, 100);
-    T.hp    = clamp(T.hp - 1.5, 0, 100);
-
-    // spawn 2 new leader shoots at cut
-    addLeadersAfterTrunkCut(T, cutFrac);
-
-    // coins feel good
-    T.meta.coins += 4;
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 1);
-
-// after trunk cut, reduce leaf load hard for performance
-for(const b of T.branches){
-  if(!b.alive) continue;
-  pruneLeavesOnBranch(b, 1.0, 0.10);
-}
-  }
-
-function scheduleRegrowBranch(b, delaySec){
-  b.alive=false;
-  b.regrow={t: Math.max(0.5, delaySec||10.0)};
-}
-
-  function pruneBranchAt(T, branchId, cutFrac){
-    const b=T.branches.find(x=>x.id===branchId);
-    if(!b || !b.alive) return false;
-
-    cutFrac=clamp(cutFrac, 0.10, 0.98);
-
-    const before=b.len;
-    const newLen = clamp(before * cutFrac, 12, b.maxLen);
-    if(newLen >= before-0.5) return false;
-
-    b.maxLen = Math.min(b.maxLen, newLen);
-    b.len = Math.min(b.len, newLen);
-
-    // remove leaves above cut
-    b.leaves = b.leaves.filter(L => L.t <= cutFrac + 0.02);
-
-    // IMPORTANT: everything above cut is removed (children attached beyond cut)
-    // kill children where attachT > cutFrac (and their subtrees)
-    for(const cid of b.children||[]){
-      const ch=T.branches.find(x=>x.id===cid);
-      if(ch && ch.alive && ch.attachT > cutFrac){
-        killSubtree(T, ch.id);
-      }
-    }
-
-    // bonsai response: 1-2 new shoots at cut point
-    const rng=mulberry32((b.seed ^ (Math.floor(cutFrac*1000)*333) ^ (T.seed*17))>>>0);
-    const n = (rng()<0.55)?1:2;
-    for(let i=0;i<n;i++){
-      const side=(i===0)?-1:1;
-      const ang = clamp(b.angle + side*(0.55 + rng()*0.55), -2.2, 2.2);
-          const maxLen = clamp(42 + T.crown*1.4 + rng()*80, 24, 240);
-    const rad = clamp(2.8 + T.crown*0.03 + rng()*0.8, 2.0, 7.0);
-      const nb=defaultBranch(T.seed^((Math.random()*1e9)|0), b.id, clamp(cutFrac,0.12,0.92), ang, maxLen, rad, false, false);
-      nb.arc = clamp((rng()-0.5)*0.75, -1, 1);
-      nb.bend= clamp((rng()-0.5)*0.25, -1, 1);
-      nb.len = Math.max(12, maxLen*0.18);
-      scheduleRegrowBranch(nb, 10 + rng()*8);
-      safeAddBranch(T, nb);
-    }
-
-    // stats (does NOT shrink trunk)
-    const removed = clamp((before-newLen)/Math.max(1,before), 0, 1);
-    T.crown = clamp(T.crown - pruneCrownLoss(T)*(0.55+removed*0.95), 0, 100);
-    T.shape = clamp(T.shape + pruneShapeGain(T)*(0.40+removed*0.75), 0, 100);
-    T.hp    = clamp(T.hp - 1.0*removed, 0, 100);
-
-    T.meta.coins += 2;
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 1);
-
-    normalizeTree(T,0);
-    return true;
-  }
-
-  function ensureOrganicStructure(T){
-    ensureStarterCrown(T);
-    // prevent immediate respawn after pruning
-    if(T.meta && T.meta.lastPruneTs && (Date.now()-T.meta.lastPruneTs)<9000) return;
-
-    // organic growth: add branches slowly, left/right via golden angle (phyllotaxis-ish)
-    const crown=T.crown;
-    const alive=T.branches.filter(b=>b.alive);
-    const desired = clamp(2 + Math.floor(crown/6), 2, 26);
-    if(alive.length >= desired) return;
-
-    const rng=mulberry32((T.seed ^ (T.meta.day*9917) ^ (alive.length*31337))>>>0);
-    const sp=spById(T.speciesId);
-
-    // choose parent: leaders & trunk get more weight
-    function pickParent(){
-      const candidates=alive.slice();
-      const weights=candidates.map(b=>{
-        const leader=b.isLeader?1.55:1.0;
-        const trunkChild=(b.parentId==="trunk")?1.25:1.0;
-        return leader*trunkChild*(0.6 + (b.len/b.maxLen)*0.8 + (b.radius/10)*0.4 + (b.age/300)*0.2);
-      });
-      const sum=weights.reduce((a,b)=>a+b,0)||1;
-      let r=rng()*sum;
-      for(let i=0;i<candidates.length;i++){
-        r-=weights[i];
-        if(r<=0) return candidates[i];
-      }
-      return candidates[candidates.length-1] || null;
-    }
-
-    // golden angle progression
-    const golden = Math.PI*(3 - Math.sqrt(5)); // ~2.399...
-    T.phyllo.a = (T.phyllo.a + golden*(0.7 + rng()*0.6)) % (Math.PI*2);
-    const side = Math.sin(T.phyllo.a) < 0 ? -1 : 1;
-
-    const parent = (crown<18 || rng()<0.35) ? null : pickParent(); // sometimes trunk
-    const parentId = parent ? parent.id : "trunk";
-    const attachT = parent ? clamp(0.30 + rng()*0.60, 0.10, 0.92) : clamp(0.25 + rng()*0.65, 0.12, 0.92);
-
-    // base angle: alternate left/right, with variation
-    const ang = clamp(side*(0.55 + rng()*0.95) - 1.10 + (rng()-0.5)*0.25, -2.2, 2.2);
-
-    const maxLen = clamp(55 + crown*2.4 + rng()*120, 30, 420);
-    const rad = clamp(3.5 + crown*0.06 + rng()*1.6, 2.0, 20);
-    const b=defaultBranch(T.seed^((Math.random()*1e9)|0), parentId, attachT, ang, maxLen, rad, false, false);
-    b.arc = clamp((rng()-0.5)*0.65, -1, 1);
-    b.bend= clamp((rng()-0.5)*0.35, -1, 1);
-
-    // start tiny with 1 leaf vibe
-    b.len = Math.max(12, maxLen*0.10);
-
-    scheduleRegrowBranch(b, 12 + rng()*10);
-    safeAddBranch(T, b);
-    normalizeTree(T,0);
-  }
-
-  function trackSpawnCounts(T){
-  if(!T) return;
-  if(!T.stats){
-    T.stats = {
-      branchesSpawned: 0,
-      leafPadsSpawned: 0,
-      leavesSpawnedApprox: 0,
-      branchesAlive: 0,
-      leafPadsNow: 0,
-      leavesNowApprox: 0
-    };
-  }
-  // seen-sets (stats only). These may deserialize as plain objects; fix defensively.
-  if(!(T._seenBranchIds && typeof T._seenBranchIds.has==="function" && typeof T._seenBranchIds.add==="function")) T._seenBranchIds = new Set();
-  if(!(T._seenLeafPadKeys && typeof T._seenLeafPadKeys.has==="function" && typeof T._seenLeafPadKeys.add==="function")) T._seenLeafPadKeys = new Set();
-  if(!(T._seenTrunkPadKeys && typeof T._seenTrunkPadKeys.has==="function" && typeof T._seenTrunkPadKeys.add==="function")) T._seenTrunkPadKeys = new Set();
-
-  let branchesAlive = 0;
-  // assign missing ids once (rare, but avoids NaN/undefined spam)
-  if(T._nextBranchId==null){
-    let mx=1;
-    for(const bb of (T.branches||[])) if(bb && typeof bb.id==="number" && bb.id>=mx) mx=bb.id+1;
-    T._nextBranchId=mx;
-  }
-  for(const b of (T.branches||[])){
-    if(!b) continue;
-    if(b.id==null){ b.id = T._nextBranchId++; }
-    const bid=b.id;
-    if(!T._seenBranchIds.has(bid)){
-      T._seenBranchIds.add(bid);
-      T.stats.branchesSpawned += 1;
-    }
-    if(b.alive) branchesAlive += 1;
-  }
-
-  let padsNow = 0;
-
-  // starter crown (trunk tip pads)
-  if(T.trunkLeafPads){
-    for(const P of T.trunkLeafPads){
-      if(!P) continue;
-      padsNow += 1;
-      const k = "trunk|" + ((P.seed>>>0)) + "|" + Math.round((P.t||0)*1000);
-      if(!T._seenTrunkPadKeys.has(k)){
-        T._seenTrunkPadKeys.add(k);
-        T.stats.leafPadsSpawned += 1;
-      }
-    }
-  }
-
-  for(const b of (T.branches||[])){
-    const pads = b && b.leafPads;
-    if(!pads) continue;
-    for(const P of pads){
-      if(!P) continue;
-      padsNow += 1;
-      const k = (b.id!=null?b.id:"?") + "|" + ((P.seed>>>0)) + "|" + Math.round((P.t||0)*1000);
-      if(!T._seenLeafPadKeys.has(k)){
-        T._seenLeafPadKeys.add(k);
-        T.stats.leafPadsSpawned += 1;
-      }
-    }
-  }
-
-  T.stats.branchesAlive = branchesAlive;
-  T.stats.leafPadsNow = padsNow;
-
-  const perPad = (typeof PAD_LEAF_COUNT==="number" ? PAD_LEAF_COUNT : 1);
-  T.stats.leavesNowApprox = padsNow * perPad;
-  T.stats.leavesSpawnedApprox = T.stats.leafPadsSpawned * perPad;
-}
-
-function tickTree(T, dt){
-    // approximate total leaf count for throttling
-    let leafApprox=0;
-    for(const b of T.branches){ leafApprox += (b.leafPads?b.leafPads.length:0); if(leafApprox>400) break; }
-    T.leafCountApprox=leafApprox;
-    const sp=spById(T.speciesId);
-    const sea=seasonObj(T);
-    const so=soil(T);
-
-    // water drain
-    const waterDrain=(0.42 * sp.thirst * sea.thirstMul * SIM.thirstMul) * dt;
-    T.water=clamp(T.water - waterDrain, 0, 100);
-
-    const {min,max}=idealRange(T);
-    let hpDelta=0;
-    if(T.water<min) hpDelta -= (0.85 + (min-T.water)*0.028) * dt;
-    if(T.water>max) hpDelta -= (0.32 + (T.water-max)*0.012) * dt;
-    hpDelta += (sea.recover + so.recover) * dt * 10 * SIM.recoverMul;
-    T.hp=clamp(T.hp + hpDelta, 0, 100);
-    lastHpDelta=hpDelta;
-
-    // crown growth
-    const hpMul=0.35 + (T.hp/100)*0.95;
-    const waterMul=0.35 + (T.water/100)*0.85;
-    const grow=(0.55 * sp.growth * sea.growMul * hpMul * waterMul * SIM.growthMul) * dt;
-
-    if(T.hp>12) T.crown=clamp(T.crown + grow, 0, 100);
-    else T.crown=clamp(T.crown - 0.18*dt, 0, 100);
-
-    // shape drift
-    const decay=(0.016 + (T.crown/100)*0.018) * dt;
-    T.shape=clamp(T.shape - decay, 0, 100);
-
-    // trunk grows persistently (does NOT shrink on branch prune)
-    // growth affected by crown + health; slow but steady
-    const trunkGrow = (0.9 + sp.growth*0.55) * (0.35 + (T.crown/100)*0.85) * (0.40 + (T.hp/100)*0.70);
-    T.trunk.len = clamp(T.trunk.len + dt*trunkGrow*0.65, 120, 520);
-    T.trunk.baseRadius = clamp(T.trunk.baseRadius + dt*(0.018 + (T.trunk.len/520)*0.025), 10, 52);
-
-// regrow timers (delayed shoots after pruning)
-for(const b of T.branches){
-  if(b.alive) continue;
-  if(!b.regrow) continue;
-  b.regrow.t -= dt;
-  if(b.regrow.t <= 0){
-    b.alive=true;
-    b.regrow=null;
-    b.age = Math.max(b.age, 0);
-  }
-}
-
-    // “alive” look: slight environmental drift (very subtle, not wobbly)
-    // only if NOT currently dragging bend tool
-    if(!drag){
-      for(const c of T.trunk.ctrl){
-        const n = (noise2(c.t*7.1, (T.env.timeOfDay*10), T.seed^0x515)-0.5);
-        c.ox = clamp(c.ox + n*dt*0.010, -1, 1);
-        c.oy = clamp(c.oy + n*dt*0.008, -1, 1);
-        // stabilize a bit
-        c.ox = lerp(c.ox, clamp(c.ox, -1, 1), 0.02);
-        c.oy = lerp(c.oy, clamp(c.oy, -1, 1), 0.02);
-      }
-    }
-
-    // branch growth
-    for(const b of T.branches){
-      if(!b.alive) continue;
-      ensureLeaves(T, b, dt);
-      // recover leaf budget slowly after pruning
-      if(b.leafBudgetMul==null) b.leafBudgetMul=1;
-      b.leafBudgetMul = Math.min(1, b.leafBudgetMul + dt*0.018);
-      b.age += dt;
-      const vigor = b.vigor * (0.6 + hpMul*0.4);
-
-      // maxLen grows slowly with crown
-      // growth: slow, organic length increase
-// maxLen is the species potential; it creeps up slowly with age/health
-b.maxLen = clamp(b.maxLen + dt*(0.015 + (T.crown/100)*0.05)*vigor, 20, 520);
-
-// target length rises with age (prevents instant long straight branches)
-const targetLen = clamp(14 + b.age*(0.030 + (T.crown/100)*0.050)*vigor, 10, b.maxLen);
-
-// len eases toward target
-b.len = clamp(b.len + (targetLen - b.len)* (1.0 - Math.exp(-dt*0.22)), 10, b.maxLen);
-
-
-      // thickness
-      b.radius = clamp(b.radius + dt*(0.008 + (T.crown/100)*0.022)*vigor, 1, 36);
-
-      // arc relax a little (prevents crazy bends)
-      b.arc = lerp(b.arc, clamp(b.arc, -1, 1), 0.03);
-      b.bend = lerp(b.bend, clamp(b.bend, -1, 1), 0.03);
-    }
-
-    // env
-    T.env.timeOfDay = (T.env.timeOfDay + dt/(24*60)) % 1; // ~24 real minutes cycle
-    T.env.cloudT += dt*0.02;
-
-    // unlocks + structure
-    checkSpeciesUnlocks(T);
-    ensureOrganicStructure(T);
-    trackSpawnCounts(T);
-
-    // day advance
-    T.meta.dayFrac += dt / SIM.daySeconds;
-    if(T.meta.dayFrac>=1){
-      T.meta.dayFrac -= 1;
-      dayAdvance(T);
-    }
-  }
-
-  function advanceActive(dtSim){
-    const T=activeTree();
-    ensureDaily(T);
-    const steps = Math.ceil(dtSim * SIM.tickHz);
-    const dt = dtSim / Math.max(1, steps);
-    for(let i=0;i<steps;i++) tickTree(T, dt);
-  }
-
-  function offlineCatchup(){
-    const T=activeTree();
-    const now=Date.now();
-    const elapsedReal=clamp((now - (T.meta.lastActiveTs||now))/1000, 0, SIM.maxOfflineSeconds);
-    const elapsedSim=elapsedReal * SIM.timeScale;
-    if(elapsedSim>0.25){
-      advanceActive(elapsedSim);
-    }
-    T.meta.lastActiveTs=now;
-    ensureDaily(T);
-  }
-
-  // ------------------------------------------------------------
-  // Actions
-  // ------------------------------------------------------------
-  function rewardSmall(T){
-    // small but rewarding
-    T.meta.coins += 1;
-    if(Math.random()<0.25) T.meta.coins += 1;
-    checkSpeciesUnlocks(T);
-  }
-
-  function actWater(){
-    const T=activeTree();
-    T.water=clamp(T.water + waterAmount(T), 0, 100);
-    incAction(T,"water");
-    rewardSmall(T);
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 1);
-    anim.water.on=true; anim.water.t=0;
-    saveNow();
-    markDirty("hud"); markDirty("play"); markDirty("quests"); markDirty("collection");
-  }
-
-  function findNearestSegment(wx,wy){
-    let best=null, bestD2=1e18;
-    for(const s of hit.segs){
-      const p=projOnSeg(wx,wy, s.ax,s.ay,s.bx,s.by);
-      if(p.d2<bestD2){ bestD2=p.d2; best={seg:s,proj:p}; }
-    }
-    // snappy thresholds:
-    const thresh = (best && best.seg.type==="trunk") ? 22*22 : 18*18;
-    if(!best || bestD2>thresh) return null;
-    return best;
-  }
-
-  function updateHoverPrune(wx,wy,sx,sy){
-    const bs=findNearestSegment(wx,wy);
-    if(!bs){
-      hover.on=false;
-      return;
-    }
-    const frac = clamp((bs.seg.cum0 + bs.proj.t*bs.seg.segLen) / Math.max(1e-6, bs.seg.totalLen), 0.02, 0.98);
-    hover.on=true;
-    hover.type=bs.seg.type;
-    hover.id=bs.seg.id;
-    hover.frac=frac;
-    hover.x=bs.proj.x;
-    hover.y=bs.proj.y;
-    hover.ang=Math.atan2(bs.seg.by-bs.seg.ay, bs.seg.bx-bs.seg.ax);
-    // scissors anim position will use screen space later
-  }
-
-  function actPruneAt(worldX,worldY, screenX,screenY){
-    const T=activeTree();
-    const bs=findNearestSegment(worldX,worldY);
-    if(!bs) return;
-
-    const frac = clamp((bs.seg.cum0 + bs.proj.t*bs.seg.segLen) / Math.max(1e-6, bs.seg.totalLen), 0.02, 0.98);
-
-    // scissors animation EXACT at cut point (screen space)
-    anim.scissor.on=true;
-    anim.scissor.t=0;
-    anim.scissor.x=screenX;
-    anim.scissor.y=screenY;
-    anim.scissor.ang = Math.atan2(bs.seg.by-bs.seg.ay, bs.seg.bx-bs.seg.ax);
-
-    if(bs.seg.type==="trunk"){
-      pruneTrunkAt(T, frac);
-    }else{
-      pruneBranchAt(T, bs.seg.id, frac);
-    }
-    T.meta.lastPruneTs = Date.now();
-
-    incAction(T,"prune");
-    rewardSmall(T);
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 1);
-    saveNow();
-    markDirty("hud"); markDirty("play"); markDirty("quests"); markDirty("collection");
-  }
-
-  // Bending commit
-  function commitBendReward(T, strength=1){
-    const gain=bendShapeGain(T)*clamp(0.25 + strength*0.45, 0.25, 1.0);
-    T.shape=clamp(T.shape+gain,0,100);
-    T.hp=clamp(T.hp - bendStress(T)*strength*10, 0, 100);
-    incAction(T,"bend");
-    rewardSmall(T);
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 1);
-    saveNow();
-    markDirty("hud"); markDirty("play"); markDirty("quests");
-  }
-
-  // ------------------------------------------------------------
-  // Tool mode + input
-  // ------------------------------------------------------------
-  let toolMode="none"; // none|water|prune|bend
-  let isRunning=false;
-  let drag=null;
-  let pan=null;   // {id,sx,sy,panX,panY}
-  let pinch=null; // {idA,idB,startDist,startZoom,panX0,panY0,ax,ay,wx,wy}
-  const touchPts=new Map(); // pointerId -> {sx,sy}
-  let activePointerId=null;
-  let G_T=null;
-  function setTool(m){
-    toolMode=m;
-    $("waterBtn").classList.toggle("active", m==="water");
-    $("pruneBtn").classList.toggle("active", m==="prune");
-    $("bendBtn").classList.toggle("active",  m==="bend");
-    markDirty("hud"); markDirty("play");
-    if(m!=="bend") clearSelection();
-  }
-
-  // trunk handle pick
-  function pickTrunkHandle(wx,wy){
-    if(toolMode!=="bend") return null;
-    let best=null, bestD2=1e18;
-    for(const hnd of hit.trunkHandles){
-      const dx=wx-hnd.x, dy=wy-hnd.y;
-      const d2=dx*dx+dy*dy;
-      const rr=(hnd.r+10)*(hnd.r+10);
-      if(d2<rr && d2<bestD2){ bestD2=d2; best=hnd; }
-    }
-    return best;
-  }
-
-  // branch pick for bend (tap near segment)
-  function pickBranchBySegment(wx,wy){
-    const bs=findNearestSegment(wx,wy);
-    if(!bs) return null;
-    if(bs.seg.type!=="branch") return null;
-    return bs.seg.id;
-  }
-
-  // pointer events
-  cv.addEventListener("pointerdown",(e)=>{
-    if(!isRunning) return;
-    activePointerId=e.pointerId;
-    try{ cv.setPointerCapture(e.pointerId); }catch(_){ }
-    cv.setPointerCapture(e.pointerId);
-    const p=screenToWorld(e.clientX,e.clientY);
-    const T=activeTree();
-// camera pan (mouse: middle/right drag)
-if(e.pointerType==="mouse" && (e.button===1 || e.button===2)){
-  pan={ id:e.pointerId, sx:p.sx, sy:p.sy, panX:(T.cam.panX ?? 0), panY:(T.cam.panY ?? 0) };
-  drag=null;
-  e.preventDefault();
-  markDirty("play");
-  return;
-}
-
-// camera pinch (touch: 2-finger zoom + pan)
-if(e.pointerType!=="mouse"){
-  touchPts.set(e.pointerId,{sx:p.sx, sy:p.sy});
-  if(touchPts.size>=2){
-    const ids=[...touchPts.keys()];
-    const a=touchPts.get(ids[0]), b=touchPts.get(ids[1]);
-    const dx=b.sx-a.sx, dy=b.sy-a.sy;
-    const dist=Math.hypot(dx,dy);
-    const cx=(a.sx+b.sx)/2, cy=(a.sy+b.sy)/2;
-    const z0=(T.cam.zoom ?? 1);
-    const panX0=(T.cam.panX ?? 0), panY0=(T.cam.panY ?? 0);
-    const ax=cam.anchorX(), ay=cam.anchorY();
-    const wx=((cx-panX0)-ax)/z0 + ax;
-    const wy=((cy-panY0)-ay)/z0 + ay;
-    pinch={ idA:ids[0], idB:ids[1], startDist:Math.max(10,dist), startZoom:z0, panX0, panY0, ax, ay, wx, wy };
-    drag=null;
-    e.preventDefault();
-    markDirty("play");
-    return;
-  }
-}
-
-    if(toolMode==="bend"){
-      // 1) trunk handle drag
-      const h=pickTrunkHandle(p.x,p.y);
-      if(h){
-drag={
-  kind:"trunkCtrl",
-  idx:h.i,
-  t:h.t,
-  startX:p.x, startY:p.y,
-  // store starting offsets for this and all handles above, so upper points follow exactly
-  startCtrl: T.trunk.ctrl
-    .map((c,i)=> i>=h.i ? ({i, t:c.t, ox:c.ox, oy:c.oy}) : null)
-    .filter(Boolean)
+const $ = id => document.getElementById(id);
+const cv = $('cv');
+const ctx = cv.getContext('2d', {alpha: false});
+
+// 1. IMPROVED COLORS FOR LEAF STYLE (Dark Base, Light Detail)
+const SPECIES = {
+  ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0 },
+  pine:  { name: "Schwarzkiefer", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6 },
+  maple: { name: "Ahorn", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8 },
+  sakura:{ name: "Sakura", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9 },
+  willow:{ name: "Trauerweide", leaf: "long", color:["#365314","#bef264"], bark:["#424242","#212121"], growth: 1.3, weeping:true },
+  jade:  { name: "Geldbaum", leaf: "fat", color:["#14532d","#22c55e"], bark:["#795548","#5d4037"], growth: 0.7 },
+  blue:  { name: "Blue Mystique", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1 },
+  hemp:  { name: "Green Power", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5 },
 };
-        return;
-      }
 
-      // 2) branch selection (tap)
-      const bid=pickBranchBySegment(p.x,p.y);
-      if(bid){
-        if(!bendSel.bundle){
-          bendSel.selected.clear();
-          bendSel.selected.add(bid);
-        }else{
-          if(bendSel.selected.has(bid)) bendSel.selected.delete(bid);
-          else bendSel.selected.add(bid);
+const ITEMS = {
+  pot_basic: { type:'pot', name:"Plastiktopf", cost:0, bonus:1.0 },
+  pot_clay:  { type:'pot', name:"Terrakotta", cost:300, bonus:1.1 },
+  pot_zen:   { type:'pot', name:"Zen Schale", cost:900, bonus:1.25 },
+  soil_basic:{ type:'soil', name:"Blumenerde", cost:0, boost:1.0 },
+  soil_aka:  { type:'soil', name:"Akadama", cost:200, boost:1.3 },
+  soil_bio:  { type:'soil', name:"Bio-Boost", cost:500, boost:2.0 }
+};
+
+const SETTINGS = { secPerDay: 60, growMult: 1.0, timeWarp: 1.0, windSpeed: 1.0, maxLeaves: 30 };
+
+let STATE = {
+  money: 500,
+  trees: [],
+  activeIdx: 0,
+  inventory: { pots:['pot_basic'], soils:['soil_basic'] },
+  quests: []
+};
+
+// Tree Logic
+class Branch {
+  constructor(parent, x, y, angle, maxLen, thick, depth) {
+    this.parent = parent; this.depth = depth || 0;
+    this.x=x; this.y=y; this.endX=x; this.endY=y;
+    this.angle=angle; this.targetAngle=angle;
+    this.len=0.1; this.maxLen=maxLen; this.thick=thick;
+    this.children=[]; this.leaves=[];
+    this.cut=false; this.sprouted=false; this.grafted=false;
+    this.windPhase = Math.random()*10;
+  }
+  serialize() { return { 
+    x:this.x, y:this.y, a:this.angle, ta:this.targetAngle, l:this.len, ml:this.maxLen, 
+    th:this.thick, d:this.depth, cut:this.cut, spr:this.sprouted, gr:this.grafted,
+    c:this.children.map(c=>c.serialize()) 
+  };}
+  static deserialize(d, p) {
+    let b = new Branch(p, d.x, d.y, d.a, d.ml, d.th, d.d);
+    b.len=d.l; b.targetAngle=d.ta; b.cut=d.cut; b.sprouted=d.spr; b.grafted=d.gr;
+    if(d.c) b.children=d.c.map(cd=>Branch.deserialize(cd, b));
+    return b;
+  }
+}
+
+class Tree {
+  constructor(key, name) {
+    this.key=key; this.name=name; this.days=0; this.water=100; this.hp=100;
+    this.pot='pot_basic'; this.soil='soil_basic';
+    this.root = new Branch(null, 0, 0, -Math.PI/2, 110, 20, 0);
+  }
+}
+
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})) };
+let CAM = { x:0, y:0, zoom:1.0 };
+let MOUSE = { drag:false }, INPUT="none", HOVER=null;
+
+function init() {
+  resize(); 
+  window.addEventListener('resize', resize);
+  loadGame();
+  if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
+  generateQuests();
+  CAM.x = cv.width/2; CAM.y = cv.height*0.75;
+  
+  updateListUI();
+  updateRealtimeUI();
+  
+  lastT = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  const tree = STATE.trees[STATE.activeIdx];
+  if(!tree) return;
+  const spec = SPECIES[tree.key];
+  const soil = ITEMS[tree.soil] || ITEMS['soil_basic'];
+  
+  ENV.dayTime += (dt/SETTINGS.secPerDay)*SETTINGS.timeWarp;
+  if(ENV.dayTime>1) { ENV.dayTime-=1; tree.days++; updateListUI(); }
+  
+  if(tree.water>0) tree.water -= (5*soil.boost/SETTINGS.secPerDay)*dt;
+  const growth = (tree.water>0?1:0) * spec.growth * soil.boost * SETTINGS.growMult;
+
+  // Cloud Spawning
+  if(ENV.clouds.length<5 && Math.random()<0.01) ENV.clouds.push({x:-200, y:Math.random()*300, s:1+Math.random(), v:0.2+Math.random()*0.3});
+
+  // Tree Sim
+  function sim(b, rx, ry) {
+    if(!b.parent) { b.x=rx; b.y=ry; } else { b.x=b.parent.endX; b.y=b.parent.endY; }
+    b.angle += (b.targetAngle-b.angle)*3*dt;
+    
+    if(!b.cut && b.len<b.maxLen) {
+      b.len += 8*dt*growth;
+      if(b.len>15) b.thick += 0.1*dt*growth;
+      
+      // LEAF LOGIC: Only upper part (85%+)
+      const thresh = b.maxLen*0.85;
+      if(b.depth>0 && b.len>thresh) {
+         if(b.leaves.length < SETTINGS.maxLeaves && Math.random()<0.1) {
+            b.leaves.push({ f:0.85+Math.random()*0.15, r:Math.random()*6.28, s:0.1, ms:1+Math.random() });
+         }
+      }
+      
+      if(b.len>b.maxLen*0.6 && !b.sprouted && b.thick>3.0) {
+         if(Math.random()<0.03*growth) {
+            b.sprouted=true;
+            let cnt=(Math.random()>0.4)?2:1;
+            for(let i=0;i<cnt;i++) {
+               let dev = (Math.random()-0.5)*1.5;
+               if(spec.weeping) dev=Math.abs(dev)+1.2;
+               b.children.push(new Branch(b,0,0,b.angle+dev, b.maxLen*(0.6+Math.random()*0.3), b.thick*0.7, b.depth+1));
+            }
+         }
+      }
+    }
+    for(let l of b.leaves) if(l.s < l.ms) l.s += 2*dt;
+    
+    // Wind
+    const sway = Math.sin(Date.now()*0.002+b.windPhase)*SETTINGS.windSpeed * (0.05*b.len)/(Math.max(1,b.thick));
+    b.endX = b.x + Math.cos(b.angle+sway)*b.len;
+    b.endY = b.y + Math.sin(b.angle+sway)*b.len;
+    b.children.forEach(c=>sim(c,0,0));
+  }
+  sim(tree.root, 0, 0);
+}
+
+// ---------------- RENDER ----------------
+function draw() {
+  const w=cv.width, h=cv.height, t=ENV.dayTime;
+  
+  // Sky
+  const sky=[[10,15,30],[255,150,100],[135,206,250],[50,30,80]];
+  let si = Math.floor(t * 4) % 4, ni = (si + 1) % 4, f = (t * 4) % 1;
+  const mix=(a,b)=>Math.round(a+(b-a)*f);
+  const col=`rgb(${mix(sky[si][0],sky[ni][0])},${mix(sky[si][1],sky[ni][1])},${mix(sky[si][2],sky[ni][2])})`;
+  const grd=ctx.createLinearGradient(0,0,0,h);
+  grd.addColorStop(0,col); grd.addColorStop(1,"#ffffff");
+  ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
+
+  // Stars
+  if(t<0.25 || t>0.75) {
+     ctx.fillStyle="#fff";
+     ENV.stars.forEach(s=>{ 
+       ctx.globalAlpha=(t<0.25?1-t*4:(t-0.75)*4)*Math.random(); 
+       ctx.beginPath(); ctx.arc(s.x*w, s.y*h*0.6, s.s,0,6.28); ctx.fill();
+     });
+     ctx.globalAlpha=1;
+  }
+
+  // Sun/Moon
+  const cx=w/2, cy=h+400, r=h+250, ang=(t-0.5)*Math.PI;
+  ctx.shadowBlur=50; ctx.shadowColor="gold"; ctx.fillStyle="#fbbf24"; // Sun
+  ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r, cy+Math.cos(ang)*r, 50,0,6.28); ctx.fill();
+  ctx.shadowBlur=30; ctx.shadowColor="#fff"; ctx.fillStyle="#e2e8f0"; // Moon
+  ctx.beginPath(); ctx.arc(cx+Math.sin(ang+Math.PI)*r, cy+Math.cos(ang+Math.PI)*r, 40,0,6.28); ctx.fill();
+  ctx.shadowBlur=0;
+
+  // Clouds
+  ctx.fillStyle="rgba(255,255,255,0.4)";
+  ENV.clouds.forEach(c=>{
+     c.x+=c.v; if(c.x>w+200) c.x=-200;
+     drawPuff(c.x,c.y,c.s);
+  });
+
+  // Mountains
+  ctx.fillStyle="#0f172a";
+  ctx.beginPath(); ctx.moveTo(0,h);
+  for(let x=0;x<=w;x+=20) ctx.lineTo(x, h*0.6 - Math.abs(Math.sin(x*0.003)*100 + Math.cos(x*0.01)*30));
+  ctx.lineTo(w,h); ctx.fill();
+  ctx.fillStyle="#1e293b";
+  ctx.beginPath(); ctx.moveTo(0,h);
+  for(let x=0;x<=w;x+=30) ctx.lineTo(x, h*0.75 - Math.abs(Math.sin(x*0.005)*50 + Math.cos(x*0.02)*20));
+  ctx.lineTo(w,h); ctx.fill();
+
+  // World (Cam)
+  ctx.save();
+  ctx.translate(CAM.x, CAM.y);
+  ctx.scale(CAM.zoom, CAM.zoom);
+  drawWorld();
+  ctx.restore();
+}
+
+function drawPuff(x,y,s) {
+  ctx.beginPath();
+  ctx.arc(x,y,30*s,0,6.28); ctx.arc(x+25*s,y-10*s,35*s,0,6.28); ctx.arc(x+50*s,y+5*s,25*s,0,6.28);
+  ctx.fill();
+}
+
+// ---------------- THE NEW DRAW LOGIC ----------------
+function drawWorld() {
+  const t=STATE.trees[STATE.activeIdx];
+  if(!t) return;
+  const spec=SPECIES[t.key], potH=70;
+  
+  // Pot Back
+  ctx.fillStyle="#27272a"; ctx.beginPath(); ctx.ellipse(0,0,90,25,0,0,6.28); ctx.fill();
+  ctx.fillStyle="#3e2723"; ctx.beginPath(); ctx.ellipse(0,0,82,20,0,0,6.28); ctx.fill();
+
+  // Recursive Tree
+  ctx.lineCap="round";
+  function render(b) {
+    if(b.len<1) return;
+    
+    // Branch
+    ctx.lineWidth=b.thick; ctx.strokeStyle=spec.bark[0];
+    if(b===HOVER) ctx.strokeStyle = (INPUT==='prune'?'#f87171':INPUT==='graft'?'#60a5fa':INPUT==='bend'?'#facc15':'#fff');
+    ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.endX, b.endY); ctx.stroke();
+    
+    // Details
+    if(b.cut) { ctx.fillStyle="#aaa"; ctx.beginPath(); ctx.arc(b.endX,b.endY,b.thick*0.4,0,6.28); ctx.fill(); }
+    if(b.grafted) { ctx.fillStyle="#fffc"; ctx.beginPath(); ctx.arc(b.x,b.y,b.thick*0.6,0,6.28); ctx.fill(); }
+
+    // LEAVES - NEW STYLE
+    if(!b.cut && b.leaves.length) {
+       const sIdx = Math.floor(t.days/30)%4; 
+       let cols = spec.color;
+       if(sIdx===2 && spec.leaf!=='needle') cols = ["#b45309", "#d97706"]; // Fall
+       
+       for(let l of b.leaves) {
+          ctx.save();
+          const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
+          ctx.translate(px,py);
+          ctx.rotate(b.angle + l.r); 
+          
+          if(spec.leaf === 'needle') {
+             ctx.strokeStyle=cols[0];
+             for(let i=0;i<5;i++) { ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo((Math.random()-0.5)*l.s*3, -l.s*2); ctx.stroke(); }
+          } else {
+             // 1. Base Darker
+             ctx.fillStyle = cols[0];
+             ctx.beginPath();
+             ctx.ellipse(l.s, 0, l.s, l.s*(spec.leaf==='fat'?0.5:0.4), 0,0,6.28);
+             ctx.fill();
+             
+             // 2. Highlight/Vein Lighter
+             ctx.fillStyle = cols[1];
+             ctx.beginPath();
+             ctx.ellipse(l.s, 0, l.s*0.6, l.s*0.15, 0,0,6.28);
+             ctx.fill();
+          }
+          ctx.restore();
+       }
+    }
+    b.children.forEach(render);
+  }
+  render(t.root);
+
+  // Pot Front
+  const pg=ctx.createLinearGradient(0,0,0,potH);
+  pg.addColorStop(0,"#444"); pg.addColorStop(1,"#111");
+  if(t.pot==='pot_clay') { pg.addColorStop(0,"#8d6e63"); pg.addColorStop(1,"#3e2723"); }
+  else if(t.pot==='pot_zen') { pg.addColorStop(0,"#1e293b"); pg.addColorStop(1,"#020617"); }
+  ctx.fillStyle=pg;
+  ctx.beginPath(); ctx.moveTo(-90,0); 
+  ctx.quadraticCurveTo(-90,potH, -60,potH); ctx.lineTo(60,potH); 
+  ctx.quadraticCurveTo(90,potH, 90,0); ctx.fill();
+}
+
+let lastT=0;
+let lastUiT=0;
+function loop(now) {
+  if(!now) now = performance.now();
+  let dt = (now-lastT)/1000; 
+  if(dt>0.1) dt=0.1; 
+  lastT=now;
+  
+  update(dt); 
+  draw();
+  
+  if(now - lastUiT > 500) { 
+     updateRealtimeUI();
+     lastUiT = now;
+  }
+  
+  requestAnimationFrame(loop);
+}
+
+// ---------------- SYSTEM ----------------
+function generateQuests() {
+  STATE.quests = [];
+  const acts = ["water","prune","grow"];
+  for(let i=0;i<3;i++) {
+     let type=acts[Math.floor(Math.random()*acts.length)];
+     let n = Math.floor(Math.random()*5)+3;
+     STATE.quests.push({ txt:`Daily: ${type==='water'?'Gieße':'Nutze'} ${n}x`, reward: n*20, done:false });
+  }
+  for(let i=1;i<=5;i++) STATE.quests.push({txt:`Habe ${i} Bäume`, reward:i*200, done:false});
+  updateListUI();
+}
+
+window.buy = function(what, key, cost) {
+  if(STATE.money>=cost) {
+     STATE.money-=cost;
+     if(what==='tree') {
+       if(STATE.trees.length>=10) return notify("Platz voll!");
+       const t=new Tree(key, SPECIES[key].name);
+       STATE.trees.push(t); STATE.activeIdx=STATE.trees.length-1;
+     } else {
+       STATE.inventory[what+'s'].push(key);
+     }
+     notify("Gekauft!"); 
+     updateListUI();
+  } else notify("Zu teuer!");
+}
+
+function setTool(t) { 
+  INPUT = (INPUT===t ? 'none' : t); 
+  document.querySelectorAll('.btn-grid .btn').forEach(b=>b.classList.remove('active'));
+  if(INPUT!=='none') {
+    let el = $('tool'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(el) el.classList.add('active');
+  }
+  notify(INPUT === 'none' ? 'Werkzeug abgewählt' : INPUT);
+}
+
+function handleInput(mx, my, isClick) {
+  const world = { x: (mx-CAM.x)/CAM.zoom, y: (my-CAM.y)/CAM.zoom };
+  let best=null, dist=9999;
+  const t = STATE.trees[STATE.activeIdx];
+  if(!t) return;
+  
+  function walk(b) {
+     const cx=(b.x+b.endX)/2, cy=(b.y+b.endY)/2;
+     const d=(cx-world.x)**2+(cy-world.y)**2;
+     if(d < 400 * Math.max(1,b.thick) && d<dist) { dist=d; best=b; }
+     b.children.forEach(walk);
+  }
+  walk(t.root);
+  
+  if(isClick && best) {
+     if(INPUT==='water') { t.water=100; notify("Gegossen"); }
+     else if(INPUT==='prune') { best.cut=true; best.leaves=[]; best.children=[]; notify("Schnipp!"); }
+     else if(INPUT==='graft') { 
+        if(best.cut && !best.grafted) {
+           best.grafted=true; best.cut=false; 
+           best.children.push(new Branch(best,0,0, best.angle-0.5, 30, best.thick*0.8, best.depth+1));
+           best.children.push(new Branch(best,0,0, best.angle+0.5, 30, best.thick*0.8, best.depth+1));
+           notify("Veredelt");
+        } else notify("Geht hier nicht");
+     }
+     else if(INPUT==='bend') { best.targetAngle+=0.3; }
+  }
+  HOVER = best;
+}
+
+// EVENTS
+cv.onmousedown = e => { 
+  const rect = cv.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  if(INPUT==='none') MOUSE.drag=true; 
+  else handleInput(mx, my, true); 
+};
+cv.onmousemove = e => { 
+  const rect = cv.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  if(MOUSE.drag){ CAM.x+=e.movementX; CAM.y+=e.movementY; } 
+  else if(INPUT!=='none') { handleInput(mx, my, false); cv.style.cursor=HOVER?'crosshair':'default'; } 
+};
+window.onmouseup=()=>MOUSE.drag=false;
+cv.onwheel=e=>{ 
+  e.preventDefault(); 
+  CAM.zoom = Math.min(Math.max(0.5, CAM.zoom - e.deltaY*0.001), 4);
+};
+
+// UI DOM UPDATES
+function notify(m) { 
+  const t=$('toast'); t.innerText=m; t.style.opacity=1; 
+  setTimeout(()=>t.style.opacity=0,2000); 
+}
+
+function updateRealtimeUI() {
+  const t = STATE.trees[STATE.activeIdx];
+  if(!t) return;
+  
+  $('uiDay').innerText="Tag "+t.days;
+  
+  const seasons = ["Frühling", "Sommer", "Herbst", "Winter"];
+  const seasonColors = ["#4ade80", "#fbbf24", "#d97706", "#94a3b8"];
+  const sIdx = Math.floor(t.days/30)%4;
+  $('uiSeason').innerText = seasons[sIdx];
+  $('uiSeason').style.color = seasonColors[sIdx];
+  
+  let w = Math.max(0, Math.min(100, t.water));
+  $('barWater').style.width = w+"%";
+  $('uiWaterVal').innerText = Math.round(w)+"%";
+  
+  let hp = Math.max(0, Math.min(100, t.hp));
+  $('barHp').style.width = hp+"%";
+  $('uiHpVal').innerText = Math.round(hp)+"%";
+}
+
+window.updateListUI = function() {
+  // Collection
+  let h="";
+  STATE.trees.forEach((t,i)=>{
+     h += `<div class="list-item" onclick="STATE.activeIdx=${i};updateListUI()" style="border-color:${i===STATE.activeIdx?'var(--accent)':'transparent'}; background:${i===STATE.activeIdx?'rgba(255,255,255,0.08)':'rgba(255,255,255,0.03)'}">
+        <div style="background:${SPECIES[t.key].color[0]}; width:30px; height:30px; border-radius:50%"></div>
+        <div><b>${t.name}</b><br><small>${SPECIES[t.key].name}</small></div>
+     </div>`;
+  });
+  $('collectionList').innerHTML = h; 
+  if(STATE.trees[STATE.activeIdx]) {
+      $('uiTreeName').innerText = STATE.trees[STATE.activeIdx].name;
+      $('uiSpeciesName').innerText = SPECIES[STATE.trees[STATE.activeIdx].key].name;
+  }
+  
+  $('shopMoney').innerText = STATE.money;
+  
+  // Shop Töpfe
+  let potsHtml = "";
+  Object.keys(ITEMS).forEach(k => {
+     if(ITEMS[k].type !== 'pot') return;
+     let item = ITEMS[k];
+     let owned = STATE.inventory.pots.includes(k);
+     let isActive = STATE.trees[STATE.activeIdx] && STATE.trees[STATE.activeIdx].pot === k;
+     potsHtml += `<div class="list-item">
+        <div style="flex:1"><b>${item.name}</b><br><small style="color:var(--text-muted)">Wachstum: +${Math.round((item.bonus-1)*100)}%</small></div>
+        ${owned 
+           ? `<button class="btn ${isActive?'active':''}" style="padding:6px 10px; font-size:11px" onclick="STATE.trees[STATE.activeIdx].pot='${k}'; updateListUI()">Nutzen</button>` 
+           : `<button class="btn" style="padding:6px 10px; font-size:11px; background:var(--gold); color:#000" onclick="buy('pot', '${k}', ${item.cost})">${item.cost} 💰</button>`
         }
-        bendSel.lastPicked=bid;
-        markDirty("play");
+     </div>`;
+  });
+  $('shopPotsList').innerHTML = potsHtml;
 
-        // start drag to bend selected
-        drag={kind:"branchDrag", startWX:p.x, startWY:p.y, ids:[...bendSel.selected]};
-        return;
-      }
-
-      // if tapped empty: start drag to bend existing selection (if any)
-      if(bendSel.selected.size){
-        drag={kind:"branchDrag", startWX:p.x, startWY:p.y, ids:[...bendSel.selected]};
-      }
-      return;
-    }
-
-    if(toolMode==="prune"){
-      updateHoverPrune(p.x,p.y,p.sx,p.sy);
-      actPruneAt(p.x,p.y, p.sx,p.sy);
-      return;
-    }
-
-    if(toolMode==="water"){
-      if(hit.pot){
-        const A=hit.pot;
-        if(p.x>=A.x && p.x<=A.x+A.w && p.y>=A.y && p.y<=A.y+A.h){
-          actWater();
+  // Shop Erde
+  let soilsHtml = "";
+  Object.keys(ITEMS).forEach(k => {
+     if(ITEMS[k].type !== 'soil') return;
+     let item = ITEMS[k];
+     let owned = STATE.inventory.soils.includes(k);
+     let isActive = STATE.trees[STATE.activeIdx] && STATE.trees[STATE.activeIdx].soil === k;
+     soilsHtml += `<div class="list-item">
+        <div style="flex:1"><b>${item.name}</b><br><small style="color:var(--text-muted)">Speed: +${Math.round((item.boost-1)*100)}%</small></div>
+        ${owned 
+           ? `<button class="btn ${isActive?'active':''}" style="padding:6px 10px; font-size:11px" onclick="STATE.trees[STATE.activeIdx].soil='${k}'; updateListUI()">Nutzen</button>` 
+           : `<button class="btn" style="padding:6px 10px; font-size:11px; background:var(--gold); color:#000" onclick="buy('soil', '${k}', ${item.cost})">${item.cost} 💰</button>`
         }
-      }
-      return;
-    }
+     </div>`;
   });
+  $('shopSoilsList').innerHTML = soilsHtml;
 
-  cv.addEventListener("pointermove",(e)=>{
-    if(!isRunning) return;
-    const p=screenToWorld(e.clientX,e.clientY);
-    const T=activeTree();
-
-// camera pan drag (mouse)
-if(pan && e.pointerId===pan.id){
-  T.cam.panX = pan.panX + (p.sx - pan.sx);
-  T.cam.panY = pan.panY + (p.sy - pan.sy);
-  e.preventDefault();
-  markDirty("play");
-  return;
+  // Quests
+  let qHtml = "";
+  STATE.quests.forEach((q, i) => {
+     qHtml += `<div class="list-item">
+        <div style="flex:1; opacity:${q.done?0.5:1}"><b>${q.txt}</b></div>
+        ${q.done 
+           ? `<span class="tag">Fertig</span>` 
+           : `<button class="btn" style="padding:6px 10px; font-size:11px; background:var(--success); color:#000" onclick="claimQuest(${i})">${q.reward} 💰</button>`
+        }
+     </div>`;
+  });
+  $('questList').innerHTML = qHtml;
 }
 
-// camera pinch (touch)
-if(e.pointerType!=="mouse"){
-  if(touchPts.has(e.pointerId)) touchPts.set(e.pointerId,{sx:p.sx, sy:p.sy});
-  if(pinch && (e.pointerId===pinch.idA || e.pointerId===pinch.idB)){
-    const a=touchPts.get(pinch.idA), b=touchPts.get(pinch.idB);
-    if(a && b){
-      const dx=b.sx-a.sx, dy=b.sy-a.sy;
-      const dist=Math.hypot(dx,dy);
-      const cx=(a.sx+b.sx)/2, cy=(a.sy+b.sy)/2;
-      const z1=clamp(pinch.startZoom * (dist/pinch.startDist), CAM_Z_MIN, CAM_Z_MAX);
-      T.cam.zoom=z1;
-      T.cam.panX = cx - ((pinch.wx - pinch.ax)*z1 + pinch.ax);
-      T.cam.panY = cy - ((pinch.wy - pinch.ay)*z1 + pinch.ay);
-      e.preventDefault();
-      markDirty("play");
-      return;
-    }
+window.claimQuest = function(idx) {
+  if(!STATE.quests[idx].done) {
+     STATE.quests[idx].done = true;
+     STATE.money += STATE.quests[idx].reward;
+     notify(`+${STATE.quests[idx].reward} 💰`);
+     updateListUI();
   }
+};
+
+function saveGame() { localStorage.setItem("bonsai_v31", JSON.stringify({money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})) })); }
+function loadGame() {
+  try {
+    const d=JSON.parse(localStorage.getItem("bonsai_v31"));
+    if(d) {
+       STATE.money=d.money ?? 500; 
+       STATE.inventory=d.inv || STATE.inventory;
+       STATE.activeIdx=d.activeIdx || 0;
+       STATE.trees=d.trees.map(td=>{
+          let t=new Tree(td.key, td.name);
+          Object.assign(t, td); t.root = Branch.deserialize(td.root, null);
+          return t;
+       });
+    }
+  } catch(e) {}
 }
-    if(toolMode==="prune"){
-      updateHoverPrune(p.x,p.y,p.sx,p.sy);
-      return;
-    }
+window.hardReset = () => { localStorage.removeItem("bonsai_v31"); location.reload(); };
+setInterval(saveGame, 5000);
 
-    if(!drag) return;
-
-    if(drag.kind==="trunkCtrl"){
-  const L=T.trunk.len;
-  const dx=p.x - drag.startX;
-  const dy=p.y - drag.startY;
-
-  // apply the same world-space delta to this and all higher handles
-  for(const s of (drag.startCtrl||[])){
-    const c=T.trunk.ctrl[s.i];
-    if(!c) continue;
-    const r=trunkCtrlRadius(T, s.t);
-    const nx = clamp(s.ox + dx/Math.max(1,r), -1, 1);
-    const ny = clamp(s.oy + dy/Math.max(1,r), -1, 1);
-    c.ox = clamp(nx, -0.98, 0.98);
-    c.oy = clamp(ny, -0.98, 0.98);
+// BINDINGS
+document.querySelectorAll('.tab-btn').forEach(b=>{ 
+  if(!b.dataset.target) return;
+  b.onclick=()=>{ 
+    const t=$(b.dataset.target); 
+    document.querySelectorAll('.overlay-panel').forEach(p=>{if(p!==t)p.classList.remove('open')}); 
+    t.classList.toggle('open'); 
+    updateListUI(); 
   }
+});
 
-  markDirty("play");
-  return;
+['Water','Prune','Graft','Bend'].forEach(t=>$('tool'+t).onclick=()=>setTool(t.toLowerCase()));
+
+$('inpSecPerDay').oninput=e=>SETTINGS.secPerDay=parseFloat(e.target.value);
+$('inpGrowMult').oninput=e=>SETTINGS.growMult=parseFloat(e.target.value);
+$('inpLeafLimit').oninput=e=>SETTINGS.maxLeaves=parseInt(e.target.value);
+$('inpWind').oninput=e=>SETTINGS.windSpeed=parseFloat(e.target.value);
+
+$('btnBuyTree').onclick=()=>{
+   buy('tree', Object.keys(SPECIES)[Math.floor(Math.random()*Object.keys(SPECIES).length)], 100);
 }
+$('btnPhoto').onclick=()=>{
+   let a=document.createElement('a'); a.download="bonsai.png"; a.href=cv.toDataURL(); a.click();
+};
 
-    if(drag.kind==="branchDrag"){
-      if(!drag.ids || !drag.ids.length) return;
+function resize() { cv.width=$('viewport').clientWidth; cv.height=$('viewport').clientHeight; }
 
-      // bend by dragging: update angle + bend relative to parent base
-      // apply weights so bundles feel natural
-      const pointer={x:p.x,y:p.y};
+// SPIEL STARTEN
+init();
 
-      for(const id of drag.ids){
-        const b=T.branches.find(x=>x.id===id);
-        if(!b || !b.alive) continue;
-
-        // base estimation using cached points
-        const base = (b.points && b.points.length) ? b.points[0] : null;
-        if(!base) continue;
-
-        const vx=pointer.x-base.x, vy=pointer.y-base.y;
-        const ang=Math.atan2(vy,vx);
-        const f=norm(Math.cos(ang), Math.sin(ang));
-        const side=norm(-f.y, f.x);
-        const projSide = vx*side.x + vy*side.y;
-
-        // bundle weight: closer bases bend more
-        const d = Math.sqrt((pointer.x-base.x)**2 + (pointer.y-base.y)**2);
-        const w = clamp(1.0 - d/420, 0.20, 1.0);
-
-        b.angle = lerp(b.angle, clamp(ang, -2.35, 2.35), 0.18*w);
-        b.bend  = lerp(b.bend, clamp(projSide/220, -1.0, 1.0), 0.20*w);
-        b.arc   = lerp(b.arc,  clamp((projSide/260), -1.0, 1.0), 0.10*w);
-      }
-
-      markDirty("play");
-      return;
-    }
-  });
-
-    // camera: wheel zoom (mouse/trackpad) + disable context menu (right-drag pan)
-  cv.addEventListener("wheel",(e)=>{
-    if(!isRunning) return;
-    e.preventDefault();
-    const T=activeTree();
-    const p=screenToWorld(e.clientX,e.clientY);
-    const ax=cam.anchorX(), ay=cam.anchorY();
-    const z0=(T.cam.zoom ?? 1);
-    const factor=Math.exp(-e.deltaY*0.0012);
-    const z1=clamp(z0*factor, CAM_Z_MIN, CAM_Z_MAX);
-    if(z1===z0) return;
-    const panX=(T.cam.panX ?? 0), panY=(T.cam.panY ?? 0);
-    const k=(z1/z0);
-    T.cam.panX = p.sx - ax - (p.sx - panX - ax)*k;
-    T.cam.panY = p.sy - ay - (p.sy - panY - ay)*k;
-    T.cam.zoom=z1;
-    markDirty("play");
-  }, {passive:false});
-  cv.addEventListener("contextmenu",(e)=>e.preventDefault());
-
-cv.addEventListener("pointerup",(e)=>{
-    // camera cleanup
-    if(pan && e.pointerId===pan.id) pan=null;
-    if(touchPts.has(e.pointerId)) touchPts.delete(e.pointerId);
-    if(pinch && (e.pointerId===pinch.idA || e.pointerId===pinch.idB || touchPts.size<2)) pinch=null;
-
-    if(!isRunning){
-      drag=null;
-      activePointerId=null;
-      return;
-    }
-    if(drag){
-      const T=activeTree();
-      if(drag.kind==="trunkCtrl"){
-        commitBendReward(T, 0.55);
-      }else if(drag.kind==="branchDrag"){
-        commitBendReward(T, 0.75);
-      }
-    }
-    drag=null;
-    activePointerId=null;
-  });
-
-cv.addEventListener("pointercancel",(e)=>{
-  try{ if(activePointerId!=null) cv.releasePointerCapture(activePointerId); }catch(_){}
-  drag=null; pan=null; pinch=null; activePointerId=null;
-});
-
-cv.addEventListener("lostpointercapture",()=>{
-  drag=null; pan=null; pinch=null; activePointerId=null;
-});
-
-window.addEventListener("blur",()=>{
-  drag=null; pan=null; pinch=null; activePointerId=null;
-});
-
-
-  // keyboard shortcuts
-  window.addEventListener("keydown",(e)=>{
-    if(!isRunning) return;
-    if(e.key==="Escape"){ setTool("none"); drag=null; hover.on=false; }
-    if(e.key==="w"||e.key==="W") setTool(toolMode==="water"?"none":"water");
-    if(e.key==="p"||e.key==="P") setTool(toolMode==="prune"?"none":"prune");
-    if(e.key==="b"||e.key==="B") setTool(toolMode==="bend"?"none":"bend");
-  });
-
-  // ------------------------------------------------------------
-  // Photo (UI-free snapshot)
-  // ------------------------------------------------------------
-  const modalPhoto=$("modalPhoto");
-  function openPhotoPreview(src){
-    const T=activeTree();
-    $("photoPreviewImg").src=src;
-    const sp=spById(T.speciesId);
-    $("photoMetaText").textContent =
-      `Tag ${T.meta.day} • ${seasonName(T)} • ${T.name} • ${sp.name[settings.lang]||sp.name.de}\n` +
-      `Wasser ${fmt(T.water)} • HP ${fmt(T.hp)} • Form ${fmt(T.shape)} • Krone ${fmt(T.crown)}`;
-    $("photoDownload").onclick=()=>{
-      const a=document.createElement("a");
-      a.href=src;
-      a.download=`bonsai_${T.name.replaceAll(" ","_")}_day${T.meta.day}.png`;
-      document.body.appendChild(a); a.click(); a.remove();
-    };
-    modalPhoto.style.display="flex";
-  }
-  function closePhoto(){ modalPhoto.style.display="none"; }
-  $("closePhoto").addEventListener("click", closePhoto);
-  modalPhoto.addEventListener("click",(e)=>{ if(e.target===modalPhoto) closePhoto(); });
-
-  function takePhotoNoUI(){
-    const T=activeTree();
-    window.renderScene(true);
-    const url=cv.toDataURL("image/png");
-
-    T.photos.push(url);
-    if(T.photos.length>30) T.photos=T.photos.slice(-30);
-
-    T.meta.coins += 8;
-    T.meta.zen = Math.min(999, (T.meta.zen||0) + 2);
-    incAction(T,"photo");
-    saveNow();
-
-    openPhotoPreview(url);
-    markDirty("photos"); markDirty("hud"); markDirty("quests");
-  }
-
-  // ------------------------------------------------------------
-  // UI rendering: collection, shop, photos, quests
-  // ------------------------------------------------------------
-  function renderGallery(){
-    const T=activeTree();
-    const el=$("gallery");
-    el.innerHTML="";
-    const shots=T.photos.slice().reverse().slice(0,18);
-    for(const src of shots){
-      const d=document.createElement("div");
-      d.className="shot";
-      const img=document.createElement("img");
-      img.src=src;
-      d.appendChild(img);
-      d.onclick=()=>openPhotoPreview(src);
-      el.appendChild(d);
-    }
-  }
-
-  function renderCollection(){
-    const T=activeTree();
-    const grid=$("collectionGrid");
-    grid.innerHTML="";
-    for(const sp of SPECIES){
-      const owned=!!T.unlockedSpecies[sp.id];
-      const selected=(T.speciesId===sp.id);
-
-      const tile=document.createElement("div");
-      tile.className="tile";
-      const h=document.createElement("h3");
-      h.textContent = owned ? (sp.name[settings.lang]||sp.name.de) : "???";
-      tile.appendChild(h);
-
-      const sub=document.createElement("div");
-      sub.className="sub";
-      if(owned){
-        sub.textContent = `Wachstum ${sp.growth.toFixed(2)} · Wasser ${sp.thirst.toFixed(2)} · Toleranz ${sp.tolerance.toFixed(2)}`;
-      }else{
-        const u=sp.unlock;
-        sub.textContent = `Req: Krone ${u.crown} · Form ${u.shape} · HP ${u.hp}`;
-      }
-      tile.appendChild(sub);
-
-      const meta=document.createElement("div");
-      meta.className="meta";
-      const t1=document.createElement("div");
-      t1.className="tag "+(owned?"good":"bad");
-      t1.textContent = owned ? "Freigeschaltet" : "Gesperrt";
-      meta.appendChild(t1);
-
-      const t2=document.createElement("div");
-      t2.className="tag cyan";
-      t2.textContent = (selected && owned) ? "Ausgewählt" : "—";
-      meta.appendChild(t2);
-      tile.appendChild(meta);
-
-      if(owned){
-        const btn=document.createElement("button");
-        btn.className="btn small";
-        btn.textContent = selected ? "Ausgewählt" : "Auswählen";
-        btn.disabled = selected;
-        btn.onclick=()=>{
-          T.speciesId=sp.id;
-          lastFact.id="";
-          markDirty("hud"); markDirty("play"); markDirty("collection");
-          saveNow();
-        };
-        tile.appendChild(document.createElement("div")).style.height="8px";
-        tile.appendChild(btn);
-      }else{
-        const prog=document.createElement("div");
-        prog.className="mini";
-        prog.textContent = `Jetzt: Krone ${fmt(T.crown)} · Form ${fmt(T.shape)} · HP ${fmt(T.hp)}`;
-        tile.appendChild(prog);
-      }
-      grid.appendChild(tile);
-    }
-  }
-
-  function renderShop(){
-    const T=activeTree();
-    const pg=$("potsGrid"), sg=$("soilsGrid"), ug=$("upgGrid");
-    pg.innerHTML=""; sg.innerHTML=""; ug.innerHTML="";
-
-    for(const p of POTS){
-      const owned=!!T.ownedPots[p.id];
-      const equipped=(T.equipped.pot===p.id);
-
-      const tile=document.createElement("div");
-      tile.className="tile";
-      tile.innerHTML=`
-        <h3>${p.name[settings.lang]||p.name.de}</h3>
-        <div class="sub">${p.note[settings.lang]||p.note.de} · Coins: ${p.price}</div>
-        <div class="meta">
-          <div class="tag cyan">WaterCap ${p.waterCap>=0?"+":""}${p.waterCap}</div>
-          <div class="tag vio">Form ×${p.shapeMul.toFixed(2)}</div>
-        </div>
-      `;
-      const btn=document.createElement("button");
-      btn.className="btn small";
-      if(equipped){ btn.textContent="Ausgerüstet"; btn.disabled=true; }
-      else if(owned){ btn.textContent="Ausrüsten"; btn.onclick=()=>{ T.equipped.pot=p.id; markDirty("hud"); markDirty("play"); saveNow(); }; }
-      else{
-        btn.textContent=`Kaufen (${p.price})`;
-        btn.onclick=()=>{ if(T.meta.coins>=p.price){ T.meta.coins-=p.price; T.ownedPots[p.id]=true; markDirty("shop"); markDirty("hud"); markDirty("play"); saveNow(); } };
-      }
-      tile.appendChild(document.createElement("div")).style.height="8px";
-      tile.appendChild(btn);
-      pg.appendChild(tile);
-    }
-
-    for(const s of SOILS){
-      const owned=!!T.ownedSoils[s.id];
-      const equipped=(T.equipped.soil===s.id);
-
-      const tile=document.createElement("div");
-      tile.className="tile";
-      tile.innerHTML=`
-        <h3>${s.name[settings.lang]||s.name.de}</h3>
-        <div class="sub">${s.note[settings.lang]||s.note.de} · Coins: ${s.price}</div>
-        <div class="meta">
-          <div class="tag cyan">Drain ${s.drainage>=0?"+":""}${s.drainage}</div>
-          <div class="tag vio">Buffer ${s.buffer>=0?"+":""}${s.buffer}</div>
-          <div class="tag">Rec ${s.recover.toFixed(2)}</div>
-        </div>
-      `;
-      const btn=document.createElement("button");
-      btn.className="btn small";
-      if(equipped){ btn.textContent="Ausgerüstet"; btn.disabled=true; }
-      else if(owned){ btn.textContent="Ausrüsten"; btn.onclick=()=>{ T.equipped.soil=s.id; markDirty("hud"); markDirty("play"); saveNow(); }; }
-      else{
-        btn.textContent=`Kaufen (${s.price})`;
-        btn.onclick=()=>{ if(T.meta.coins>=s.price){ T.meta.coins-=s.price; T.ownedSoils[s.id]=true; markDirty("shop"); markDirty("hud"); markDirty("play"); saveNow(); } };
-      }
-      tile.appendChild(document.createElement("div")).style.height="8px";
-      tile.appendChild(btn);
-      sg.appendChild(tile);
-    }
-
-    const upgTiles=[
-      {key:"can", name:"Gießkanne", desc:`Mehr Wasser pro Gießen (+${waterAmount(T)}).`, lvl:T.upgrades.can},
-      {key:"shear", name:"Schere", desc:`Besseres Pruning (Form +${pruneShapeGain(T).toFixed(1)}).`, lvl:T.upgrades.shear},
-      {key:"wire", name:"Draht", desc:`Biegen bringt mehr Form (Haupttool).`, lvl:T.upgrades.wire},
-    ];
-    for(const u of upgTiles){
-      const cap=upgCap();
-      const atCap=u.lvl>=cap;
-      const nextCost=upgCost(u.key,u.lvl);
-
-      const tile=document.createElement("div");
-      tile.className="tile";
-      tile.innerHTML=`
-        <h3>${u.name}</h3>
-        <div class="sub">${u.desc}</div>
-        <div class="meta">
-          <div class="tag cyan">Lv ${u.lvl}/${cap}</div>
-          <div class="tag">${atCap ? "MAX" : ("Cost "+nextCost)}</div>
-        </div>
-      `;
-      const btn=document.createElement("button");
-      btn.className="btn small";
-      btn.textContent = atCap ? "Max" : `Upgrade (${nextCost})`;
-      btn.disabled = atCap || (T.meta.coins<nextCost);
-      btn.onclick=()=>{ buyUpgrade(T,u.key); markDirty("shop"); markDirty("hud"); markDirty("play"); saveNow(); };
-      tile.appendChild(document.createElement("div")).style.height="8px";
-      tile.appendChild(btn);
-      ug.appendChild(tile);
-    }
-  }
-
-  function tierTagClass(tier){
-    if(tier==="GOLD") return "tag good";
-    if(tier==="SILVER") return "tag cyan";
-    if(tier==="BRONZE") return "tag vio";
-    return "tag";
-  }
-
-  function renderQuests(){
-    const T=activeTree();
-    ensureDaily(T);
-
-    const dg=$("dailyGrid"), mg=$("milestoneGrid"), bg=$("badgeGrid");
-    dg.innerHTML=""; mg.innerHTML=""; bg.innerHTML="";
-
-    for(const task of T.meta.daily){
-      const prog=dailyProgress(T,task);
-      const done=dailyComplete(T,task);
-      const tile=document.createElement("div");
-      tile.className="tile";
-      const desc=task.desc[settings.lang]||task.desc.de;
-      tile.innerHTML=`
-        <h3>${desc}</h3>
-        <div class="sub">Reward: ${task.reward} Coins</div>
-        <div class="meta">
-          <div class="tag cyan">${prog}/${task.goal}</div>
-          <div class="tag ${done?"good":""}">${done?"FERTIG":"LÄUFT"}</div>
-          <div class="tag ${task.claimed?"good":""}">${task.claimed?"ABGEHOLT":"OFFEN"}</div>
-        </div>
-      `;
-      const btn=document.createElement("button");
-      btn.className="btn small";
-      btn.textContent = task.claimed ? "ABGEHOLT" : "Claim";
-      btn.disabled = task.claimed || !done;
-      btn.onclick=()=>{ claimDaily(T,task.id); markDirty("hud"); markDirty("quests"); saveNow(); };
-      tile.appendChild(document.createElement("div")).style.height="8px";
-      tile.appendChild(btn);
-      dg.appendChild(tile);
-    }
-
-    for(const m of milestoneDefs(T)){
-      const claimed=milestoneClaimed(T,m.id);
-      const tile=document.createElement("div");
-      tile.className="tile";
-      tile.innerHTML=`
-        <h3>${m.name}</h3>
-        <div class="sub">${m.desc} · Reward: ${m.reward} Coins</div>
-        <div class="meta">
-          <div class="tag ${m.done?"good":""}">${m.done?"FERTIG":"NOT YET"}</div>
-          <div class="tag ${claimed?"good":""}">${claimed?"ABGEHOLT":"OFFEN"}</div>
-        </div>
-      `;
-      const btn=document.createElement("button");
-      btn.className="btn small";
-      btn.textContent = claimed ? "ABGEHOLT" : "Claim";
-      btn.disabled = claimed || !m.done;
-      btn.onclick=()=>{ claimMilestone(T,m.id); markDirty("hud"); markDirty("quests"); saveNow(); };
-      tile.appendChild(document.createElement("div")).style.height="8px";
-      tile.appendChild(btn);
-      mg.appendChild(tile);
-    }
-
-    for(const b of badges(T)){
-      const tile=document.createElement("div");
-      tile.className="tile";
-      tile.innerHTML=`
-        <h3>${b.name}</h3>
-        <div class="sub">${b.desc}</div>
-        <div class="meta"><div class="${tierTagClass(b.tier)}">${b.tier}</div></div>
-      `;
-      bg.appendChild(tile);
-    }
-  }
-
-  // ------------------------------------------------------------
-  // HUD update
-  // ------------------------------------------------------------
-  function updateHud(){
-    const T=activeTree();
-
-    $("coins").textContent=fmt(T.meta.coins);
-    $("day").textContent=fmt(T.meta.day);
-    $("season").textContent=seasonName(T);
-    $("treeNameTop").textContent=T.name;
-
-    $("waterV").textContent=fmt(T.water);
-    $("hpV").textContent=fmt(T.hp);
-    $("canV").textContent=fmt(T.crown);
-    $("shapeV").textContent=fmt(T.shape);
-
-    bar($("waterB"),T.water);
-    bar($("hpB"),T.hp);
-    bar($("canB"),T.crown);
-    bar($("shapeB"),T.shape);
-
-    $("uCan").textContent=T.upgrades.can;
-    $("uShear").textContent=T.upgrades.shear;
-    $("uWire").textContent=T.upgrades.wire;
-
-    $("fact").textContent=pickFact(T);
-    $("diag").textContent=diagnosis(T);
-
-    updateIdealOverlay(T);
-
-    $("bundleState").textContent = bendSel.bundle ? "An" : "Aus";
-
-    // Zoom panel
-    $("rngZoom").value=T.cam.zoom;
-    $("valZoom").textContent=(T.cam.zoom*100).toFixed(0)+"%";
-  }
-
-  // ------------------------------------------------------------
-  // Zoom UI
-  // ------------------------------------------------------------
-  function toggleZoomPanel(){
-    const on=$("zoomPanel").style.display!=="none";
-    $("zoomPanel").style.display = on ? "none" : "block";
-  }
-  $("zoomBtn").addEventListener("click", toggleZoomPanel);
-  $("zoomClose").addEventListener("click", ()=>$("zoomPanel").style.display="none");
-  $("zoomReset").addEventListener("click", ()=>{
-    const T=activeTree();
-    T.cam.zoom=1.20;
-    markDirty("hud"); markDirty("play");
-    saveNow();
-  });
-  $("rngZoom").addEventListener("input", ()=>{
-    const T=activeTree();
-    T.cam.zoom=clamp(Number($("rngZoom").value), 0.55, 2.80);
-    markDirty("hud"); markDirty("play");
-    saveNow();
-  });
-
-  // ------------------------------------------------------------
-  // Buttons
-  // ------------------------------------------------------------
-  $("waterBtn").addEventListener("click", ()=>setTool(toolMode==="water"?"none":"water"));
-  $("pruneBtn").addEventListener("click", ()=>{ setTool(toolMode==="prune"?"none":"prune"); hover.on=false; });
-  $("bendBtn").addEventListener("click",  ()=>setTool(toolMode==="bend"?"none":"bend"));
-
-  $("bundleBtn").addEventListener("click", ()=>{
-    bendSel.bundle = !bendSel.bundle;
-    if(!bendSel.bundle){
-      // keep only last picked
-      if(bendSel.lastPicked){
-        bendSel.selected = new Set([bendSel.lastPicked]);
-      }else{
-        clearSelection();
-      }
-    }
-    markDirty("hud"); markDirty("play");
-  });
-
-  $("photoBtn").addEventListener("click", takePhotoNoUI);
-
-  $("newTree").addEventListener("click", ()=>{
-    const seed=(Math.random()*1e9)|0;
-    const t=defaultTree(seed);
-    t.name="Bonsai " + (SAVE.trees.length+1);
-    SAVE.trees.push(t);
-    SAVE.activeTreeId=SAVE.trees.length-1;
-    normalizeTree(t, SAVE.activeTreeId);
-
-    setTool("none");
-    drag=null; hover.on=false;
-    clearSelection();
-
-    rebuildTreeSelect();
-    saveNow();
-    markDirty("hud"); markDirty("play"); markDirty("collection"); markDirty("shop"); markDirty("photos"); markDirty("quests");
-  });
-
-  $("treeSel").addEventListener("change", ()=>{
-    const idx=Number($("treeSel").value);
-    if(!isFinite(idx)) return;
-
-    const current=activeTree();
-    current.meta.lastActiveTs=Date.now();
-
-    SAVE.activeTreeId=clamp(idx,0,SAVE.trees.length-1);
-    const T=activeTree();
-    T.meta.lastActiveTs=Date.now();
-    ensureDaily(T);
-
-    setTool("none");
-    drag=null; hover.on=false;
-    clearSelection();
-
-    rebuildTreeSelect();
-    saveNow();
-    markDirty("hud"); markDirty("play"); markDirty("collection"); markDirty("shop"); markDirty("photos"); markDirty("quests");
-  });
-
-  // ------------------------------------------------------------
-  // Settings modal
-  // ------------------------------------------------------------
-  const modalSettings=$("modalSettings");
-  function openSettings(){
-    $("langSel").value=settings.lang;
-    $("modeSel").value=settings.mode;
-    $("rngTimeScale").value=settings.test.timeScale;
-    $("rngGrowthMul").value=settings.test.growthMul;
-    $("rngThirstMul").value=settings.test.thirstMul;
-    $("rngRecoverMul").value=settings.test.recoverMul;
-    $("saveText").value="";
-    updateSettingsUI();
-    modalSettings.style.display="flex";
-  }
-  function closeSettings(){ modalSettings.style.display="none"; }
-  $("openSettings").addEventListener("click", openSettings);
-  $("closeSettings").addEventListener("click", closeSettings);
-  modalSettings.addEventListener("click",(e)=>{ if(e.target===modalSettings) closeSettings(); });
-
-  function updateSettingsUI(){
-    const mode=$("modeSel").value;
-    $("testOptions").style.display=(mode==="test")?"block":"none";
-
-    $("valTimeScale").textContent=Number($("rngTimeScale").value).toFixed(2)+"×";
-    $("valGrowthMul").textContent=Number($("rngGrowthMul").value).toFixed(2)+"×";
-    $("valThirstMul").textContent=Number($("rngThirstMul").value).toFixed(2)+"×";
-    $("valRecoverMul").textContent=Number($("rngRecoverMul").value).toFixed(2)+"×";
-
-    $("modeHelp").textContent =
-      mode==="real" ? "Real-Time: Tage+Saison folgen echter Zeit." :
-      mode==="test" ? "Test: Regler steuern Speed & Multiplikatoren." :
-                      "Normal: konstante Simulation.";
-  }
-  $("modeSel").addEventListener("change", updateSettingsUI);
-  $("langSel").addEventListener("change", updateSettingsUI);
-  ["rngTimeScale","rngGrowthMul","rngThirstMul","rngRecoverMul"].forEach(id=>$(id).addEventListener("input", updateSettingsUI));
-
-  $("applySettingsBtn").addEventListener("click", ()=>{
-    settings.lang=$("langSel").value;
-    settings.mode=$("modeSel").value;
-    settings.test.timeScale=Number($("rngTimeScale").value);
-    settings.test.growthMul=Number($("rngGrowthMul").value);
-    settings.test.thirstMul=Number($("rngThirstMul").value);
-    settings.test.recoverMul=Number($("rngRecoverMul").value);
-
-    saveSettings();
-    applyModeToSim();
-    closeSettings();
-    markDirty("hud"); markDirty("play"); markDirty("collection"); markDirty("shop"); markDirty("photos"); markDirty("quests");
-    saveNow();
-  });
-
-  function isValidSave(obj){
-    if(!obj || typeof obj!=="object") return false;
-    if(!Array.isArray(obj.trees)) return false;
-    return true;
-  }
-
-  $("doExport").addEventListener("click", ()=>{
-    $("saveText").value=JSON.stringify(SAVE);
-    $("saveText").select();
-  });
-  $("doImport").addEventListener("click", ()=>{
-    try{
-      const obj=JSON.parse(($("saveText").value||"").trim());
-      if(!isValidSave(obj)) return;
-      SAVE=obj;
-      if(!Array.isArray(SAVE.trees) || SAVE.trees.length===0) SAVE=defaultSave();
-      SAVE.activeTreeId=clamp(SAVE.activeTreeId||0,0,SAVE.trees.length-1);
-      SAVE.trees=SAVE.trees.map((t,idx)=>normalizeTree(t,idx));
-
-      rebuildTreeSelect();
-      saveNow();
-      $("saveText").value="";
-      closeSettings();
-      markDirty("hud"); markDirty("play"); markDirty("collection"); markDirty("shop"); markDirty("photos"); markDirty("quests");
-    }catch{}
-  });
-  $("doReset").addEventListener("click", ()=>{
-    localStorage.removeItem(SAVE_KEY);
-    SAVE=defaultSave();
-    rebuildTreeSelect();
-    saveNow();
-    $("saveText").value="";
-    closeSettings();
-    markDirty("hud"); markDirty("play"); markDirty("collection"); markDirty("shop"); markDirty("photos"); markDirty("quests");
-  });
-
-  // ------------------------------------------------------------
-  // Start menu
-  // ------------------------------------------------------------
-  function showMenu(){
-    console.log("showMenu()");
-    document.body.classList.add("menuOpen");
-    isRunning=false;
-    $("startMenu").style.display="flex";
-    const T=activeTree();
-    T.meta.lastActiveTs=Date.now();
-    saveNow();
-  }
-  function hideMenu(){
-    console.log("hideMenu()");
-    document.body.classList.remove("menuOpen");
-    $("startMenu").style.display="none";
-    isRunning=true;
-    offlineCatchup();
-    const T=activeTree();
-    T.meta.lastActiveTs=Date.now();
-    saveNow();
-  }
-
-    bindTap("menuPlay", ()=>{ hideMenu(); markDirty("hud"); markDirty("play"); });
-  bindTap("menuSettings", ()=>{ $("startMenu").style.display="none"; isRunning=false; openSettings(); });
-  bindTap("startMenu", ()=>{ hideMenu(); markDirty("hud"); markDirty("play"); });
-
-// ------------------------------------------------------------
-  // Mobile drawer collapse
-  // ------------------------------------------------------------
-  function syncDrawerMode(){
-    const isMobile=window.matchMedia("(max-width: 980px)").matches;
-    $("drawerHead").style.display = isMobile ? "flex" : "none";
-    if(isMobile){
-      $("drawerTitle").textContent = currentTab[0].toUpperCase()+currentTab.slice(1);
-    }else{
-      $("drawer").classList.remove("collapsed");
-      $("drawerToggle").textContent="▼";
-    }
-  }
-  window.addEventListener("resize", syncDrawerMode);
-
-  $("drawerToggle").addEventListener("click", ()=>{
-    const d=$("drawer");
-    d.classList.toggle("collapsed");
-    $("drawerToggle").textContent = d.classList.contains("collapsed") ? "▲" : "▼";
-  });
-
-  // ------------------------------------------------------------
-  // Visibility change: only active tree grows
-  // ------------------------------------------------------------
-  document.addEventListener("visibilitychange", ()=>{
-    const T=activeTree();
-    if(document.visibilityState==="hidden"){
-      T.meta.lastActiveTs=Date.now();
-      saveNow();
-    }else{
-      if(isRunning){
-        offlineCatchup();
-        markDirty("hud"); markDirty("play"); markDirty("quests"); markDirty("collection"); markDirty("shop"); markDirty("photos");
-      }
-    }
-  });
-
-  // ------------------------------------------------------------
-  // Main loop
-  // ------------------------------------------------------------
-  let accDraw=0;
-  let last=performance.now();
-  let hudAcc=0;
-
-  function frame(now){
-    const dtReal=Math.min(0.05, (now-last)/1000);
-    last=now;
-
-    if(isRunning){
-      const dtSim=dtReal * SIM.timeScale;
-      advanceActive(dtSim);
-    }
-
-    accDraw += dtReal;
-    while(accDraw >= 1/SIM.tickHz){
-      accDraw -= 1/SIM.tickHz;
-      window.renderScene(false);
-    }
-
-    hudAcc += dtReal;
-    if(hudAcc >= 1/SIM.hudHz){
-      hudAcc=0;
-
-      if(dirty.hud || dirty.play){
-        updateHud();
-        dirty.hud=false; dirty.play=false;
-      }
-      if(panels.quests.style.display==="block" && dirty.quests){ renderQuests(); dirty.quests=false; }
-      if(panels.collection.style.display==="block" && dirty.collection){ renderCollection(); dirty.collection=false; }
-      if(panels.shop.style.display==="block" && dirty.shop){ renderShop(); dirty.shop=false; }
-      if(panels.photos.style.display==="block" && dirty.photos){ renderGallery(); dirty.photos=false; }
-    }
-
-    requestAnimationFrame(frame);
-  }
-
-  // ------------------------------------------------------------
-  // Init
-  // ------------------------------------------------------------
-  function init(){
-    applyModeToSim();
-    updateCanvasSize();
-    ensureDaily(activeTree());
-    rebuildTreeSelect();
-    setTab("play");
-    syncDrawerMode();
-    updateSettingsUI();
-    showMenu();
-    dbgInitUI(); dbgState();
-    requestAnimationFrame(frame);
-  }
-
-// expose critical menu actions (iOS/embedded)
-window.hideMenu = hideMenu;
-window.showMenu = showMenu;
-window.openSettings = openSettings;
-
-
-  init();
 })();
 </script>
-
-<!-- DEBUG OVERLAY -->
-<div id="dbg" style="position:fixed;left:10px;bottom:10px;z-index:9999;max-width:min(520px,calc(100vw - 20px));
-  background:rgba(0,0,0,0.62);color:#eaf1fb;border:1px solid rgba(255,255,255,0.15);
-  border-radius:12px;padding:10px;backdrop-filter: blur(8px);font:12px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial;
-  display:none;">
-  <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
-    <div style="font-weight:700">DEBUG</div>
-    <div style="display:flex;gap:6px;align-items:center;">
-      <button id="dbgCopy" style="all:unset;cursor:pointer;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14)">Copy</button>
-      <button id="dbgHide" style="all:unset;cursor:pointer;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14)">Hide</button>
-    </div>
-  </div>
-  <div id="dbgState" style="margin-top:8px;color:#9fb2c7;white-space:pre-wrap"></div>
-  <div id="dbgLog" style="margin-top:8px;max-height:34vh;overflow:auto;white-space:pre-wrap"></div>
-</div>
-
 </body>
 </html>
