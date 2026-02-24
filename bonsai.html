@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="de">
 <head>
@@ -99,6 +98,9 @@
       -webkit-user-select:none;
       cursor: default; /* remove any “circle feel” */
     }
+    body.menuOpen canvas{pointer-events:none;}
+    .start{pointer-events:auto;}
+
     @media (max-width:980px){
       canvas{ height: min(56vh, 520px); }
     }
@@ -387,7 +389,7 @@
   </style>
 </head>
 
-<body>
+<body class="menuOpen">
 <div class="wrap">
   <header>
     <div class="brand">
@@ -675,8 +677,8 @@
         <p>Ein belohnendes Bonsai-Game: starte klein, biege ihn in Form, schneide präzise, halte ihn gesund, verdiene Coins mit Quests und baue ein Foto-Album. Jeder Baum hat sein eigenes Leben.</p>
       </div>
       <div class="actions">
-        <button class="btn" id="menuPlay">▶️ Spielen</button>
-        <button class="btn" id="menuSettings">⚙️ Einstellungen</button>
+        <button class="btn" id="menuPlay" onclick="window.hideMenu && window.hideMenu()">▶️ Spielen</button>
+        <button class="btn" id="menuSettings" onclick="window.openSettings && window.openSettings()">⚙️ Einstellungen</button>
       </div>
     </div>
     <div class="content">
@@ -706,6 +708,10 @@
 </div>
 
 <script>
+const LEAF_BINS = 12;
+const LEAF_BIN_MAX = 3;
+const LEAF_PADS = 1;      // leaf groups per branch (performance)
+const PAD_LEAF_COUNT = 2; // leaves drawn per group (performance)
 (() => {
   "use strict";
 
@@ -713,7 +719,115 @@
   // Helpers
   // ------------------------------------------------------------
   const $ = (id)=>document.getElementById(id);
-  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  
+
+
+// ---------------- DEBUG ----------------
+const DEBUG = true;
+const DBG = {
+  t0: performance.now(),
+  lines: [],
+  max: 160,
+  lastErr: null,
+  lastRej: null
+};
+
+function dbgShow(){ const el=$("dbg"); if(el) el.style.display="block"; }
+function dbgHide(){ const el=$("dbg"); if(el) el.style.display="none"; }
+
+function dbgLine(s){
+  const ts=((performance.now()-DBG.t0)/1000).toFixed(2);
+  const line=`[${ts}s] ${s}`;
+  DBG.lines.push(line);
+  if(DBG.lines.length>DBG.max) DBG.lines.shift();
+  const log=$("dbgLog");
+  if(log) log.textContent = DBG.lines.join("\n");
+}
+
+function dbgState(){
+  const sm=$("startMenu");
+  let leaf="?", tree="no";
+  try{
+    if(typeof activeTree==="function" && activeTree()){
+      tree="yes";
+      leaf=String(activeTree().leafCountApprox||0);
+    }
+  }catch(_){}
+  const st=[
+    `isRunning=${(typeof isRunning!=="undefined") ? isRunning : "?"}`,
+    `menuDisplay=${sm ? sm.style.display : "?"}`,
+    `menuClass=${document.body.classList.contains("menuOpen")}`,
+    `tree=${tree}`,
+    `leafApprox=${leaf}`,
+    `lastErr=${DBG.lastErr ? DBG.lastErr : "none"}`,
+    `lastRej=${DBG.lastRej ? DBG.lastRej : "none"}`
+  ].join("\n");
+  const el=$("dbgState");
+  if(el) el.textContent=st;
+}
+
+(function(){
+  const olog=console.log.bind(console);
+  const owarn=console.warn.bind(console);
+  const oerr=console.error.bind(console);
+  console.log=(...a)=>{ try{ dbgLine("LOG  "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; olog(...a); };
+  console.warn=(...a)=>{ try{ dbgLine("WARN "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; owarn(...a); };
+  console.error=(...a)=>{ try{ dbgLine("ERR  "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; oerr(...a); };
+})();
+
+window.addEventListener("error",(e)=>{
+  try{
+    DBG.lastErr = `${e.message} @ ${e.filename}:${e.lineno}:${e.colno}`;
+    dbgShow();
+    dbgLine("UNCAUGHT "+DBG.lastErr);
+    dbgState();
+  }catch(_){}
+});
+
+window.addEventListener("unhandledrejection",(e)=>{
+  try{
+    DBG.lastRej = String(e.reason||"unhandledrejection");
+    dbgShow();
+    dbgLine("REJECT "+DBG.lastRej);
+    dbgState();
+  }catch(_){}
+});
+
+window.addEventListener("keydown",(e)=>{ if(e.key==="d"||e.key==="D"){ dbgShow(); dbgState(); } });
+
+let __dbgTap=0, __dbgTapT=0;
+window.addEventListener("pointerdown",(e)=>{
+  const now=performance.now();
+  if(now-__dbgTapT>600){ __dbgTap=0; }
+  __dbgTapT=now;
+  __dbgTap++;
+  if(__dbgTap>=5){
+    __dbgTap=0;
+    dbgShow();
+    dbgLine("DEBUG OPEN (5 taps)");
+    dbgState();
+  }
+}, {capture:true, passive:true});
+
+function dbgInitUI(){
+  const b1=$("dbgHide"); if(b1) b1.addEventListener("click",()=>dbgHide());
+  const b2=$("dbgCopy"); if(b2) b2.addEventListener("click",async ()=>{
+    const payload = ["STATE", $("dbgState")?.textContent||"", "", "LOG", $("dbgLog")?.textContent||""].join("\n");
+    try{ await navigator.clipboard.writeText(payload); dbgLine("copied to clipboard"); }catch(_){ dbgLine("clipboard failed"); }
+  });
+}
+// ---------------------------------------
+
+function bindTap(id, fn){
+  const el=$(id);
+  if(!el) return;
+  const handler=(e)=>{ try{ e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation) e.stopImmediatePropagation(); }catch(_){} fn(); };
+  el.addEventListener("pointerup", handler, {passive:false, capture:true});
+  el.addEventListener("touchend", handler, {passive:false, capture:true});
+  el.addEventListener("click", handler);
+  el.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ handler(e); } });
+}
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
   const clamp01 = (x)=>clamp(x,0,1);
   const lerp = (a,b,t)=>a+(b-a)*t;
   const fmt = (n)=>Math.round(n);
@@ -975,7 +1089,10 @@
     defaultBranch(seed^0x1A2B3C4D, "trunk", 0.76,  0.35, 105, 5.8, false, true),
     defaultBranch(seed^0xBEEF0042, "trunk", 0.82, -0.05,  90, 5.2, false, true),
   ],
-};
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+;
 
   }
 
@@ -1127,7 +1244,8 @@
 // trunk handle movement radius in world units (higher = more flexible)
 function trunkCtrlRadius(T, t){
   const L=T.trunk.len;
-  return (18 + L*0.22) * (0.55 + t*0.85); // was too tight before
+  // smaller radius => easier to reach max bend with normal finger drag
+  return (12 + L*0.14) * (0.50 + t*0.75);
 }
 
 
@@ -1368,7 +1486,18 @@ function trunkCtrlRadius(T, t){
   ro.observe(cv);
 
   function beginFrame(){
+    // hard reset of canvas state (prevents "stuck alpha" and other state leaks on mobile)
     g.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
+    g.globalAlpha=1;
+    g.globalCompositeOperation="source-over";
+    g.setLineDash([]);
+    g.lineCap="butt";
+    g.lineJoin="miter";
+    g.shadowColor="rgba(0,0,0,0)";
+    g.shadowBlur=0;
+    g.shadowOffsetX=0;
+    g.shadowOffsetY=0;
+
     g.clearRect(0,0,viewW,viewH);
   }
 
@@ -1569,7 +1698,7 @@ function trunkCtrlRadius(T, t){
 
     g.strokeStyle="rgba(35,48,66,0.45)";
     g.lineWidth=1;
-    for(let i=0;i<10;i++){
+    for(let i=0;i<3;i++){
       const y=floorY + i*((h-floorY)/10);
       g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke();
     }
@@ -1784,24 +1913,29 @@ function trunkCtrlRadius(T, t){
     return {a,b,deciduous,kind:spec.leaf};
   }
 
-  function drawTaperedPolyline(points, thick0, colA, colB, seedTex, highlight=false){
-    // shadow
-    g.save();
-    g.globalAlpha=0.18;
-    g.strokeStyle="rgba(0,0,0,0.92)";
-    g.lineWidth=thick0*1.06;
-    g.lineCap="round";
-    g.beginPath();
-    g.moveTo(points[0].x+4, points[0].y+3);
-    for(let i=1;i<points.length;i++) g.lineTo(points[i].x+4, points[i].y+3);
-    g.stroke();
-    g.restore();
+  function drawTaperedPolyline(points, thick0, colA, colB, seedTex, highlight=false, shadowOn=true){
+    // optional shadow pass
+    if(shadowOn){
+      g.save();
+      g.globalAlpha=0.18;
+      g.strokeStyle="rgba(0,0,0,0.92)";
+      g.lineWidth=thick0*1.06;
+      g.lineCap="round";
+      g.beginPath();
+      g.moveTo(points[0].x+4, points[0].y+3);
+      for(let i=1;i<points.length;i++) g.lineTo(points[i].x+4, points[i].y+3);
+      g.stroke();
+      g.restore();
+    }
 
     g.save();
     g.lineCap="round";
     for(let i=0;i<points.length-1;i++){
       const t=i/(points.length-1);
-      const thick=lerp(thick0, Math.max(0.9, thick0*0.22), t);
+      // keep a minimum taper so tips don't become hair-thin
+      const taper = Math.max(0.38, 1 - t);
+      const thick = Math.max(0.9, thick0 * taper);
+
       let col=mix(colA,colB, t*0.7);
 
       // subtle bark texture (noise)
@@ -1826,6 +1960,7 @@ function trunkCtrlRadius(T, t){
       g.stroke();
       g.restore();
     }
+
     // selection highlight
     if(highlight){
       g.save();
@@ -1843,10 +1978,12 @@ function trunkCtrlRadius(T, t){
   }
 
   function drawLeafShape(kind, x,y, rot, w,h, colA, colB, alpha, seed){
+(kind, x,y, rot, w,h, colA, colB, alpha, seed){
     g.save();
     g.translate(x,y);
     g.rotate(rot);
     g.globalAlpha=alpha;
+    const lod=((G_T&&G_T.leafCountApprox)||0);
 
     const grd=g.createLinearGradient(-w,-h,w,h);
     grd.addColorStop(0, rgba(colA,0.95));
@@ -1872,7 +2009,8 @@ function trunkCtrlRadius(T, t){
       g.fill();
     }
 
-    // vein + texture speckles
+        if(lod < 320){
+// vein + texture speckles
     g.globalAlpha*=0.20;
     g.strokeStyle="rgba(255,255,255,0.65)";
     g.lineWidth=Math.max(0.6,w*0.10);
@@ -1880,17 +2018,21 @@ function trunkCtrlRadius(T, t){
     g.moveTo(-w*0.55,0);
     g.quadraticCurveTo(0,-h*0.15,w*0.55,0);
     g.stroke();
+    }
 
-    // micro texture
+    // micro texture (skip when many leaves)
+if(((G_T && G_T.leafCountApprox)||0) < 380){
     g.globalAlpha*=0.55;
-    for(let i=0;i<10;i++){
+    for(let i=0;i<3;i++){
       const nx=(noise2(i*1.7, seed*0.001+i, seed|0)-0.5)*w*1.2;
       const ny=(noise2(i*2.3, seed*0.002+i, seed|0)-0.5)*h*1.2;
       g.fillStyle="rgba(0,0,0,0.12)";
       g.beginPath(); g.arc(nx,ny,0.6,0,Math.PI*2); g.fill();
     }
+    }
 
-    // shadow edge
+        if(lod < 320){
+// shadow edge
     g.globalAlpha=alpha*0.14;
     g.strokeStyle="rgba(0,0,0,0.55)";
     g.lineWidth=Math.max(0.7,w*0.12);
@@ -1908,6 +2050,7 @@ function trunkCtrlRadius(T, t){
       g.ellipse(0,0,w*1.02,h*1.02,0,0,Math.PI*2);
     }
     g.stroke();
+    }
 
     g.restore();
   }
@@ -1931,40 +2074,50 @@ function trunkCtrlRadius(T, t){
     g.restore();
   }
 
-  function ensureLeaves(T, b){
-    const pal=leafPalette(T);
-    const hp01=T.hp/100;
-    const crown01=T.crown/100;
+  function ensureLeaves(T, b, dt){
+  const hp01=T.hp/100;
+  const crown01=T.crown/100;
 
-    // leaf target up to 200
-    const dens = (0.35 + crown01*0.85) * (0.45 + hp01*0.70);
-    const target = clamp(Math.floor((b.len/3.2) * dens), (b.len<22?1:6), 200);
+  // 2 leaf-groups per branch, not hundreds of individual leaves
+  const budget = (b.leafBudgetMul==null)?1:b.leafBudgetMul;
+  const target = Math.max(0, Math.min(LEAF_PADS, Math.round(LEAF_PADS * budget)));
 
-    if(b.leaves.length>=target) return;
-    const rng=mulberry32((b.seed ^ (b.leaves.length*977) ^ (T.seed*131))>>>0);
+  if(!b.leafPads) b.leafPads=[];
+  b.leafAcc = (b.leafAcc||0);
 
-    while(b.leaves.length<target){
-      const t = clamp(0.30 + rng()*0.70, 0.12, 0.98);
-      const side = (rng()<0.5)?-1:1;
-      const sz = 0.75 + rng()*0.9;
-      const rot = (rng()-0.5)*1.6;
-      const jitter = (rng()-0.5)*0.9;
-      const tint = rng(); // per-leaf color mix
-
-      // base leaf shape sizes by species
-      let w=5, h=3;
-      if(pal.kind==="narrow"){ w=5.5; h=2.1; }
-      if(pal.kind==="broadFine"){ w=4.6; h=2.6; }
-      if(pal.kind==="palmate"){ w=6.0; h=4.2; }
-      if(pal.kind==="broad"){ w=5.6; h=3.1; }
-      if(pal.kind==="scale"){ w=3.5; h=2.0; }
-
-      b.leaves.push({t, side, rot, w, h, tint, jitter, sseed:(b.seed^((b.leaves.length+1)*99991))>>>0});
-      if(b.leaves.length>=200) break;
-    }
+  // grow existing pads slowly
+  const growRate = 0.10 + crown01*0.06 + hp01*0.05;
+  for(const P of b.leafPads){
+    if(P.g==null) P.g=0;
+    P.g = Math.min(1, P.g + dt*growRate);
   }
 
-  function buildTrunkPoints(T, baseX, baseY){
+  // global throttle
+  const leafTotal = (T.leafCountApprox||0);
+  const globalFactor = leafTotal > 80 ? 0.25 : 1.0;
+
+  // pad spawn rate
+  const spawnRate = (0.10 + crown01*0.30) * (0.40 + hp01*0.55) * globalFactor;
+  b.leafAcc += dt*spawnRate;
+
+  if(b.leafPads.length >= target) return;
+  if(b.leafAcc < 1) return;
+  b.leafAcc -= 1;
+
+  // place pads away from trunk-attach to avoid center blobs
+  const minT = (b.parentId==="trunk") ? 0.68 : 0.52;
+  const maxT = 0.94;
+  const rng=mulberry32((b.seed ^ (b.leafPads.length*977) ^ (T.seed*131))>>>0);
+
+  const t = clamp(minT + rng()*(maxT-minT), 0.08, 0.98);
+  const side = (rng()<0.5)?-1:1;
+  const rot = (rng()-0.5)*1.0;
+  const tint = rng();
+
+  b.leafPads.push({t, side, rot, tint, g:0, seed:(b.seed^((b.leafPads.length+1)*99991))>>>0});
+}
+
+function buildTrunkPoints(T, baseX, baseY){
     const L=T.trunk.len;
     const ctrl=T.trunk.ctrl;
 
@@ -1979,9 +2132,11 @@ function trunkCtrlRadius(T, t){
       const nx = baseX;
 
       // allowed radius increases upwards (bonsai freedom)
-      const allow = (10 + L*0.14) * (0.30 + c.t*0.70);
+      // allowed radius: much higher so you can make real bonsai bends
+      // keep bottom more constrained, but not stiff
+      const allow = (18 + L*0.26) * (0.65 + c.t*0.95);
       const ox = c.ox * allow;
-      const oy = c.oy * allow * 0.55;
+      const oy = c.oy * allow * 0.82;
 
       pts.push({x:nx+ox, y:ny+oy});
     }
@@ -2156,8 +2311,6 @@ for(const hnd of hit.trunkHandles){
     const pal=leafPalette(T);
 
     for(const b of alive){
-      // ensure leaves grow only on branches
-      ensureLeaves(T,b);
 
       const base = parentPoint(b);
 
@@ -2193,7 +2346,7 @@ for(const hnd of hit.trunkHandles){
       b.points=pts;
 
       const isSelected = bendSel.selected.has(b.id);
-      drawTaperedPolyline(pts, thick, bark.a, bark.b, (b.seed^0x222), isSelected);
+      drawTaperedPolyline(pts, thick, bark.a, bark.b, (b.seed^0x222), isSelected, false);
 
       // branch hit segs (for prune + bend selection)
       let bcum=0;
@@ -2221,39 +2374,57 @@ for(const hnd of hit.trunkHandles){
           drawNeedles(tipP.x, tipP.y, ang*0.35, 18 + crown01*30, pal.a, pal.b, alpha*0.90, b.seed^0x7A7);
         }else if(pal.kind==="scale"){
           // small oval clusters
-          for(let k=0;k<8;k++){
+          for(let k=0;k<3;k++){
             const t = clamp(0.55 + k*0.05,0.55,0.95);
             const idx=Math.floor(t*(pts.length-1));
             const p=pts[idx];
-            const w0=3.2 + crown01*3.5;
-            const h0=2.0 + crown01*2.2;
+            const w0=2.8 + crown01*2.2;
+            const h0=1.7 + crown01*1.4;
             drawLeafShape("broadFine", p.x+(k%2?4:-4), p.y+(k%3?-2:2), (k-4)*0.25, w0,h0, pal.a,pal.b, alpha*0.65, b.seed+k);
           }
         }else{
-          for(const L of b.leaves){
-            const idx=Math.floor(clamp01(L.t)*(pts.length-1));
-            const p0=pts[idx];
-            const p1=pts[Math.min(pts.length-1, idx+1)];
-            const tx=p1.x-p0.x, ty=p1.y-p0.y;
-            const n=norm(-ty, tx);
+  // broad leaves as 2 small groups per branch (performance)
+  for(const P of (b.leafPads||[])){
+    const idx = Math.min(pts.length-2, Math.floor(clamp01(P.t)*(pts.length-1)));
+    const p0 = pts[idx];
+    const p1 = pts[idx+1];
 
-            // size scaling with crown and branch thickness
-            const s = (0.85 + crown01*1.10) * (0.65 + thick*0.05) * (0.60 + L.w*0.08);
-            const wL = L.w * s;
-            const hL = L.h * s;
+    let tx = p1.x-p0.x, ty = p1.y-p0.y;
+    if(Math.abs(tx)+Math.abs(ty) < 0.001){
+      tx = Math.cos(ang);
+      ty = Math.sin(ang);
+    }
+    const tdir = norm(tx,ty);
+    const n = {x:-tdir.y, y:tdir.x};
 
-            const off = (5 + thick*0.35 + crown01*6) * L.side + L.jitter*2.2;
-            const px = p0.x + n.x*off;
-            const py = p0.y + n.y*off;
-            const rot = Math.atan2(ty,tx) + L.rot;
+    const gg = (P.g==null)?1:clamp(P.g,0,1);
+    const aL = alpha * (0.18 + 0.82*gg);
 
-            const cA=mix(pal.a,pal.b, L.tint*0.55);
-            const cB=mix(pal.b,pal.a, L.tint*0.35);
+    // group center offset away from branch
+    const off = (2.2 + thick*0.62) * P.side; // attach to branch surface
+    const cx = p0.x + n.x*off;
+    const cy = p0.y + n.y*off;
 
-            drawLeafShape(pal.kind==="palmate" ? "palmate" : "broad",
-              px,py,rot,wL,hL,cA,cB, alpha*(0.70 + L.tint*0.30), L.sseed);
-          }
-        }
+    const cA=mix(pal.a,pal.b, (P.tint||0.5)*0.55);
+    const cB=mix(pal.b,pal.a, (P.tint||0.5)*0.35);
+
+    // group scale (clamped)
+    const baseS = (0.70 + crown01*0.90) * (0.70 + thick*0.04);
+    const w0 = Math.min(10 + crown01*12, 6.4*baseS);
+    const h0 = Math.min(7  + crown01*9,  4.2*baseS);
+
+    for(let k=0;k<PAD_LEAF_COUNT;k++){
+      const ks = (k-0.5) * (w0*0.32 + 1.2);
+      const jn = (k===1?0:(k===0?-1:1)) * (h0*0.10);
+      const px = cx + tdir.x*ks + n.x*jn;
+      const py = cy + tdir.y*ks + n.y*jn;
+      const rr = Math.atan2(ty,tx) + (P.rot||0) + (k-1)*0.16;
+
+      drawLeafShape(pal.kind==="palmate" ? "palmate" : "broad",
+        px,py,rr, w0*(0.25+0.75*gg), h0*(0.25+0.75*gg), cA,cB, aL, (P.seed||b.seed)+k);
+    }
+  }
+}
       }
     }
 
@@ -2367,6 +2538,7 @@ for(const hnd of hit.trunkHandles){
 
     if(!noUI) drawScissors();
   }
+  window.renderScene = renderScene;
 
   // ------------------------------------------------------------
   // Simulation (ONLY active tree advances)
@@ -2415,7 +2587,59 @@ for(const hnd of hit.trunkHandles){
     normalizeTree(T,0);
   }
 
-  function pruneTrunkAt(T, cutFrac){
+  function pruneLeavesOnBranch(b, cutFrac, keepRatio=0.10){
+  if(!b) return;
+
+  // leaf groups: remove pads above cut, then keep at most 2
+  if(b.leafPads && b.leafPads.length){
+    b.leafPads = b.leafPads.filter(P=> (P && (P.t==null || P.t<=cutFrac)));
+    // keep only the earliest pads (spread)
+    b.leafPads.sort((a,c)=>(a.t||0)-(c.t||0));
+    const keep = Math.min(LEAF_PADS, Math.max(0, Math.round(LEAF_PADS*keepRatio)));
+    if(b.leafPads.length > keep) b.leafPads = b.leafPads.slice(0, keep);
+    // reset growth so it regrows
+    for(const P of b.leafPads){ P.g = Math.min(P.g||0, 0.35); }
+  }else{
+    b.leafPads=[];
+  }
+
+  b.leafAcc=0;
+  b.leafBudgetMul=0.10;
+  // legacy leaves off
+  if(b.leaves) b.leaves.length=0;
+}
+
+  // keep only ~10% (performance) but spread along branch
+  arr.sort((a,c)=>(a.t||0)-(c.t||0));
+  const keep=Math.max(1, Math.ceil(arr.length*keepRatio));
+  if(arr.length>keep){
+    const picked=[];
+    for(let i=0;i<keep;i++){
+      const idx=Math.floor(i*(arr.length-1)/Math.max(1,keep-1));
+      picked.push(arr[idx]);
+    }
+    arr=picked;
+  }
+
+  // rebuild bins + slots, enforce max overlap
+  const bins=new Array(LEAF_BINS).fill(0);
+  const out=[];
+  for(const L of arr){
+    const bin = (L.bin!=null) ? L.bin : Math.min(LEAF_BINS-1, Math.floor(clamp01(L.t||0)*LEAF_BINS));
+    const slot = bins[bin];
+    if(slot>=LEAF_BIN_MAX) continue;
+    bins[bin] = slot+1;
+    L.bin=bin;
+    L.slot=slot;
+    out.push(L);
+  }
+  b.leaves=out;
+  b.leafBins=bins;
+  b.leafAcc=0;
+  b.leafBudgetMul=0.10;
+}
+
+function pruneTrunkAt(T, cutFrac){
     // cutFrac: 0..1 along trunk length (arc-length fraction)
     cutFrac=clamp(cutFrac, 0.12, 0.98);
 
@@ -2449,6 +2673,12 @@ for(const hnd of hit.trunkHandles){
     // coins feel good
     T.meta.coins += 4;
     T.meta.zen = Math.min(999, (T.meta.zen||0) + 1);
+
+// after trunk cut, reduce leaf load hard for performance
+for(const b of T.branches){
+  if(!b.alive) continue;
+  pruneLeavesOnBranch(b, 1.0, 0.10);
+}
   }
 
 function scheduleRegrowBranch(b, delaySec){
@@ -2487,8 +2717,8 @@ function scheduleRegrowBranch(b, delaySec){
     for(let i=0;i<n;i++){
       const side=(i===0)?-1:1;
       const ang = clamp(b.angle + side*(0.55 + rng()*0.55), -2.2, 2.2);
-      const maxLen = clamp(60 + rng()*140 + T.crown*1.2, 30, 320);
-      const rad = clamp(Math.max(2.8, b.radius*0.55 + rng()*1.4), 1.5, 16);
+          const maxLen = clamp(42 + crown*1.4 + rng()*80, 24, 240);
+    const rad = clamp(2.8 + crown*0.03 + rng()*0.8, 2.0, 7.0);
       const nb=defaultBranch(T.seed^((Math.random()*1e9)|0), b.id, clamp(cutFrac,0.12,0.92), ang, maxLen, rad, false, false);
       nb.arc = clamp((rng()-0.5)*0.75, -1, 1);
       nb.bend= clamp((rng()-0.5)*0.25, -1, 1);
@@ -2560,7 +2790,6 @@ function scheduleRegrowBranch(b, delaySec){
 
     // start tiny with 1 leaf vibe
     b.len = Math.max(14, maxLen*0.14);
-    b.leaves.length=0;
 
     scheduleRegrowBranch(b, 12 + rng()*10);
     T.branches.push(b);
@@ -2568,6 +2797,10 @@ function scheduleRegrowBranch(b, delaySec){
   }
 
   function tickTree(T, dt){
+    // approximate total leaf count for throttling
+    let leafApprox=0;
+    for(const b of T.branches){ leafApprox += (b.leafPads?b.leafPads.length:0); if(leafApprox>400) break; }
+    T.leafCountApprox=leafApprox;
     const sp=spById(T.speciesId);
     const sea=seasonObj(T);
     const so=soil(T);
@@ -2630,6 +2863,10 @@ for(const b of T.branches){
     // branch growth
     for(const b of T.branches){
       if(!b.alive) continue;
+      ensureLeaves(T, b, dt);
+      // recover leaf budget slowly after pruning
+      if(b.leafBudgetMul==null) b.leafBudgetMul=1;
+      b.leafBudgetMul = Math.min(1, b.leafBudgetMul + dt*0.018);
       b.age += dt;
       const vigor = b.vigor * (0.6 + hpMul*0.4);
 
@@ -2778,7 +3015,10 @@ for(const b of T.branches){
   let toolMode="none"; // none|water|prune|bend
   let isRunning=false;
   let drag=null;
-
+  let pan=null;
+  let pinch=null;
+  let activePointerId=null;
+  let G_T=null;
   function setTool(m){
     toolMode=m;
     $("waterBtn").classList.toggle("active", m==="water");
@@ -2812,6 +3052,8 @@ for(const b of T.branches){
   // pointer events
   cv.addEventListener("pointerdown",(e)=>{
     if(!isRunning) return;
+    activePointerId=e.pointerId;
+    try{ cv.setPointerCapture(e.pointerId); }catch(_){ }
     cv.setPointerCapture(e.pointerId);
     const p=screenToWorld(e.clientX,e.clientY);
     const T=activeTree();
@@ -2942,7 +3184,7 @@ drag={
     }
   });
 
-  cv.addEventListener("pointerup",()=>{
+  cv.addEventListener("pointerup",(e)=>{
     if(!isRunning || !drag){ drag=null; return; }
     const T=activeTree();
 
@@ -2952,7 +3194,21 @@ drag={
       commitBendReward(T, 0.75);
     }
     drag=null;
+    drag=null; pan=null; pinch=null; activePointerId=null;
   });
+cv.addEventListener("pointercancel",(e)=>{
+  try{ if(activePointerId!=null) cv.releasePointerCapture(activePointerId); }catch(_){}
+  drag=null; pan=null; pinch=null; activePointerId=null;
+});
+
+cv.addEventListener("lostpointercapture",()=>{
+  drag=null; pan=null; pinch=null; activePointerId=null;
+});
+
+window.addEventListener("blur",()=>{
+  drag=null; pan=null; pinch=null; activePointerId=null;
+});
+
 
   // keyboard shortcuts
   window.addEventListener("keydown",(e)=>{
@@ -2988,7 +3244,7 @@ drag={
 
   function takePhotoNoUI(){
     const T=activeTree();
-    renderScene(true);
+    window.renderScene(true);
     const url=cv.toDataURL("image/png");
 
     T.photos.push(url);
@@ -3458,6 +3714,8 @@ drag={
   // Start menu
   // ------------------------------------------------------------
   function showMenu(){
+    console.log("showMenu()");
+    document.body.classList.add("menuOpen");
     isRunning=false;
     $("startMenu").style.display="flex";
     const T=activeTree();
@@ -3465,6 +3723,8 @@ drag={
     saveNow();
   }
   function hideMenu(){
+    console.log("hideMenu()");
+    document.body.classList.remove("menuOpen");
     $("startMenu").style.display="none";
     isRunning=true;
     offlineCatchup();
@@ -3473,17 +3733,11 @@ drag={
     saveNow();
   }
 
-  $("menuPlay").addEventListener("click", ()=>{
-    hideMenu();
-    markDirty("hud"); markDirty("play");
-  });
-  $("menuSettings").addEventListener("click", ()=>{
-    $("startMenu").style.display="none";
-    isRunning=false;
-    openSettings();
-  });
+    bindTap("menuPlay", ()=>{ hideMenu(); markDirty("hud"); markDirty("play"); });
+  bindTap("menuSettings", ()=>{ $("startMenu").style.display="none"; isRunning=false; openSettings(); });
+  bindTap("startMenu", ()=>{ hideMenu(); markDirty("hud"); markDirty("play"); });
 
-  // ------------------------------------------------------------
+// ------------------------------------------------------------
   // Mobile drawer collapse
   // ------------------------------------------------------------
   function syncDrawerMode(){
@@ -3539,7 +3793,7 @@ drag={
     accDraw += dtReal;
     while(accDraw >= 1/SIM.tickHz){
       accDraw -= 1/SIM.tickHz;
-      renderScene(false);
+      window.renderScene(false);
     }
 
     hudAcc += dtReal;
@@ -3571,11 +3825,43 @@ drag={
     syncDrawerMode();
     updateSettingsUI();
     showMenu();
+    dbgInitUI(); dbgState();
     requestAnimationFrame(frame);
   }
 
+// expose critical menu actions (iOS/embedded)
+window.hideMenu = hideMenu;
+window.showMenu = showMenu;
+window.openSettings = openSettings;
+
+
   init();
+// AUTO_START_FAILSAFE (iOS/embedded): if menu tap handlers fail, auto-start
+setTimeout(()=>{
+  try{
+    const sm=document.getElementById("startMenu");
+    if(sm && sm.style.display!=="none"){ hideMenu(); }
+  }catch(_){}
+}, 900);
+
 })();
 </script>
+
+<!-- DEBUG OVERLAY -->
+<div id="dbg" style="position:fixed;left:10px;bottom:10px;z-index:9999;max-width:min(520px,calc(100vw - 20px));
+  background:rgba(0,0,0,0.62);color:#eaf1fb;border:1px solid rgba(255,255,255,0.15);
+  border-radius:12px;padding:10px;backdrop-filter: blur(8px);font:12px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  display:none;">
+  <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
+    <div style="font-weight:700">DEBUG</div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button id="dbgCopy" style="all:unset;cursor:pointer;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14)">Copy</button>
+      <button id="dbgHide" style="all:unset;cursor:pointer;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14)">Hide</button>
+    </div>
+  </div>
+  <div id="dbgState" style="margin-top:8px;color:#9fb2c7;white-space:pre-wrap"></div>
+  <div id="dbgLog" style="margin-top:8px;max-height:34vh;overflow:auto;white-space:pre-wrap"></div>
+</div>
+
 </body>
 </html>
