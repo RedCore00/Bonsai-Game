@@ -3723,6 +3723,7 @@ window.addEventListener("blur",()=>{
     saveNow();
   }
   function hideMenu(){
+    try{ document.body.classList.remove("menuOpen"); }catch(_){ }
     console.log("hideMenu()");
     document.body.classList.remove("menuOpen");
     $("startMenu").style.display="none";
