@@ -1372,7 +1372,18 @@ function trunkCtrlRadius(T, t){
   ro.observe(cv);
 
   function beginFrame(){
+    // hard reset of canvas state (prevents "stuck alpha" and other state leaks on mobile)
     g.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
+    g.globalAlpha=1;
+    g.globalCompositeOperation="source-over";
+    g.setLineDash([]);
+    g.lineCap="butt";
+    g.lineJoin="miter";
+    g.shadowColor="rgba(0,0,0,0)";
+    g.shadowBlur=0;
+    g.shadowOffsetX=0;
+    g.shadowOffsetY=0;
+
     g.clearRect(0,0,viewW,viewH);
   }
 
@@ -1789,24 +1800,28 @@ function trunkCtrlRadius(T, t){
   }
 
   function drawTaperedPolyline(points, thick0, colA, colB, seedTex, highlight=false, shadowOn=true){
-    // shadow
+    // optional shadow pass
     if(shadowOn){
-    g.save();
-    g.globalAlpha=0.18;
-    g.strokeStyle="rgba(0,0,0,0.92)";
-    g.lineWidth=thick0*1.06;
-    g.lineCap="round";
-    g.beginPath();
-    g.moveTo(points[0].x+4, points[0].y+3);
-    for(let i=1;i<points.length;i++) g.lineTo(points[i].x+4, points[i].y+3);
-    g.stroke();
-    g.restore();
+      g.save();
+      g.globalAlpha=0.18;
+      g.strokeStyle="rgba(0,0,0,0.92)";
+      g.lineWidth=thick0*1.06;
+      g.lineCap="round";
+      g.beginPath();
+      g.moveTo(points[0].x+4, points[0].y+3);
+      for(let i=1;i<points.length;i++) g.lineTo(points[i].x+4, points[i].y+3);
+      g.stroke();
+      g.restore();
+    }
 
     g.save();
     g.lineCap="round";
     for(let i=0;i<points.length-1;i++){
       const t=i/(points.length-1);
-      const thick=lerp(thick0, Math.max(0.9, thick0*0.22), t);
+      // keep a minimum taper so tips don't become hair-thin
+      const taper = Math.max(0.38, 1 - t);
+      const thick = Math.max(0.9, thick0 * taper);
+
       let col=mix(colA,colB, t*0.7);
 
       // subtle bark texture (noise)
@@ -1831,6 +1846,7 @@ function trunkCtrlRadius(T, t){
       g.stroke();
       g.restore();
     }
+
     // selection highlight
     if(highlight){
       g.save();
@@ -1848,6 +1864,7 @@ function trunkCtrlRadius(T, t){
   }
 
   function drawLeafShape(kind, x,y, rot, w,h, colA, colB, alpha, seed){
+(kind, x,y, rot, w,h, colA, colB, alpha, seed){
     g.save();
     g.translate(x,y);
     g.rotate(rot);
