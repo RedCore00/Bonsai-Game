@@ -724,9 +724,9 @@ const PAD_LEAF_COUNT = 3; // leaves drawn per group
 function bindTap(id, fn){
   const el=$(id);
   if(!el) return;
-  const handler=(e)=>{ try{ e.preventDefault(); e.stopPropagation(); }catch(_){} fn(); };
-  el.addEventListener("pointerup", handler, {passive:false});
-  el.addEventListener("touchend", handler, {passive:false});
+  const handler=(e)=>{ try{ e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation) e.stopImmediatePropagation(); }catch(_){} fn(); };
+  el.addEventListener("pointerup", handler, {passive:false, capture:true});
+  el.addEventListener("touchend", handler, {passive:false, capture:true});
   el.addEventListener("click", handler);
   el.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ handler(e); } });
 }
@@ -3726,6 +3726,12 @@ window.addEventListener("blur",()=>{
     showMenu();
     requestAnimationFrame(frame);
   }
+
+// expose critical menu actions (iOS/embedded)
+window.hideMenu = hideMenu;
+window.showMenu = showMenu;
+window.openSettings = openSettings;
+
 
   init();
 })();
