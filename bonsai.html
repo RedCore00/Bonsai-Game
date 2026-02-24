@@ -3,176 +3,302 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
-<title>Bonsai Master v3.2 (Touch & Flow)</title>
+<title>Bonsai Master v4.0 (Zen Edition)</title>
 <style>
   :root {
-    --bg-dark: #020617; 
-    --panel: rgba(15, 23, 42, 0.92);
-    --accent: #38bdf8; --success: #4ade80; --gold: #fbbf24;
-    --text: #f1f5f9; --text-muted: #94a3b8;
-    --font: 'Segoe UI', system-ui, sans-serif;
+    --bg-dark: #090a0f; 
+    --panel-bg: rgba(18, 22, 31, 0.75);
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #38bdf8; 
+    --success: #34d399; 
+    --gold: #fbbf24;
+    --text: #f8fafc; 
+    --text-muted: #64748b;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
   }
-  body { margin:0; height:100vh; background: #000; overflow:hidden; font-family: var(--font); color:var(--text); user-select:none; -webkit-user-select:none; }
   
-  .app-grid { display: grid; grid-template-columns: 1fr 300px; grid-template-rows: 1fr 70px; height: 100%; width: 100%; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   
-  .viewport { grid-column: 1 / 2; grid-row: 1 / 2; position: relative; cursor: grab; overflow: hidden; background: #000; touch-action: none; }
+  body { 
+    margin: 0; height: 100vh; height: 100dvh; background: var(--bg-dark); 
+    overflow: hidden; font-family: var(--font); color: var(--text); 
+    user-select: none; -webkit-user-select: none;
+  }
+  
+  .app-layout { 
+    display: flex; flex-direction: column; height: 100%; width: 100%; 
+  }
+  
+  /* --- CANVAS BEREICH --- */
+  .viewport { 
+    flex: 1; position: relative; cursor: grab; overflow: hidden; 
+    background: #000; touch-action: none; 
+  }
   .viewport:active { cursor: grabbing; }
-  .viewport.tool-active { cursor: crosshair; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
-  .sidebar {
-    grid-column: 2 / 3; grid-row: 1 / 3;
-    background: var(--panel); border-left: 1px solid rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    display: flex; flex-direction: column; gap: 15px; padding: 20px;
-    z-index: 10; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  /* Schwebender Name auf dem Canvas */
+  .tree-header {
+    position: absolute; top: env(safe-area-inset-top, 20px); left: 20px;
+    background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    padding: 10px 18px; border-radius: 16px; border: 1px solid var(--border);
+    pointer-events: none; z-index: 5;
+  }
+  .tree-header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+  .tree-header p { margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* --- UNTERER UI BEREICH --- */
+  .ui-panel {
+    height: 40vh; min-height: 280px;
+    background: #0d111a; border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; 
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    position: relative; z-index: 10;
   }
 
-  .bottom-bar {
-    grid-column: 1 / 2; grid-row: 2 / 3;
-    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-    display: flex; justify-content: center; gap: 20px; align-items: center; z-index: 5;
-    padding-bottom: 10px; pointer-events: none;
+  /* Stats Block */
+  .stats-glass {
+    display: flex; gap: 20px; margin-bottom: 20px;
   }
-  .bottom-bar button { pointer-events: auto; }
-
-  h2 { margin: 0 0 10px 0; color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; border-bottom:1px solid #333; padding-bottom:5px;}
-  h3 { font-size:14px; margin:15px 0 5px 0; color:#fff;}
-
-  .stat-block { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; }
-  .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
-  .bar-bg { width:100%; height:6px; background: rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
-  .bar-fill { height:100%; transition: width 0.3s; }
-
-  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .btn {
-    background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1;
-    padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;
-    font-size: 13px; display: flex; align-items: center; justify-content: center; gap:6px;
-    transition: all 0.2s;
-  }
-  .btn:hover { background: rgba(255,255,255,0.1); color: #fff; transform: translateY(-1px); }
-  .btn.active { background: var(--accent); color: #000; border-color: transparent; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
-
-  .tab-btn { 
-    background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2); color: #fff; 
-    width: 50px; height: 50px; border-radius: 50%; 
-    font-size: 22px; cursor: pointer; transition: 0.2s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .tab-btn:hover { background: var(--accent); transform: scale(1.1); box-shadow: 0 0 20px #000; }
-
-  /* OVERLAYS */
-  .overlay-panel {
-    position: absolute; top: 30px; left: 30px; bottom: 90px; width: 420px;
-    background: rgba(13, 17, 28, 0.98); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px; padding: 25px; z-index: 50; display: none;
-    overflow-y: auto; box-shadow: 0 25px 50px #000;
-    animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .overlay-panel.open { display: block; }
-  @keyframes slideUp { from{transform: translateY(30px); opacity:0} to{transform: translateY(0); opacity:1} }
-
-  .list-item { 
-    display: flex; align-items: center; gap: 10px; 
-    background: rgba(255,255,255,0.03); padding: 12px; margin-bottom: 8px; border-radius: 8px; 
-    border: 1px solid transparent; cursor:pointer; transition: background 0.2s;
-  }
-  .list-item:hover { border-color: var(--accent); background: rgba(255,255,255,0.06); }
-  .list-item img { width: 36px; height: 36px; border-radius: 50%; }
+  .stat-col { display: flex; flex-direction: column; justify-content: center; min-width: 80px;}
+  .flex-1 { flex: 1; }
   
-  .tag { font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase;}
-  .tag.active { background: var(--success); color: #000; }
+  .s-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .s-val { font-size: 14px; font-weight: 500; margin-top: 2px; }
+  .mt { margin-top: 12px; }
+  
+  .bar-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .bar-header { display: flex; justify-content: space-between; align-items: flex-end; }
+  .bar-bg { width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .water-color { background: var(--accent); }
+  .hp-color { background: var(--success); }
 
-  #settingsGrid input { width: 100%; margin: 8px 0; accent-color: var(--accent); }
-  .toast { position: fixed; top: 20px; right: 340px; background: rgba(0,0,0,0.8); color: var(--gold); padding: 10px 20px; border-radius: 20px; pointer-events: none; opacity: 0; transition: opacity 0.5s; font-weight: bold; border:1px solid var(--gold); z-index: 100;}
+  /* Werkzeuge (Tools) */
+  .section-title { 
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase; 
+    letter-spacing: 1.5px; margin: 0 0 12px 0; font-weight: 600;
+  }
+  
+  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text);
+    padding: 14px 10px; border-radius: 14px; font-weight: 500; cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s ease; font-family: inherit;
+  }
+  .btn svg { width: 16px; height: 16px; opacity: 0.7; transition: opacity 0.2s; }
+  .btn:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+  
+  .btn.active { 
+    background: rgba(56, 189, 248, 0.1); border-color: var(--accent); color: var(--accent); 
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.15); 
+  }
+  .btn.active svg { opacity: 1; }
 
-  /* MOBILE OPTIMIZATION */
-  @media(max-width: 900px) {
-    .app-grid { grid-template-columns: 1fr; grid-template-rows: 50vh 1fr 70px; }
-    .sidebar { grid-column: 1 / 2; grid-row: 2 / 3; border-left:none; border-top:1px solid #333; overflow-y: auto; padding-bottom: 20px; }
-    .bottom-bar { grid-column: 1 / 2; grid-row: 3 / 4; }
-    .overlay-panel { width: auto; left: 15px; right: 15px; top: 15px; bottom: 15px; }
-    .toast { right: 20px; }
+  /* --- BOTTOM NAVIGATION --- */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%;
+    background: rgba(9, 10, 15, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
+    z-index: 60;
+  }
+  .nav-item {
+    background: transparent; border: none; color: var(--text-muted);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10px; cursor: pointer; transition: 0.2s; font-family: inherit;
+  }
+  .nav-item svg { width: 22px; height: 22px; transition: transform 0.2s, stroke 0.2s; }
+  .nav-item:hover, .nav-item.open { color: var(--accent); }
+  .nav-item:hover svg, .nav-item.open svg { transform: scale(1.1); stroke: var(--accent); }
+  
+  .snap-btn { 
+    background: var(--text); color: #000; border-radius: 20px; padding: 8px 16px; 
+    font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px;
+  }
+
+  /* --- BOTTOM SHEET OVERLAYS (NATIVE FEEL) --- */
+  .overlay-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .overlay-bg.open { opacity: 1; pointer-events: auto; }
+
+  .overlay-sheet {
+    position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh;
+    background: rgba(18, 22, 31, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px 24px 0 0; border-top: 1px solid var(--border);
+    padding: 25px 20px calc(25px + env(safe-area-inset-bottom));
+    z-index: 50; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow-y: auto; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+  }
+  .overlay-sheet.open { transform: translateY(0); }
+
+  .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .sheet-header h2 { margin: 0; font-size: 16px; letter-spacing: 1px; }
+  .close-btn { 
+    background: rgba(255,255,255,0.05); border: none; color: var(--text); 
+    width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px;
+  }
+
+  /* Listen Design im Shop/Sammlung */
+  .list-item { 
+    display: flex; align-items: center; gap: 14px; 
+    background: rgba(255,255,255,0.02); padding: 14px; margin-bottom: 10px; border-radius: 16px; 
+    border: 1px solid var(--border); transition: all 0.2s;
+  }
+  .list-item:active { transform: scale(0.98); }
+  .list-item.selected { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
+  .tree-icon { width: 36px; height: 36px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
+  .list-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .list-title { font-size: 14px; font-weight: 600; }
+  .list-sub { font-size: 11px; color: var(--text-muted); }
+  
+  .tag { font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: var(--success); color: #000; }
+
+  #settingsGrid input { width: 100%; margin: 12px 0; accent-color: var(--accent); }
+  .toast { 
+    position: fixed; top: env(safe-area-inset-top, 20px); left: 50%; transform: translateX(-50%);
+    background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.3);
+    padding: 10px 24px; border-radius: 20px; pointer-events: none; opacity: 0; 
+    transition: opacity 0.4s, transform 0.4s; font-weight: 600; font-size: 13px; z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 10px); }
+
+  /* Desktop Fix */
+  @media(min-width: 900px) {
+    .app-layout { flex-direction: row; }
+    .viewport { height: 100%; }
+    .ui-panel { width: 340px; height: 100%; border-top: none; border-left: 1px solid var(--border); }
+    .bottom-nav { position: absolute; bottom: 0; width: 340px; right: 0; left: auto; }
+    .overlay-sheet { width: 400px; left: 20px; bottom: 20px; border-radius: 24px; border: 1px solid var(--border); }
   }
 </style>
 </head>
 <body>
 
-<div class="app-grid">
+<div class="app-layout">
   <div class="viewport" id="viewport">
+    <div class="tree-header">
+      <h1 id="uiTreeName">Baum</h1>
+      <p id="uiSpeciesName">Spezies</p>
+    </div>
     <canvas id="cv"></canvas>
-    
-    <div id="panel_collection" class="overlay-panel">
-      <h2>Baumschule</h2>
-      <div id="collectionList"></div>
-      <button class="btn" style="width:100%; margin-top:15px; background:var(--success); color:#000" id="btnBuyTree">🌱 Setzling kaufen (100 💰)</button>
-    </div>
-
-    <div id="panel_shop" class="overlay-panel">
-      <h2>Shop</h2>
-      <div style="text-align:right; font-weight:bold; color:var(--gold); margin-bottom:10px">Guthaben: <span id="shopMoney">0</span> 💰</div>
-      <h3>Töpfe</h3><div id="shopPotsList"></div>
-      <h3>Substrate</h3><div id="shopSoilsList"></div>
-    </div>
-
-    <div id="panel_quests" class="overlay-panel">
-      <h2>Aufträge</h2>
-      <div id="questList"></div>
-    </div>
-
-    <div id="panel_settings" class="overlay-panel">
-      <h2>System & Dev</h2>
-      <div id="settingsGrid">
-        <label>Tempo (Sekunden pro Tag)</label><input type="range" id="inpSecPerDay" min="1" max="120" value="60">
-        <label>Wachstums-Speed</label><input type="range" id="inpGrowMult" min="0" max="20" step="0.5" value="1">
-        <label>Max. Blätter (Dichte)</label><input type="range" id="inpLeafLimit" min="5" max="100" value="30">
-        <label>Windstärke</label><input type="range" id="inpWind" min="0" max="3" step="0.1" value="1">
-      </div>
-      <br><button class="btn" onclick="hardReset()" style="width:100%; background:#ef4444; color:#fff">Spielstand Löschen</button>
-    </div>
-    
     <div id="toast" class="toast">Nachricht</div>
   </div>
 
-  <div class="sidebar">
-    <div style="text-align:center; margin-bottom:10px">
-      <div id="uiTreeName" style="font-size:18px; font-weight:700">Baum</div>
-      <div id="uiSpeciesName" style="color:var(--text-muted); font-size:12px;">Spezies</div>
+  <div class="ui-panel">
+    
+    <div class="stats-glass">
+      <div class="stat-col">
+        <span class="s-label">Alter</span>
+        <span class="s-val" id="uiDay">Tag 1</span>
+        <span class="s-label mt">Saison</span>
+        <span class="s-val" id="uiSeason" style="color:var(--accent)">Sommer</span>
+      </div>
+      <div class="stat-col flex-1">
+        <div class="bar-wrap">
+          <div class="bar-header"><span class="s-label">Wasser</span><span class="s-label" id="uiWaterVal">100%</span></div>
+          <div class="bar-bg"><div class="bar-fill water-color" id="barWater" style="width:100%"></div></div>
+        </div>
+        <div class="bar-wrap mt">
+          <div class="bar-header"><span class="s-label">Vitalität</span><span class="s-label" id="uiHpVal">100%</span></div>
+          <div class="bar-bg"><div class="bar-fill hp-color" id="barHp" style="width:100%"></div></div>
+        </div>
+      </div>
     </div>
 
-    <div class="stat-block">
-      <div class="stat-row"><span>Alter</span> <span id="uiDay" style="color:var(--text)">Tag 1</span></div>
-      <div class="stat-row"><span>Saison</span> <span id="uiSeason" style="color:var(--accent)">Sommer</span></div>
-      
-      <div style="margin-top:10px" class="stat-row"><span>Wasser</span> <span id="uiWaterVal">100%</span></div>
-      <div class="bar-bg"><div class="bar-fill" id="barWater" style="background:var(--accent); width:100%"></div></div>
-      
-      <div style="margin-top:8px" class="stat-row"><span>Vitalität</span> <span id="uiHpVal">100%</span></div>
-      <div class="bar-bg"><div class="bar-fill" id="barHp" style="background:var(--success); width:100%"></div></div>
-    </div>
-
-    <div style="flex:1"></div>
-
-    <h2>Werkzeuge</h2>
+    <h3 class="section-title">Werkzeuge</h3>
     <div class="btn-grid">
-      <button class="btn" id="toolWater">💧 Gießen</button>
-      <button class="btn" id="toolPrune">✂️ Schnitt</button>
-      <button class="btn" id="toolGraft">🧬 Veredeln</button>
-      <button class="btn" id="toolBend">🧵 Biegen</button>
+      <button class="btn" id="toolWater">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        Gießen
+      </button>
+      <button class="btn" id="toolPrune">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+        Schnitt
+      </button>
+      <button class="btn" id="toolGraft">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+        Veredeln
+      </button>
+      <button class="btn" id="toolBend">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg>
+        Biegen
+      </button>
     </div>
   </div>
+</div>
 
-  <div class="bottom-bar">
-    <button class="tab-btn" data-target="panel_collection">🌲</button>
-    <button class="tab-btn" data-target="panel_shop">🛒</button>
-    <button class="tab-btn" data-target="panel_quests">📜</button>
-    <button class="tab-btn" data-target="panel_settings">⚙️</button>
-    <div style="width:20px"></div>
-    <button class="tab-btn" id="btnPhoto" style="font-size:14px; width:auto; padding:0 20px; border-radius:20px;">📸 SNAP</button>
+<div class="bottom-nav">
+  <button class="nav-item tab-btn" data-target="panel_collection">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg>
+    Bäume
+  </button>
+  <button class="nav-item tab-btn" data-target="panel_shop">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    Shop
+  </button>
+  <button class="nav-item tab-btn" data-target="panel_quests">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Ziele
+  </button>
+  <button class="nav-item tab-btn" data-target="panel_settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    System
+  </button>
+  <button class="snap-btn" id="btnPhoto">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    SNAP
+  </button>
+</div>
+
+<div class="overlay-bg" id="overlayBg" onclick="closeAllPanels()"></div>
+
+<div class="overlay-sheet" id="panel_collection">
+  <div class="sheet-header">
+    <h2 style="color:var(--accent)">Sammlung</h2>
+    <button class="close-btn" onclick="closeAllPanels()">✕</button>
   </div>
+  <div id="collectionList"></div>
+  <button class="btn" style="width:100%; margin-top:10px; background:rgba(52, 211, 153, 0.1); color:var(--success); border-color:var(--success)" id="btnBuyTree">🌱 Neuer Setzling (100 💰)</button>
+</div>
+
+<div class="overlay-sheet" id="panel_shop">
+  <div class="sheet-header">
+    <h2 style="color:var(--gold)">Bonsai Shop</h2>
+    <button class="close-btn" onclick="closeAllPanels()">✕</button>
+  </div>
+  <div style="text-align:right; font-weight:600; color:var(--gold); margin-bottom:15px; font-size:14px;">Guthaben: <span id="shopMoney">0</span> 💰</div>
+  <div class="section-title">Töpfe & Schalen</div><div id="shopPotsList"></div>
+  <div class="section-title" style="margin-top:20px">Substrate</div><div id="shopSoilsList"></div>
+</div>
+
+<div class="overlay-sheet" id="panel_quests">
+  <div class="sheet-header">
+    <h2 style="color:var(--success)">Aufträge</h2>
+    <button class="close-btn" onclick="closeAllPanels()">✕</button>
+  </div>
+  <div id="questList"></div>
+</div>
+
+<div class="overlay-sheet" id="panel_settings">
+  <div class="sheet-header">
+    <h2 style="color:var(--text-muted)">System</h2>
+    <button class="close-btn" onclick="closeAllPanels()">✕</button>
+  </div>
+  <div id="settingsGrid">
+    <label class="s-label">Tempo (Sek/Tag)</label><input type="range" id="inpSecPerDay" min="1" max="120" value="60">
+    <label class="s-label mt" style="display:block">Wachstum Multiplikator</label><input type="range" id="inpGrowMult" min="0" max="20" step="0.5" value="1">
+    <label class="s-label mt" style="display:block">Blattdichte (Limit)</label><input type="range" id="inpLeafLimit" min="5" max="100" value="30">
+    <label class="s-label mt" style="display:block">Windstärke</label><input type="range" id="inpWind" min="0" max="3" step="0.1" value="1">
+  </div>
+  <br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239, 68, 68, 0.1); color:#ef4444; border-color:#ef4444; margin-top:10px;">Spielstand Löschen</button>
 </div>
 
 <script>
@@ -184,8 +310,8 @@ const ctx = cv.getContext('2d', {alpha: false});
 const SPECIES = {
   ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0 },
   pine:  { name: "Schwarzkiefer", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6 },
-  maple: { name: "Ahorn", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8 },
-  sakura:{ name: "Sakura", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9 },
+  maple: { name: "Roter Ahorn", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8 },
+  sakura:{ name: "Sakura Kirsche", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9 },
   willow:{ name: "Trauerweide", leaf: "long", color:["#365314","#bef264"], bark:["#424242","#212121"], growth: 1.3, weeping:true },
   jade:  { name: "Geldbaum", leaf: "fat", color:["#14532d","#22c55e"], bark:["#795548","#5d4037"], growth: 0.7 },
   blue:  { name: "Blue Mystique", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1 },
@@ -247,7 +373,6 @@ class Tree {
 let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 
-// Interaction states
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0 };
 let INPUT="none", HOVER=null, BEND_TARGET=null, WATERING=false;
 
@@ -257,7 +382,7 @@ function init() {
   loadGame();
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   generateQuests();
-  CAM.x = cv.width/2; CAM.y = cv.height*0.75;
+  CAM.x = cv.width/2; CAM.y = cv.height*0.8;
   
   updateListUI();
   updateRealtimeUI();
@@ -277,19 +402,15 @@ function update(dt) {
   if(ENV.dayTime>1) { ENV.dayTime-=1; tree.days++; updateListUI(); }
   
   if(tree.water>0) tree.water -= (5*soil.boost/SETTINGS.secPerDay)*dt;
-  
-  // Wachstum wird nun auch vom Topf-Bonus beeinflusst
   const growth = (tree.water>0?1:0) * spec.growth * soil.boost * pot.bonus * SETTINGS.growMult;
 
-  // Cloud Spawning
   if(ENV.clouds.length<5 && Math.random()<0.01) ENV.clouds.push({x:-200, y:Math.random()*300, s:1+Math.random(), v:0.2+Math.random()*0.3});
 
-  // Gieß-Partikel spwanen
   if(WATERING && INPUT === 'water') {
      for(let i=0; i<3; i++) {
         ENV.particles.push({
            x: MOUSE.worldX + (Math.random()-0.5)*30,
-           y: Math.min(MOUSE.worldY, -50) + (Math.random()-0.5)*10, // Wasser kommt von oben
+           y: Math.min(MOUSE.worldY, -50) + (Math.random()-0.5)*10,
            vx: (Math.random()-0.5)*15,
            vy: 120 + Math.random()*80,
            life: 2.0
@@ -297,23 +418,15 @@ function update(dt) {
      }
   }
 
-  // Partikel bewegen
   for(let i = ENV.particles.length - 1; i >= 0; i--) {
      let p = ENV.particles[i];
-     p.x += p.vx * dt;
-     p.y += p.vy * dt;
-     p.life -= dt;
-     
-     // Kollision mit Topf (Wasser auffüllen) - Topfbereich ca. x: -90 bis +90, y: 0 bis 70
+     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
      if(p.y > 0 && p.y < 70 && p.x > -90 && p.x < 90) {
          tree.water = Math.min(100, tree.water + 0.5);
          ENV.particles.splice(i, 1);
-     } else if(p.life <= 0) {
-         ENV.particles.splice(i, 1);
-     }
+     } else if(p.life <= 0) { ENV.particles.splice(i, 1); }
   }
 
-  // Tree Sim
   function sim(b, rx, ry) {
     if(!b.parent) { b.x=rx; b.y=ry; } else { b.x=b.parent.endX; b.y=b.parent.endY; }
     b.angle += (b.targetAngle-b.angle)*3*dt;
@@ -343,7 +456,6 @@ function update(dt) {
     }
     for(let l of b.leaves) if(l.s < l.ms) l.s += 10*dt; 
     
-    // Wind
     const sway = Math.sin(Date.now()*0.002+b.windPhase)*SETTINGS.windSpeed * (0.05*b.len)/(Math.max(1,b.thick));
     b.endX = b.x + Math.cos(b.angle+sway)*b.len;
     b.endY = b.y + Math.sin(b.angle+sway)*b.len;
@@ -356,16 +468,14 @@ function update(dt) {
 function draw() {
   const w=cv.width, h=cv.height, t=ENV.dayTime;
   
-  // Sky
-  const sky=[[10,15,30],[255,150,100],[135,206,250],[50,30,80]];
+  const sky=[[10,15,25],[255,140,90],[120,190,240],[30,25,60]];
   let si = Math.floor(t * 4) % 4, ni = (si + 1) % 4, f = (t * 4) % 1;
   const mix=(a,b)=>Math.round(a+(b-a)*f);
   const col=`rgb(${mix(sky[si][0],sky[ni][0])},${mix(sky[si][1],sky[ni][1])},${mix(sky[si][2],sky[ni][2])})`;
   const grd=ctx.createLinearGradient(0,0,0,h);
-  grd.addColorStop(0,col); grd.addColorStop(1,"#ffffff");
+  grd.addColorStop(0,col); grd.addColorStop(1, si===0||si===3 ? "#0f172a" : "#f1f5f9");
   ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
 
-  // Stars
   if(t<0.25 || t>0.75) {
      ctx.fillStyle="#fff";
      ENV.stars.forEach(s=>{ 
@@ -375,32 +485,22 @@ function draw() {
      ctx.globalAlpha=1;
   }
 
-  // Sun/Moon
-  const cx=w/2, cy=h+400, r=h+250, ang=(t-0.5)*Math.PI;
-  ctx.shadowBlur=50; ctx.shadowColor="gold"; ctx.fillStyle="#fbbf24"; // Sun
-  ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r, cy+Math.cos(ang)*r, 50,0,6.28); ctx.fill();
-  ctx.shadowBlur=30; ctx.shadowColor="#fff"; ctx.fillStyle="#e2e8f0"; // Moon
-  ctx.beginPath(); ctx.arc(cx+Math.sin(ang+Math.PI)*r, cy+Math.cos(ang+Math.PI)*r, 40,0,6.28); ctx.fill();
+  const cx=w/2, cy=h+300, r=h+150, ang=(t-0.5)*Math.PI;
+  ctx.shadowBlur=40; ctx.shadowColor="gold"; ctx.fillStyle="#fbbf24"; 
+  ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r, cy+Math.cos(ang)*r, 45,0,6.28); ctx.fill();
+  ctx.shadowBlur=20; ctx.shadowColor="#fff"; ctx.fillStyle="#e2e8f0"; 
+  ctx.beginPath(); ctx.arc(cx+Math.sin(ang+Math.PI)*r, cy+Math.cos(ang+Math.PI)*r, 35,0,6.28); ctx.fill();
   ctx.shadowBlur=0;
 
-  // Clouds
-  ctx.fillStyle="rgba(255,255,255,0.4)";
-  ENV.clouds.forEach(c=>{
-     c.x+=c.v; if(c.x>w+200) c.x=-200;
-     drawPuff(c.x,c.y,c.s);
-  });
+  ctx.fillStyle="rgba(255,255,255,0.2)";
+  ENV.clouds.forEach(c=>{ c.x+=c.v; if(c.x>w+200) c.x=-200; drawPuff(c.x,c.y,c.s); });
 
-  // Mountains
-  ctx.fillStyle="#0f172a";
+  // Sleek Mountains
+  ctx.fillStyle="#060913";
   ctx.beginPath(); ctx.moveTo(0,h);
-  for(let x=0;x<=w;x+=20) ctx.lineTo(x, h*0.6 - Math.abs(Math.sin(x*0.003)*100 + Math.cos(x*0.01)*30));
-  ctx.lineTo(w,h); ctx.fill();
-  ctx.fillStyle="#1e293b";
-  ctx.beginPath(); ctx.moveTo(0,h);
-  for(let x=0;x<=w;x+=30) ctx.lineTo(x, h*0.75 - Math.abs(Math.sin(x*0.005)*50 + Math.cos(x*0.02)*20));
+  for(let x=0;x<=w;x+=20) ctx.lineTo(x, h*0.7 - Math.abs(Math.sin(x*0.002)*80 + Math.cos(x*0.008)*20));
   ctx.lineTo(w,h); ctx.fill();
 
-  // World (Cam)
   ctx.save();
   ctx.translate(CAM.x, CAM.y);
   ctx.scale(CAM.zoom, CAM.zoom);
@@ -417,51 +517,39 @@ function drawPuff(x,y,s) {
 function drawWorld() {
   const t=STATE.trees[STATE.activeIdx];
   if(!t) return;
-  const spec=SPECIES[t.key], potH=70;
+  const spec=SPECIES[t.key], potH=60;
   
-  // Pot Back
-  ctx.fillStyle="#27272a"; ctx.beginPath(); ctx.ellipse(0,0,90,25,0,0,6.28); ctx.fill();
-  ctx.fillStyle="#3e2723"; ctx.beginPath(); ctx.ellipse(0,0,82,20,0,0,6.28); ctx.fill();
+  ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill();
+  ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
 
-  // Recursive Tree
   ctx.lineCap="round";
   function render(b) {
     if(b.len<1) return;
-    
-    // Branch
     ctx.lineWidth=b.thick; ctx.strokeStyle=spec.bark[0];
     if(b===HOVER) ctx.strokeStyle = (INPUT==='prune'?'#f87171':INPUT==='graft'?'#60a5fa':INPUT==='bend'?'#facc15':'#fff');
     ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.endX, b.endY); ctx.stroke();
     
-    // Details
     if(b.cut) { ctx.fillStyle="#aaa"; ctx.beginPath(); ctx.arc(b.endX,b.endY,b.thick*0.4,0,6.28); ctx.fill(); }
     if(b.grafted) { ctx.fillStyle="#fffc"; ctx.beginPath(); ctx.arc(b.x,b.y,b.thick*0.6,0,6.28); ctx.fill(); }
 
-    // LEAVES - NEW STYLE
     if(!b.cut && b.leaves.length) {
        const sIdx = Math.floor(t.days/30)%4; 
        let cols = spec.color;
-       if(sIdx===2 && spec.leaf!=='needle') cols = ["#b45309", "#d97706"]; // Fall
+       if(sIdx===2 && spec.leaf!=='needle') cols = ["#b45309", "#d97706"]; 
        
        for(let l of b.leaves) {
           ctx.save();
           const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
-          ctx.translate(px,py);
-          ctx.rotate(b.angle + l.r); 
+          ctx.translate(px,py); ctx.rotate(b.angle + l.r); 
           
           if(spec.leaf === 'needle') {
              ctx.strokeStyle=cols[0];
              for(let i=0;i<5;i++) { ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo((Math.random()-0.5)*l.s*3, -l.s*2); ctx.stroke(); }
           } else {
              ctx.fillStyle = cols[0];
-             ctx.beginPath();
-             ctx.ellipse(l.s, 0, l.s, l.s*(spec.leaf==='fat'?0.5:0.4), 0,0,6.28);
-             ctx.fill();
-             
+             ctx.beginPath(); ctx.ellipse(l.s, 0, l.s, l.s*(spec.leaf==='fat'?0.5:0.4), 0,0,6.28); ctx.fill();
              ctx.fillStyle = cols[1];
-             ctx.beginPath();
-             ctx.ellipse(l.s, 0, l.s*0.6, l.s*0.15, 0,0,6.28);
-             ctx.fill();
+             ctx.beginPath(); ctx.ellipse(l.s, 0, l.s*0.6, l.s*0.15, 0,0,6.28); ctx.fill();
           }
           ctx.restore();
        }
@@ -470,45 +558,28 @@ function drawWorld() {
   }
   render(t.root);
 
-  // Pot Front
   const pg=ctx.createLinearGradient(0,0,0,potH);
-  pg.addColorStop(0,"#444"); pg.addColorStop(1,"#111");
-  if(t.pot==='pot_clay') { pg.addColorStop(0,"#8d6e63"); pg.addColorStop(1,"#3e2723"); }
+  pg.addColorStop(0,"#2a2a2e"); pg.addColorStop(1,"#09090b");
+  if(t.pot==='pot_clay') { pg.addColorStop(0,"#785346"); pg.addColorStop(1,"#2d1d18"); }
   else if(t.pot==='pot_zen') { pg.addColorStop(0,"#1e293b"); pg.addColorStop(1,"#020617"); }
   ctx.fillStyle=pg;
-  ctx.beginPath(); ctx.moveTo(-90,0); 
-  ctx.quadraticCurveTo(-90,potH, -60,potH); ctx.lineTo(60,potH); 
-  ctx.quadraticCurveTo(90,potH, 90,0); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-85,0); 
+  ctx.quadraticCurveTo(-85,potH, -55,potH); ctx.lineTo(55,potH); 
+  ctx.quadraticCurveTo(85,potH, 85,0); ctx.fill();
 
-  // Partikel Zeichnen (Wasser)
-  ctx.fillStyle = "rgba(56, 189, 248, 0.7)";
-  ENV.particles.forEach(p => {
-     ctx.beginPath();
-     ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
-     ctx.fill();
-  });
+  ctx.fillStyle = "rgba(56, 189, 248, 0.8)";
+  ENV.particles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, Math.PI*2); ctx.fill(); });
 }
 
-let lastT=0;
-let lastUiT=0;
+let lastT=0; let lastUiT=0;
 function loop(now) {
   if(!now) now = performance.now();
-  let dt = (now-lastT)/1000; 
-  if(dt>0.1) dt=0.1; 
-  lastT=now;
-  
-  update(dt); 
-  draw();
-  
-  if(now - lastUiT > 500) { 
-     updateRealtimeUI();
-     lastUiT = now;
-  }
-  
+  let dt = (now-lastT)/1000; if(dt>0.1) dt=0.1; lastT=now;
+  update(dt); draw();
+  if(now - lastUiT > 500) { updateRealtimeUI(); lastUiT = now; }
   requestAnimationFrame(loop);
 }
 
-// ---------------- SYSTEM ----------------
 function generateQuests() {
   STATE.quests = [];
   const acts = ["water","prune","grow"];
@@ -517,11 +588,10 @@ function generateQuests() {
      let n = Math.floor(Math.random()*5)+3;
      STATE.quests.push({ txt:`Daily: ${type==='water'?'Gieße':'Nutze'} ${n}x`, reward: n*20, done:false });
   }
-  for(let i=1;i<=5;i++) STATE.quests.push({txt:`Habe ${i} Bäume`, reward:i*200, done:false});
+  for(let i=1;i<=3;i++) STATE.quests.push({txt:`Habe ${i} Bäume`, reward:i*200, done:false});
   updateListUI();
 }
 
-// Global Interfaces for inline HTML
 window.buy = function(what, key, cost) {
   if(STATE.money>=cost) {
      STATE.money-=cost;
@@ -529,45 +599,31 @@ window.buy = function(what, key, cost) {
        if(STATE.trees.length>=10) return notify("Platz voll!");
        const t=new Tree(key, SPECIES[key].name);
        STATE.trees.push(t); STATE.activeIdx=STATE.trees.length-1;
-     } else {
-       STATE.inventory[what+'s'].push(key);
-     }
-     notify("Gekauft!"); 
-     updateListUI();
-  } else notify("Zu teuer!");
+     } else { STATE.inventory[what+'s'].push(key); }
+     notify("Erfolgreich Gekauft!"); updateListUI();
+  } else notify("Zu wenig Guthaben");
 }
 
-window.selectTree = function(idx) { STATE.activeIdx = idx; updateListUI(); }
+window.selectTree = function(idx) { STATE.activeIdx = idx; updateListUI(); window.closeAllPanels(); }
 window.equipPot = function(k) { STATE.trees[STATE.activeIdx].pot = k; updateListUI(); }
 window.equipSoil = function(k) { STATE.trees[STATE.activeIdx].soil = k; updateListUI(); }
 
 function setTool(t) { 
   INPUT = (INPUT===t ? 'none' : t); 
   document.querySelectorAll('.btn-grid .btn').forEach(b=>b.classList.remove('active'));
-  if(INPUT!=='none') {
-    let el = $('tool'+t.charAt(0).toUpperCase()+t.slice(1));
-    if(el) el.classList.add('active');
-  }
-  notify(INPUT === 'none' ? 'Werkzeug abgewählt' : INPUT);
+  if(INPUT!=='none') { $('tool'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active'); }
 }
 
-// ---------------- EINGABE & TOUCH LOGIK ----------------
-function getMouseWorld(mx, my) {
-  return { x: (mx-CAM.x)/CAM.zoom, y: (my-CAM.y)/CAM.zoom };
-}
-
+function getMouseWorld(mx, my) { return { x: (mx-CAM.x)/CAM.zoom, y: (my-CAM.y)/CAM.zoom }; }
 function findHover(wx, wy) {
-  let best=null, dist=9999;
-  const t = STATE.trees[STATE.activeIdx];
-  if(!t) return;
+  let best=null, dist=9999; const t = STATE.trees[STATE.activeIdx]; if(!t) return;
   function walk(b) {
      const cx=(b.x+b.endX)/2, cy=(b.y+b.endY)/2;
      const d=(cx-wx)**2+(cy-wy)**2;
      if(d < 400 * Math.max(1,b.thick) && d<dist) { dist=d; best=b; }
      b.children.forEach(walk);
   }
-  walk(t.root);
-  HOVER = best;
+  walk(t.root); HOVER = best;
 }
 
 function processActionClick() {
@@ -589,17 +645,10 @@ function handlePointerDown(clientX, clientY) {
   const w = getMouseWorld(MOUSE.x, MOUSE.y);
   MOUSE.worldX = w.x; MOUSE.worldY = w.y;
 
-  if(INPUT==='none') {
-      MOUSE.drag=true; 
-  } else if(INPUT==='water') {
-      WATERING = true;
-  } else if(INPUT==='bend') {
-      findHover(w.x, w.y);
-      if(HOVER) BEND_TARGET = HOVER;
-  } else {
-      findHover(w.x, w.y);
-      processActionClick();
-  }
+  if(INPUT==='none') { MOUSE.drag=true; } 
+  else if(INPUT==='water') { WATERING = true; } 
+  else if(INPUT==='bend') { findHover(w.x, w.y); if(HOVER) BEND_TARGET = HOVER; } 
+  else { findHover(w.x, w.y); processActionClick(); }
 }
 
 function handlePointerMove(clientX, clientY) {
@@ -607,95 +656,65 @@ function handlePointerMove(clientX, clientY) {
   const mx = clientX - rect.left, my = clientY - rect.top;
   const dx = mx - MOUSE.x, dy = my - MOUSE.y;
   MOUSE.x = mx; MOUSE.y = my;
-  const w = getMouseWorld(mx, my);
-  MOUSE.worldX = w.x; MOUSE.worldY = w.y;
+  const w = getMouseWorld(mx, my); MOUSE.worldX = w.x; MOUSE.worldY = w.y;
 
-  if(MOUSE.drag){ 
-     CAM.x+=dx; CAM.y+=dy; 
-  } else if(BEND_TARGET && INPUT==='bend') {
-     // Biegen: Berechne Winkel von Ast-Start zum Finger
-     let angle = Math.atan2(w.y - BEND_TARGET.y, w.x - BEND_TARGET.x);
-     BEND_TARGET.targetAngle = angle;
-  } else if(INPUT!=='none') { 
-     findHover(w.x, w.y); 
-     cv.style.cursor=HOVER?'crosshair':'default'; 
-  }
+  if(MOUSE.drag){ CAM.x+=dx; CAM.y+=dy; } 
+  else if(BEND_TARGET && INPUT==='bend') { BEND_TARGET.targetAngle = Math.atan2(w.y - BEND_TARGET.y, w.x - BEND_TARGET.x); } 
+  else if(INPUT!=='none') { findHover(w.x, w.y); cv.style.cursor=HOVER?'crosshair':'default'; }
 }
 
-function handlePointerUp() {
-  MOUSE.drag=false;
-  BEND_TARGET=null;
-  WATERING=false;
-  HOVER=null; // <--- HIER IST DER FIX: Hover wird beim Loslassen sofort zurückgesetzt
-}
+function handlePointerUp() { MOUSE.drag=false; BEND_TARGET=null; WATERING=false; HOVER=null; }
 
-// Mouse Events
 cv.onmousedown = e => handlePointerDown(e.clientX, e.clientY);
 cv.onmousemove = e => handlePointerMove(e.clientX, e.clientY);
 window.onmouseup = handlePointerUp;
 cv.oncontextmenu = e => e.preventDefault();
 cv.onwheel = e => { e.preventDefault(); CAM.zoom = Math.min(Math.max(0.5, CAM.zoom - e.deltaY*0.001), 4); };
 
-// Touch Events (iOS & Android)
 let lastTouchDist = 0;
 cv.addEventListener('touchstart', e => {
-  if(e.touches.length === 2) {
-      lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-  } else if(e.touches.length === 1) {
-      handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
-  }
+  if(e.touches.length === 2) { lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } 
+  else if(e.touches.length === 1) { handlePointerDown(e.touches[0].clientX, e.touches[0].clientY); }
   e.preventDefault(); 
 }, {passive: false});
 
 cv.addEventListener('touchmove', e => {
   if(e.touches.length === 2) {
       let dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      let delta = dist - lastTouchDist;
-      CAM.zoom = Math.min(Math.max(0.5, CAM.zoom + delta*0.01), 4);
-      lastTouchDist = dist;
-  } else if(e.touches.length === 1) {
-      handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
-  }
+      CAM.zoom = Math.min(Math.max(0.5, CAM.zoom + (dist - lastTouchDist)*0.01), 4); lastTouchDist = dist;
+  } else if(e.touches.length === 1) { handlePointerMove(e.touches[0].clientX, e.touches[0].clientY); }
   e.preventDefault();
 }, {passive: false});
 
 cv.addEventListener('touchend', e => { handlePointerUp(); e.preventDefault(); }, {passive: false});
 
-
-// UI DOM UPDATES
 function notify(m) { 
-  const t=$('toast'); t.innerText=m; t.style.opacity=1; 
-  setTimeout(()=>t.style.opacity=0,2000); 
+  const t=$('toast'); t.innerText=m; t.classList.add('show'); 
+  setTimeout(()=>t.classList.remove('show'), 2500); 
 }
 
 function updateRealtimeUI() {
-  const t = STATE.trees[STATE.activeIdx];
-  if(!t) return;
+  const t = STATE.trees[STATE.activeIdx]; if(!t) return;
   
   $('uiDay').innerText="Tag "+t.days;
-  
   const seasons = ["Frühling", "Sommer", "Herbst", "Winter"];
-  const seasonColors = ["#4ade80", "#fbbf24", "#d97706", "#94a3b8"];
+  const seasonColors = ["var(--success)", "var(--gold)", "#f97316", "var(--text-muted)"];
   const sIdx = Math.floor(t.days/30)%4;
-  $('uiSeason').innerText = seasons[sIdx];
-  $('uiSeason').style.color = seasonColors[sIdx];
+  $('uiSeason').innerText = seasons[sIdx]; $('uiSeason').style.color = seasonColors[sIdx];
   
   let w = Math.max(0, Math.min(100, t.water));
-  $('barWater').style.width = w+"%";
-  $('uiWaterVal').innerText = Math.round(w)+"%";
-  
+  $('barWater').style.width = w+"%"; $('uiWaterVal').innerText = Math.round(w)+"%";
   let hp = Math.max(0, Math.min(100, t.hp));
-  $('barHp').style.width = hp+"%";
-  $('uiHpVal').innerText = Math.round(hp)+"%";
+  $('barHp').style.width = hp+"%"; $('uiHpVal').innerText = Math.round(hp)+"%";
 }
 
 window.updateListUI = function() {
-  // Collection
   let h="";
   STATE.trees.forEach((t,i)=>{
-     h += `<div class="list-item" onclick="selectTree(${i})" style="border-color:${i===STATE.activeIdx?'var(--accent)':'transparent'}; background:${i===STATE.activeIdx?'rgba(255,255,255,0.08)':'rgba(255,255,255,0.03)'}">
-        <div style="background:${SPECIES[t.key].color[0]}; width:30px; height:30px; border-radius:50%"></div>
-        <div><b>${t.name}</b><br><small>${SPECIES[t.key].name}</small></div>
+     let isSel = i===STATE.activeIdx;
+     h += `<div class="list-item ${isSel?'selected':''}" onclick="selectTree(${i})">
+        <div class="tree-icon" style="background:${SPECIES[t.key].color[0]}"></div>
+        <div class="list-info"><span class="list-title">${t.name}</span><span class="list-sub">${SPECIES[t.key].name}</span></div>
      </div>`;
   });
   $('collectionList').innerHTML = h; 
@@ -706,49 +725,36 @@ window.updateListUI = function() {
   
   $('shopMoney').innerText = STATE.money;
   
-  // Shop Töpfe
   let potsHtml = "";
   Object.keys(ITEMS).forEach(k => {
      if(ITEMS[k].type !== 'pot') return;
-     let item = ITEMS[k];
-     let owned = STATE.inventory.pots.includes(k);
-     let isActive = STATE.trees[STATE.activeIdx] && STATE.trees[STATE.activeIdx].pot === k;
-     potsHtml += `<div class="list-item">
-        <div style="flex:1"><b>${item.name}</b><br><small style="color:var(--text-muted)">Wachstum: +${Math.round((item.bonus-1)*100)}%</small></div>
-        ${owned 
-           ? `<button class="btn ${isActive?'active':''}" style="padding:6px 10px; font-size:11px" onclick="equipPot('${k}')">Nutzen</button>` 
-           : `<button class="btn" style="padding:6px 10px; font-size:11px; background:var(--gold); color:#000" onclick="buy('pot', '${k}', ${item.cost})">${item.cost} 💰</button>`
-        }
+     let item = ITEMS[k], owned = STATE.inventory.pots.includes(k), isActive = STATE.trees[STATE.activeIdx]?.pot === k;
+     potsHtml += `<div class="list-item ${isActive?'selected':''}">
+        <div class="list-info"><span class="list-title">${item.name}</span><span class="list-sub">Bonus: +${Math.round((item.bonus-1)*100)}%</span></div>
+        ${owned ? `<button class="btn" style="padding:6px 12px; font-size:11px" onclick="equipPot('${k}')">${isActive?'Aktiv':'Nutzen'}</button>` 
+                : `<button class="btn" style="padding:6px 12px; font-size:11px; color:var(--gold); border-color:var(--gold)" onclick="buy('pot', '${k}', ${item.cost})">${item.cost} 💰</button>`}
      </div>`;
   });
   $('shopPotsList').innerHTML = potsHtml;
 
-  // Shop Erde
   let soilsHtml = "";
   Object.keys(ITEMS).forEach(k => {
      if(ITEMS[k].type !== 'soil') return;
-     let item = ITEMS[k];
-     let owned = STATE.inventory.soils.includes(k);
-     let isActive = STATE.trees[STATE.activeIdx] && STATE.trees[STATE.activeIdx].soil === k;
-     soilsHtml += `<div class="list-item">
-        <div style="flex:1"><b>${item.name}</b><br><small style="color:var(--text-muted)">Speed: +${Math.round((item.boost-1)*100)}%</small></div>
-        ${owned 
-           ? `<button class="btn ${isActive?'active':''}" style="padding:6px 10px; font-size:11px" onclick="equipSoil('${k}')">Nutzen</button>` 
-           : `<button class="btn" style="padding:6px 10px; font-size:11px; background:var(--gold); color:#000" onclick="buy('soil', '${k}', ${item.cost})">${item.cost} 💰</button>`
-        }
+     let item = ITEMS[k], owned = STATE.inventory.soils.includes(k), isActive = STATE.trees[STATE.activeIdx]?.soil === k;
+     soilsHtml += `<div class="list-item ${isActive?'selected':''}">
+        <div class="list-info"><span class="list-title">${item.name}</span><span class="list-sub">Speed: +${Math.round((item.boost-1)*100)}%</span></div>
+        ${owned ? `<button class="btn" style="padding:6px 12px; font-size:11px" onclick="equipSoil('${k}')">${isActive?'Aktiv':'Nutzen'}</button>` 
+                : `<button class="btn" style="padding:6px 12px; font-size:11px; color:var(--gold); border-color:var(--gold)" onclick="buy('soil', '${k}', ${item.cost})">${item.cost} 💰</button>`}
      </div>`;
   });
   $('shopSoilsList').innerHTML = soilsHtml;
 
-  // Quests
   let qHtml = "";
   STATE.quests.forEach((q, i) => {
-     qHtml += `<div class="list-item">
-        <div style="flex:1; opacity:${q.done?0.5:1}"><b>${q.txt}</b></div>
-        ${q.done 
-           ? `<span class="tag">Fertig</span>` 
-           : `<button class="btn" style="padding:6px 10px; font-size:11px; background:var(--success); color:#000" onclick="claimQuest(${i})">${q.reward} 💰</button>`
-        }
+     qHtml += `<div class="list-item" style="opacity:${q.done?0.5:1}">
+        <div class="list-info"><span class="list-title">${q.txt}</span></div>
+        ${q.done ? `<span class="tag">Fertig</span>` 
+                 : `<button class="btn" style="padding:6px 12px; font-size:11px; color:var(--success); border-color:var(--success)" onclick="claimQuest(${i})">${q.reward} 💰</button>`}
      </div>`;
   });
   $('questList').innerHTML = qHtml;
@@ -756,39 +762,24 @@ window.updateListUI = function() {
 
 window.claimQuest = function(idx) {
   if(!STATE.quests[idx].done) {
-     STATE.quests[idx].done = true;
-     STATE.money += STATE.quests[idx].reward;
-     notify(`+${STATE.quests[idx].reward} 💰`);
-     updateListUI();
+     STATE.quests[idx].done = true; STATE.money += STATE.quests[idx].reward;
+     notify(`+${STATE.quests[idx].reward} 💰`); updateListUI();
   }
 };
 
-function saveGame() { localStorage.setItem("bonsai_v32", JSON.stringify({money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})) })); }
-function loadGame() {
-  try {
-    const d=JSON.parse(localStorage.getItem("bonsai_v32"));
-    if(d) {
-       STATE.money=d.money ?? 500; 
-       STATE.inventory=d.inv || STATE.inventory;
-       STATE.activeIdx=d.activeIdx || 0;
-       STATE.trees=d.trees.map(td=>{
-          let t=new Tree(td.key, td.name);
-          Object.assign(t, td); t.root = Branch.deserialize(td.root, null);
-          return t;
-       });
-    }
-  } catch(e) {}
-}
-window.hardReset = () => { localStorage.removeItem("bonsai_v32"); location.reload(); };
-setInterval(saveGame, 5000);
+window.closeAllPanels = function() {
+  document.querySelectorAll('.overlay-sheet').forEach(p=>p.classList.remove('open'));
+  $('overlayBg').classList.remove('open');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('open'));
+};
 
-// BINDINGS
 document.querySelectorAll('.tab-btn').forEach(b=>{ 
   if(!b.dataset.target) return;
   b.onclick=()=>{ 
-    const t=$(b.dataset.target); 
-    document.querySelectorAll('.overlay-panel').forEach(p=>{if(p!==t)p.classList.remove('open')}); 
-    t.classList.toggle('open'); 
+    let t=$(b.dataset.target);
+    let wasOpen = t.classList.contains('open');
+    closeAllPanels();
+    if(!wasOpen) { t.classList.add('open'); $('overlayBg').classList.add('open'); b.classList.add('open'); }
     updateListUI(); 
   }
 });
@@ -800,16 +791,23 @@ $('inpGrowMult').oninput=e=>SETTINGS.growMult=parseFloat(e.target.value);
 $('inpLeafLimit').oninput=e=>SETTINGS.maxLeaves=parseInt(e.target.value);
 $('inpWind').oninput=e=>SETTINGS.windSpeed=parseFloat(e.target.value);
 
-$('btnBuyTree').onclick=()=>{
-   buy('tree', Object.keys(SPECIES)[Math.floor(Math.random()*Object.keys(SPECIES).length)], 100);
+$('btnBuyTree').onclick=()=>{ buy('tree', Object.keys(SPECIES)[Math.floor(Math.random()*Object.keys(SPECIES).length)], 100); }
+$('btnPhoto').onclick=()=>{ let a=document.createElement('a'); a.download="bonsai.png"; a.href=cv.toDataURL(); a.click(); };
+
+function saveGame() { localStorage.setItem("bonsai_v40", JSON.stringify({money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})) })); }
+function loadGame() {
+  try {
+    const d=JSON.parse(localStorage.getItem("bonsai_v40"));
+    if(d) {
+       STATE.money=d.money ?? 500; STATE.inventory=d.inv || STATE.inventory; STATE.activeIdx=d.activeIdx || 0;
+       STATE.trees=d.trees.map(td=>{ let t=new Tree(td.key, td.name); Object.assign(t, td); t.root = Branch.deserialize(td.root, null); return t; });
+    }
+  } catch(e) {}
 }
-$('btnPhoto').onclick=()=>{
-   let a=document.createElement('a'); a.download="bonsai.png"; a.href=cv.toDataURL(); a.click();
-};
+window.hardReset = () => { localStorage.removeItem("bonsai_v40"); location.reload(); };
+setInterval(saveGame, 5000);
 
 function resize() { cv.width=$('viewport').clientWidth; cv.height=$('viewport').clientHeight; }
-
-// SPIEL STARTEN
 init();
 
 })();
