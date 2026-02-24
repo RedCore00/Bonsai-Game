@@ -721,6 +721,103 @@ const PAD_LEAF_COUNT = 3; // leaves drawn per group
   const $ = (id)=>document.getElementById(id);
   
 
+
+// ---------------- DEBUG ----------------
+const DEBUG = true;
+const DBG = {
+  t0: performance.now(),
+  lines: [],
+  max: 160,
+  lastErr: null,
+  lastRej: null
+};
+
+function dbgShow(){ const el=$("dbg"); if(el) el.style.display="block"; }
+function dbgHide(){ const el=$("dbg"); if(el) el.style.display="none"; }
+
+function dbgLine(s){
+  const ts=((performance.now()-DBG.t0)/1000).toFixed(2);
+  const line=`[${ts}s] ${s}`;
+  DBG.lines.push(line);
+  if(DBG.lines.length>DBG.max) DBG.lines.shift();
+  const log=$("dbgLog");
+  if(log) log.textContent = DBG.lines.join("\n");
+}
+
+function dbgState(){
+  const sm=$("startMenu");
+  let leaf="?", tree="no";
+  try{
+    if(typeof activeTree==="function" && activeTree()){
+      tree="yes";
+      leaf=String(activeTree().leafCountApprox||0);
+    }
+  }catch(_){}
+  const st=[
+    `isRunning=${(typeof isRunning!=="undefined") ? isRunning : "?"}`,
+    `menuDisplay=${sm ? sm.style.display : "?"}`,
+    `menuClass=${document.body.classList.contains("menuOpen")}`,
+    `tree=${tree}`,
+    `leafApprox=${leaf}`,
+    `lastErr=${DBG.lastErr ? DBG.lastErr : "none"}`,
+    `lastRej=${DBG.lastRej ? DBG.lastRej : "none"}`
+  ].join("\n");
+  const el=$("dbgState");
+  if(el) el.textContent=st;
+}
+
+(function(){
+  const olog=console.log.bind(console);
+  const owarn=console.warn.bind(console);
+  const oerr=console.error.bind(console);
+  console.log=(...a)=>{ try{ dbgLine("LOG  "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; olog(...a); };
+  console.warn=(...a)=>{ try{ dbgLine("WARN "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; owarn(...a); };
+  console.error=(...a)=>{ try{ dbgLine("ERR  "+a.map(x=>String(x)).join(" ")); dbgState(); }catch(_){}; oerr(...a); };
+})();
+
+window.addEventListener("error",(e)=>{
+  try{
+    DBG.lastErr = `${e.message} @ ${e.filename}:${e.lineno}:${e.colno}`;
+    dbgShow();
+    dbgLine("UNCAUGHT "+DBG.lastErr);
+    dbgState();
+  }catch(_){}
+});
+
+window.addEventListener("unhandledrejection",(e)=>{
+  try{
+    DBG.lastRej = String(e.reason||"unhandledrejection");
+    dbgShow();
+    dbgLine("REJECT "+DBG.lastRej);
+    dbgState();
+  }catch(_){}
+});
+
+window.addEventListener("keydown",(e)=>{ if(e.key==="d"||e.key==="D"){ dbgShow(); dbgState(); } });
+
+let __dbgTap=0, __dbgTapT=0;
+window.addEventListener("pointerdown",(e)=>{
+  const now=performance.now();
+  if(now-__dbgTapT>600){ __dbgTap=0; }
+  __dbgTapT=now;
+  __dbgTap++;
+  if(__dbgTap>=5){
+    __dbgTap=0;
+    dbgShow();
+    dbgLine("DEBUG OPEN (5 taps)");
+    dbgState();
+  }
+}, {capture:true, passive:true});
+
+function dbgInitUI(){
+  const b1=$("dbgHide"); if(b1) b1.addEventListener("click",()=>dbgHide());
+  const b2=$("dbgCopy"); if(b2) b2.addEventListener("click",async ()=>{
+    const payload = ["STATE", $("dbgState")?.textContent||"", "", "LOG", $("dbgLog")?.textContent||""].join("\n");
+    try{ await navigator.clipboard.writeText(payload); dbgLine("copied to clipboard"); }catch(_){ dbgLine("clipboard failed"); }
+  });
+}
+// ---------------------------------------
+
 function bindTap(id, fn){
   const el=$(id);
   if(!el) return;
@@ -3617,6 +3714,7 @@ window.addEventListener("blur",()=>{
   // Start menu
   // ------------------------------------------------------------
   function showMenu(){
+    console.log("showMenu()");
     document.body.classList.add("menuOpen");
     isRunning=false;
     $("startMenu").style.display="flex";
@@ -3625,6 +3723,7 @@ window.addEventListener("blur",()=>{
     saveNow();
   }
   function hideMenu(){
+    console.log("hideMenu()");
     document.body.classList.remove("menuOpen");
     $("startMenu").style.display="none";
     isRunning=true;
@@ -3726,6 +3825,7 @@ window.addEventListener("blur",()=>{
     syncDrawerMode();
     updateSettingsUI();
     showMenu();
+    dbgInitUI(); dbgState();
     requestAnimationFrame(frame);
   }
 
@@ -3746,5 +3846,22 @@ setTimeout(()=>{
 
 })();
 </script>
+
+<!-- DEBUG OVERLAY -->
+<div id="dbg" style="position:fixed;left:10px;bottom:10px;z-index:9999;max-width:min(520px,calc(100vw - 20px));
+  background:rgba(0,0,0,0.62);color:#eaf1fb;border:1px solid rgba(255,255,255,0.15);
+  border-radius:12px;padding:10px;backdrop-filter: blur(8px);font:12px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  display:none;">
+  <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
+    <div style="font-weight:700">DEBUG</div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button id="dbgCopy" style="all:unset;cursor:pointer;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14)">Copy</button>
+      <button id="dbgHide" style="all:unset;cursor:pointer;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14)">Hide</button>
+    </div>
+  </div>
+  <div id="dbgState" style="margin-top:8px;color:#9fb2c7;white-space:pre-wrap"></div>
+  <div id="dbgLog" style="margin-top:8px;max-height:34vh;overflow:auto;white-space:pre-wrap"></div>
+</div>
+
 </body>
 </html>
