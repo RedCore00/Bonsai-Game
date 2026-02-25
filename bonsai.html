@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v7.5 (Complete & Polished)</title>
+<title>Bonsai Master v7.6 (Fixed Physics)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -53,7 +53,7 @@
     position: absolute; top: 0; left: 0; 
     width: 100%; height: 100%;
     z-index: 10; pointer-events: none; 
-    display: flex; flex-direction: column; justify-content: space-between;
+    display: flex; flex-direction: column; justify-content: flex-end;
   }
 
   .glass {
@@ -63,19 +63,6 @@
     box-shadow: var(--glass-shadow);
     pointer-events: auto;
   }
-
-  /* --- TOP HEADER --- */
-  .tree-header {
-    margin: env(safe-area-inset-top, 20px) 20px 0 20px;
-    padding: 10px 18px; border-radius: 18px;
-    align-self: flex-start;
-    border-top: 1px solid rgba(255,255,255,0.3); 
-    border-left: 1px solid rgba(255,255,255,0.2);
-    display: flex; justify-content: space-between; align-items: center; min-width: 200px;
-  }
-  .tree-info h1 { margin: 0; font-size: 18px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-  .tree-info p { margin: 2px 0 0 0; font-size: 11px; color: var(--accent); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
-  .money-display { font-weight: 700; color: var(--gold); text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 14px; }
 
   /* --- BOTTOM UI AREA --- */
   .bottom-area {
@@ -89,7 +76,7 @@
     border-top: 1px solid rgba(255,255,255,0.2);
     display: flex; flex-direction: column; gap: 12px;
   }
-  .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .stat-row-top { display: flex; justify-content: space-between; align-items: flex-start; }
   .stat-group { display: flex; gap: 20px; }
   .stat-item { display: flex; align-items: baseline; gap: 8px; }
   .s-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
@@ -244,20 +231,16 @@
 
 <div class="ui-layer">
   
-  <div class="tree-header glass">
-    <div class="tree-info">
-      <h1 id="uiTreeName">Baum</h1>
-      <p id="uiSpeciesName">Spezies</p>
-    </div>
-    <div class="money-display" id="uiMoneyTop">0 💰</div>
-  </div>
-
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
         <div class="stat-group">
           <div class="stat-item"><span class="s-label">Alter</span><span class="s-val" id="uiDay">Tag 0</span></div>
           <div class="stat-item"><span class="s-label">Saison</span><span class="s-val" id="uiSeason" style="color:var(--accent); text-shadow:0 0 8px var(--accent-glow)">Sommer</span></div>
+        </div>
+        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; margin-left: 10px;">
+          <span class="s-val" id="uiTreeName" style="font-size: 15px; font-weight: 700;">Baum</span>
+          <span class="s-label" id="uiSpeciesName" style="color: var(--accent); margin-top: 2px;">Spezies</span>
         </div>
       </div>
       <div class="stat-row-bars">
@@ -563,13 +546,14 @@ function setupInteractions() {
         // --- Falling Parts Logic (Physik für abgeschnittene Äste) ---
         const spec = SPECIES[STATE.trees[STATE.activeIdx].key];
         function dropChildren(b) {
-          // Aststück zur Physik-Engine hinzufügen
+          // Echte Länge für das Holzstück berechnen (verhindert das Langziehen-Bug!)
+          const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
           ENV.fallingParts.push({ 
-            type: 'branch', x: b.x, y: b.y, ex: b.endX, ey: b.endY, 
+            type: 'branch', x: b.x, y: b.y, len: branchLen, 
             a: b.angle, th: b.thick, col: spec.bark[0], 
             vx: (Math.random() - 0.5) * 50, vy: Math.random() * 50, vr: (Math.random() - 0.5) * 5 
           });
-          // Blätter zur Physik-Engine hinzufügen
+          // Blätter
           b.leaves.forEach(l => {
             const px = b.x + (b.endX - b.x) * l.f;
             const py = b.y + (b.endY - b.y) * l.f;
@@ -711,7 +695,6 @@ function update(dt) {
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.a += p.vr * dt;
-    // Verschwinden lassen wenn sie weit unter dem Topf sind
     if(p.y > 250) ENV.fallingParts.splice(i, 1);
   }
 
@@ -863,8 +846,6 @@ function drawWorld() {
     
     ctx.shadowBlur = 0; // Shadow direkt resetten
     
-    // Die weißen und grauen Punkte an Schnittstellen (b.cut und b.grafted) wurden hier komplett entfernt!
-    
     if(!b.cut && b.leaves.length) {
        const sIdx = Math.floor(t.days / 30) % 4; 
        let cols = spec.color;
@@ -893,7 +874,7 @@ function drawWorld() {
   }
   render(t.root);
 
-  // Fallende Teile Rendern
+  // Fallende Teile Rendern (Mit gefixter Längen-Berechnung)
   ENV.fallingParts.forEach(p => {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -903,9 +884,9 @@ function drawWorld() {
           ctx.lineWidth = p.th;
           ctx.lineCap = "round";
           ctx.beginPath();
-          const len = Math.hypot(p.ex - p.x, p.ey - p.y);
-          ctx.moveTo(-len/2, 0);
-          ctx.lineTo(len/2, 0);
+          // Hier wird die vorberechnete, feste Länge benutzt!
+          ctx.moveTo(-p.len/2, 0);
+          ctx.lineTo(p.len/2, 0);
           ctx.stroke();
       } else if (p.type === 'leaf') {
           if(p.leafType === 'needle') {
