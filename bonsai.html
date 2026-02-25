@@ -7,20 +7,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v7.7 (Wind & Previews)</title>
+<title>Bonsai Master v7.8 (Realtime Thumbnails)</title>
 <style>
   :root {
-    --accent: #38bdf8; 
-    --accent-glow: rgba(56, 189, 248, 0.6);
-    --success: #34d399; 
-    --success-glow: rgba(52, 211, 153, 0.6);
-    --gold: #fbbf24; 
-    --gold-glow: rgba(251, 191, 36, 0.5);
-    --text: #ffffff; 
-    --text-muted: #94a3b8;
+    --accent: #38bdf8; --accent-glow: rgba(56, 189, 248, 0.6);
+    --success: #34d399; --success-glow: rgba(52, 211, 153, 0.6);
+    --gold: #fbbf24; --gold-glow: rgba(251, 191, 36, 0.5);
+    --text: #ffffff; --text-muted: #94a3b8;
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    --glass-bg: rgba(15, 20, 30, 0.45);
-    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-bg: rgba(15, 20, 30, 0.45); --glass-border: rgba(255, 255, 255, 0.15);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -67,7 +62,7 @@
   .list-item { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; transition: 0.2s; }
   .list-item.active-item { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
   .tree-preview { width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); }
-  .tree-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .tree-preview img { width: 100%; height: 100%; object-fit: contain; }
   .list-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   .list-title { font-size: 15px; font-weight: 700; }
   .list-sub { font-size: 12px; color: var(--text-muted); }
@@ -160,6 +155,9 @@
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 const ctx = cv.getContext('2d', {alpha: false});
+const thumbCanvas = document.createElement('canvas');
+thumbCanvas.width = 150; thumbCanvas.height = 150;
+const thumbCtx = thumbCanvas.getContext('2d');
 
 const SPECIES = {
   ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
@@ -200,10 +198,10 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave77');
+  const saved = localStorage.getItem('bonsaiSave78');
   if(saved) { try { let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; STATE.stats=data.stats||{totalWaters:0,totalPrunes:0,totalDays:0,itemsBought:0}; STATE.quests=data.quests||[]; if(data.trees&&data.trees.length){ STATE.trees=data.trees.map(t=>Tree.deserialize(t)); } STATE.activeIdx=data.activeIdx||0; if(STATE.activeIdx>=STATE.trees.length) STATE.activeIdx=0; } catch(e){console.error(e);} }
 }
-function saveGame() { localStorage.setItem('bonsaiSave77', JSON.stringify({ money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) })); }
+function saveGame() { localStorage.setItem('bonsaiSave78', JSON.stringify({ money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) })); }
 
 function init() {
   cv.width=$('viewport').clientWidth||window.innerWidth; cv.height=$('viewport').clientHeight||window.innerHeight;
@@ -290,30 +288,20 @@ function update(dt) {
 
   function sim(b,rx,ry) {
     if(!b.parent){b.x=rx;b.y=ry;}else{b.x=b.parent.endX;b.y=b.parent.endY;}
-    
-    // --- NEUE WIND PHYSIK ---
     let finalTargetAngle = b.targetAngle;
     if (b.depth > 0 && SETTINGS.windSpeed > 0.01) {
-        // Windstärke nimmt mit der Höhe (Tiefe) zu und wirkt stärker auf dünne Äste
         const windIntensity = (SETTINGS.windSpeed * 0.08) * (b.depth / Math.max(1, b.thick * 0.8));
-        // Sanftere Oszillation
         const windOscillation = Math.sin(Date.now() * 0.0008 * SETTINGS.windSpeed + b.windPhase + b.depth * 0.3);
         finalTargetAngle += windOscillation * windIntensity;
     }
-    // Sanfte Bewegung zum Zielwinkel
     b.angle += (finalTargetAngle - b.angle) * (2.5 * dt);
-    
     if(!b.cut&&b.len<b.maxLen&&tree.hp>0){
       b.len+=8*dt*growth; if(b.len>15)b.thick+=0.1*dt*growth*SETTINGS.thickMult;
       if(b.depth>0&&b.len>b.maxLen*0.85&&b.leaves.length<SETTINGS.maxLeaves&&Math.random()<SETTINGS.leafRate) b.leaves.push({f:0.85+Math.random()*0.15,r:Math.random()*6.28,s:0.1,ms:(8+Math.random()*6)*SETTINGS.leafSizeMult});
       if(b.len>b.maxLen*0.6&&!b.sprouted&&b.thick>3.0&&Math.random()<SETTINGS.sproutChance*growth){ b.sprouted=true; let cnt=Math.random()>0.4?2:1; for(let i=0;i<cnt;i++){ let dev=(Math.random()-0.5)*1.5; if(spec.weeping)dev=Math.abs(dev)+1.2; b.children.push(new Branch(b,0,0,b.angle+dev,b.maxLen*(0.6+Math.random()*0.3),b.thick*0.7,b.depth+1)); }}
     }
     if(b.cut&&b.leaves.length>0){ b.leaves.forEach(l=>l.s=Math.max(0,l.s-5*dt)); b.leaves=b.leaves.filter(l=>l.s>0); } else for(let l of b.leaves)if(l.s<l.ms)l.s+=10*dt;
-    
-    // Endposition basierend auf dem neuen Winkel berechnen (kein zusätzlicher "Sway" mehr nötig)
-    b.endX = b.x + Math.cos(b.angle) * b.len;
-    b.endY = b.y + Math.sin(b.angle) * b.len;
-    
+    b.endX = b.x + Math.cos(b.angle) * b.len; b.endY = b.y + Math.sin(b.angle) * b.len;
     b.children.forEach(c=>sim(c,0,0));
   }
   sim(tree.root,0,0); checkQuests();
@@ -336,7 +324,6 @@ function drawWorld() {
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; const spec=SPECIES[t.key], potH=60;
   ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
   if(BEND_TARGET&&INPUT==='bend'){ ctx.beginPath(); ctx.moveTo(BEND_TARGET.x,BEND_TARGET.y); ctx.lineTo(MOUSE.worldX,MOUSE.worldY); ctx.strokeStyle="rgba(250,204,21,0.6)"; ctx.lineWidth=2; ctx.setLineDash([8,8]); ctx.stroke(); ctx.setLineDash([]); }
-
   ctx.lineCap="round";
   function render(b) {
     if(b.len<1)return; ctx.lineWidth=b.thick; ctx.strokeStyle=spec.bark[0];
@@ -354,18 +341,12 @@ function drawWorld() {
     b.children.forEach(render);
   }
   render(t.root);
-
   ENV.fallingParts.forEach(p => {
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
-      if(p.type === 'branch') {
-          ctx.strokeStyle = p.col; ctx.lineWidth = p.th; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-p.len/2, 0); ctx.lineTo(p.len/2, 0); ctx.stroke();
-      } else if (p.type === 'leaf') {
-           if(p.leafType === 'needle') { ctx.strokeStyle = p.cols[0]; ctx.lineWidth = 1; for(let i=0; i<5; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * p.s * 3, -p.s * 2); ctx.stroke(); } }
-           else { ctx.fillStyle = p.cols[0]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s, p.s * (p.leafType === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill(); ctx.fillStyle = p.cols[1]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s * 0.6, p.s * 0.15, 0, 0, 6.28); ctx.fill(); }
-      }
+      if(p.type === 'branch') { ctx.strokeStyle = p.col; ctx.lineWidth = p.th; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-p.len/2, 0); ctx.lineTo(p.len/2, 0); ctx.stroke(); }
+      else if (p.type === 'leaf') { if(p.leafType === 'needle') { ctx.strokeStyle = p.cols[0]; ctx.lineWidth = 1; for(let i=0; i<5; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * p.s * 3, -p.s * 2); ctx.stroke(); } } else { ctx.fillStyle = p.cols[0]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s, p.s * (p.leafType === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill(); ctx.fillStyle = p.cols[1]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s * 0.6, p.s * 0.15, 0, 0, 6.28); ctx.fill(); } }
       ctx.restore();
   });
-
   const pg=ctx.createLinearGradient(0,0,0,potH); pg.addColorStop(0,"#2a2a2e"); pg.addColorStop(1,"#09090b"); if(t.pot==='pot_clay'){pg.addColorStop(0,"#785346");pg.addColorStop(1,"#2d1d18");} else if(t.pot==='pot_zen'){pg.addColorStop(0,"#1e293b");pg.addColorStop(1,"#020617");}
   ctx.fillStyle=pg; ctx.beginPath(); ctx.moveTo(-85,0); ctx.quadraticCurveTo(-85,potH,-55,potH); ctx.lineTo(55,potH); ctx.quadraticCurveTo(85,potH,85,0); ctx.fill();
   ctx.fillStyle="rgba(56,189,248,0.8)"; ENV.particles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,4,0,6.28); ctx.fill(); });
@@ -385,17 +366,38 @@ function getPreview(key) {
   pctx.beginPath(); pctx.moveTo(0,-15); pctx.lineTo(-10, -30); pctx.stroke();
   pctx.beginPath(); pctx.moveTo(0,-15); pctx.lineTo(10, -25); pctx.stroke();
   pctx.fillStyle = spec.color[0];
-  if(spec.leaf === 'needle') {
-    pctx.beginPath(); pctx.moveTo(-15,-25); pctx.lineTo(0,-45); pctx.lineTo(15,-25); pctx.fill();
-  } else {
-    pctx.beginPath(); pctx.arc(0, -30, 15, 0, Math.PI*2); pctx.fill();
-    if(spec.leaf === 'long' || spec.weeping) { pctx.beginPath(); pctx.ellipse(0, -25, 18, 10, Math.PI/2, 0, Math.PI*2); pctx.fill(); }
-  }
+  if(spec.leaf === 'needle') { pctx.beginPath(); pctx.moveTo(-15,-25); pctx.lineTo(0,-45); pctx.lineTo(15,-25); pctx.fill(); }
+  else { pctx.beginPath(); pctx.arc(0, -30, 15, 0, Math.PI*2); pctx.fill(); if(spec.leaf === 'long' || spec.weeping) { pctx.beginPath(); pctx.ellipse(0, -25, 18, 10, Math.PI/2, 0, Math.PI*2); pctx.fill(); }}
   return previewCache[key] = pc.toDataURL();
 }
 
+function getRealtimeThumbnail(tree) {
+    thumbCtx.clearRect(0, 0, 150, 150);
+    thumbCtx.save();
+    thumbCtx.translate(75, 130); thumbCtx.scale(0.4, 0.4);
+    const spec = SPECIES[tree.key];
+    thumbCtx.lineCap = "round";
+    function renderThumb(b) {
+        if(b.len<1)return; thumbCtx.lineWidth=b.thick; thumbCtx.strokeStyle=spec.bark[0];
+        thumbCtx.beginPath(); thumbCtx.moveTo(b.x,b.y); thumbCtx.lineTo(b.endX,b.endY); thumbCtx.stroke();
+        if(!b.cut&&b.leaves.length){
+           const sIdx=Math.floor(tree.days/30)%4; let cols=spec.color; if(sIdx===2&&spec.leaf!=='needle')cols=["#b45309","#d97706"];
+           for(let l of b.leaves){
+              thumbCtx.save(); thumbCtx.translate(b.x+(b.endX-b.x)*l.f, b.y+(b.endY-b.y)*l.f); thumbCtx.rotate(b.angle+l.r);
+              if(spec.leaf==='needle'){ thumbCtx.strokeStyle=cols[0]; thumbCtx.lineWidth=1; for(let i=0;i<5;i++){ thumbCtx.beginPath(); thumbCtx.moveTo(0,0); thumbCtx.lineTo((Math.random()-0.5)*l.s*3,-l.s*2); thumbCtx.stroke(); }}
+              else{ thumbCtx.fillStyle=cols[0]; thumbCtx.beginPath(); thumbCtx.ellipse(l.s,0,l.s,l.s*(spec.leaf==='fat'?0.5:0.4),0,0,6.28); thumbCtx.fill(); thumbCtx.fillStyle=cols[1]; thumbCtx.beginPath(); thumbCtx.ellipse(l.s,0,l.s*0.6,l.s*0.15,0,0,6.28); thumbCtx.fill(); }
+              thumbCtx.restore();
+           }
+        }
+        b.children.forEach(renderThumb);
+    }
+    renderThumb(tree.root);
+    thumbCtx.restore();
+    return thumbCanvas.toDataURL();
+}
+
 function updateListUI(){
-  let cH=''; STATE.trees.forEach((t,i)=>{ let a=(i===STATE.activeIdx)?'active-item':'', b=(i===STATE.activeIdx)?`<span style="font-size:12px;color:var(--accent)">Aktiv</span>`:`<button class="action-btn" onclick="switchTree(${i})">Auswählen</button>`; cH+=`<div class="list-item ${a}"><div class="tree-preview"><img src="${getPreview(t.key)}"></div><div class="list-content"><div class="list-title">${t.name}</div><div class="list-sub">Tag ${Math.floor(t.days)} • ${Math.round(t.hp)}% HP</div></div>${b}</div>`; }); $('collectionList').innerHTML=cH;
+  let cH=''; STATE.trees.forEach((t,i)=>{ let a=(i===STATE.activeIdx)?'active-item':'', b=(i===STATE.activeIdx)?`<span style="font-size:12px;color:var(--accent)">Aktiv</span>`:`<button class="action-btn" onclick="switchTree(${i})">Auswählen</button>`; cH+=`<div class="list-item ${a}"><div class="tree-preview"><img src="${getRealtimeThumbnail(t)}"></div><div class="list-content"><div class="list-title">${t.name}</div><div class="list-sub">Tag ${Math.floor(t.days)} • ${Math.round(t.hp)}% HP</div></div>${b}</div>`; }); $('collectionList').innerHTML=cH;
   let sH=''; for(let k in SPECIES){ if(!STATE.inventory.species.includes(k)){ let s=SPECIES[k]; sH+=`<div class="list-item"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; } else { let s=SPECIES[k]; sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; }} $('speciesList').innerHTML=sH;
   $('shopMoneyDisplay').innerText=`Guthaben: ${STATE.money} 💰`; let pH='',sH2=''; const tr=STATE.trees[STATE.activeIdx]; for(let k in ITEMS){ let it=ITEMS[k], own=STATE.inventory[it.type+'s'].includes(k), eq=(tr&&tr[it.type]===k), bH=''; if(!own)bH=`<button class="action-btn buy" onclick="buyItem('${k}')">${it.cost} 💰</button>`; else if(!eq)bH=`<button class="action-btn" onclick="equipItem('${k}')">Nutzen</button>`; else bH=`<span style="font-size:12px;color:var(--success)">Aktiv</span>`; let c=`<div class="list-item ${eq?'active-item':''}"><div class="list-content"><div class="list-title">${it.name}</div><div class="list-sub">${it.bonus?'Wachstum +'+Math.round((it.bonus-1)*100)+'%':'Feuchtigkeit +'+Math.round((it.boost-1)*100)+'%'}</div></div>${bH}</div>`; if(it.type==='pot')pH+=c;else sH2+=c; } $('shopPotsList').innerHTML=pH; $('shopSoilsList').innerHTML=sH2;
   let qH=''; STATE.quests.forEach((q,i)=>{ let bc=(q.done&&!q.coll)?'quest-btn ready':'quest-btn', bt=q.coll?'Erledigt':(q.done?`Abholen`:`${Math.floor(q.cur)}/${q.goal}`); qH+=`<div class="list-item"><div class="list-content"><div class="list-title">${q.txt}</div><div class="list-sub">Belohnung: ${q.rew} 💰</div></div><button class="${bc}" onclick="claimQuest(${i})" ${q.coll||(!q.done)?'disabled':''}>${bt}</button></div>`; }); $('questList').innerHTML=qH;
@@ -408,18 +410,8 @@ window.equipItem=k=>{ let it=ITEMS[k]; if(STATE.trees[STATE.activeIdx]){ STATE.t
 window.claimQuest=i=>{ let q=STATE.quests[i]; if(q.done&&!q.coll){ q.coll=true; STATE.money+=q.rew; notify(`+${q.rew} 💰 erhalten!`); updateListUI(); updateRealtimeUI(); generateQuests(); }};
 function generateQuests(){
   if(STATE.quests.length > 0 && !STATE.quests.every(q => q.coll)) return;
-  const pool = [
-    {id:'qW',txt:"Gieße deinen Baum (15x)",goal:15,cur:0,rew:150,metric:'totalWaters'},
-    {id:'qP',txt:"Schneide Äste (8x)",goal:8,cur:0,rew:200,metric:'totalPrunes'},
-    {id:'qD',txt:"Erreiche Tag 10",goal:10,cur:0,rew:350,metric:'days'},
-    {id:'qM',txt:"Spare 1000 💰",goal:1000,cur:0,rew:250,metric:'money'},
-    {id:'qI',txt:"Kaufe 2 Items",goal:2,cur:0,rew:300,metric:'itemsBought'}
-  ];
-  STATE.quests = [];
-  for(let i=0; i<3; i++) {
-      let q = pool[Math.floor(Math.random()*pool.length)];
-      STATE.quests.push({id:q.id+Date.now()+i, txt:q.txt, goal:q.goal, cur:0, rew:q.rew, done:false, coll:false, metric:q.metric});
-  }
+  const pool = [{id:'qW',txt:"Gieße deinen Baum (15x)",goal:15,cur:0,rew:150,metric:'totalWaters'},{id:'qP',txt:"Schneide Äste (8x)",goal:8,cur:0,rew:200,metric:'totalPrunes'},{id:'qD',txt:"Erreiche Tag 10",goal:10,cur:0,rew:350,metric:'days'},{id:'qM',txt:"Spare 1000 💰",goal:1000,cur:0,rew:250,metric:'money'},{id:'qI',txt:"Kaufe 2 Items",goal:2,cur:0,rew:300,metric:'itemsBought'}];
+  STATE.quests = []; for(let i=0; i<3; i++) { let q = pool[Math.floor(Math.random()*pool.length)]; STATE.quests.push({id:q.id+Date.now()+i, txt:q.txt, goal:q.goal, cur:0, rew:q.rew, done:false, coll:false, metric:q.metric}); }
   checkQuests();
 }
 function checkQuests(){ let c=false; STATE.quests.forEach(q=>{ if(q.done)return; if(q.metric==='money')q.cur=STATE.money; else if(q.metric==='days')q.cur=STATE.trees[STATE.activeIdx]?.days||0; else q.cur=STATE.stats[q.metric]||0; if(q.cur>=q.goal){q.done=true;c=true;notify("Ziel erreicht!");}}); if(c)updateListUI(); }
@@ -429,7 +421,7 @@ function bindSettingsUI(){
   let h=''; binds.forEach(b=>{ h+=`<div class="set-row"><div class="set-header"><span class="s-label">${labels[b.key]||b.key}</span><span class="s-val" id="v_${b.id}">${SETTINGS[b.key]}</span></div><input type="range" id="${b.id}" min="${b.min}" max="${b.max}" step="${b.step}" value="${SETTINGS[b.key]}"></div>`; }); $('settingsGrid').innerHTML=h; binds.forEach(b=>{ let el=$(b.id); if(el)el.oninput=e=>{ let v=parseFloat(e.target.value); SETTINGS[b.key]=v; $(`v_${b.id}`).innerText=v; }; });
 }
 window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>{console.log(e);});}else{if(document.exitFullscreen){document.exitFullscreen();}} };
-window.hardReset=()=>{ if(confirm("ALLES löschen und neu starten?")){ localStorage.removeItem('bonsaiSave77'); location.reload(); }};
+window.hardReset=()=>{ if(confirm("ALLES löschen und neu starten?")){ localStorage.removeItem('bonsaiSave78'); location.reload(); }};
 init();
 </script>
 </body>
