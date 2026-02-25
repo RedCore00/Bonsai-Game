@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v11.0 (World Anchor)</title>
+<title>Bonsai Master v11.1 (Smooth Pan)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -346,7 +346,7 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave110');
+  const saved = localStorage.getItem('bonsaiSave111');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -358,7 +358,7 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave110', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave111', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
@@ -404,6 +404,8 @@ function doSegmentsIntersect(p0, p1, p2, p3) {
 
 function setupInteractions() {
   let lastWorldX = null, lastWorldY = null;
+  // Letzte Mauskoordinaten für das Kamera-Verschieben speichern
+  let lastScreenX = null, lastScreenY = null;
 
   const getPos = e => { 
     let rect=cv.getBoundingClientRect(); 
@@ -428,9 +430,12 @@ function setupInteractions() {
 
   cv.addEventListener('pointerdown', e => {
     MOUSE.down=true; 
-    getPos(e); 
+    let p = getPos(e); 
     lastWorldX = MOUSE.worldX;
     lastWorldY = MOUSE.worldY;
+    
+    lastScreenX = p.x;
+    lastScreenY = p.y;
 
     if(!STATE.trees[STATE.activeIdx])return;
 
@@ -461,16 +466,20 @@ function setupInteractions() {
   });
 
   cv.addEventListener('pointermove', e => {
-    getPos(e);
+    let p = getPos(e);
     
-    if(MOUSE.drag) {
-        let rect=cv.getBoundingClientRect(); 
-        let mx = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
-        let my = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
-        CAM.x += mx - MOUSE.x;
-        CAM.y += my - MOUSE.y;
-        MOUSE.x = mx;
-        MOUSE.y = my;
+    // FIX FÜR KAMERA BEWEGUNG (DELTA-BASIERT)
+    if(MOUSE.drag && MOUSE.down) {
+        let dx = p.x - lastScreenX;
+        let dy = p.y - lastScreenY;
+        
+        CAM.x += dx;
+        CAM.y += dy;
+        
+        // Aktualisiere World-Koordinaten neu, da Kamera sich bewegt hat
+        let camBaseY = cv.height * 0.55;
+        MOUSE.worldX=(p.x-(cv.width/2+CAM.x))/CAM.zoom; 
+        MOUSE.worldY=(p.y-(camBaseY+CAM.y))/CAM.zoom;
     }
 
     if(MOUSE.down && INPUT === 'prune') {
@@ -511,11 +520,8 @@ function setupInteractions() {
 
     lastWorldX = MOUSE.worldX;
     lastWorldY = MOUSE.worldY;
-    if(!MOUSE.drag){
-        let rect=cv.getBoundingClientRect(); 
-        MOUSE.x = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
-        MOUSE.y = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
-    }
+    lastScreenX = p.x;
+    lastScreenY = p.y;
   });
 
   function handlePointerUp() {
@@ -524,6 +530,8 @@ function setupInteractions() {
       BEND_TARGET=null; 
       lastWorldX = null;
       lastWorldY = null;
+      lastScreenX = null;
+      lastScreenY = null;
   }
 
   window.addEventListener('mouseup', handlePointerUp);
@@ -596,13 +604,16 @@ function update(dt) {
   }
 
   const gravity = 300;
-  const GROUND_Y = 55; // Welt-Koordinaten-Boden
   for(let i=ENV.fallingParts.length-1; i>=0; i--) {
       let p = ENV.fallingParts[i];
       if(!p.onGround) {
           p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
-          if(p.y > GROUND_Y + Math.random()*15) {
-             p.y = GROUND_Y + Math.random()*15; 
+          
+          // Berechne exakte Bodenkollision basierend auf der Wellenform des Bodens
+          const groundYAtX = 55 + Math.sin(p.x * 0.01) * 15 + Math.cos(p.x * 0.005) * 10;
+          
+          if(p.y > groundYAtX) {
+             p.y = groundYAtX; 
              p.onGround = true; 
              p.a = Math.random()*6.28;
           }
@@ -685,7 +696,6 @@ function drawPuff(x,y,s){ ctx.beginPath(); ctx.arc(x,y,40*s,0,6.28); ctx.arc(x+3
 function drawWorld() {
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; const spec=SPECIES[t.key], potH=60;
   
-  // WICHTIGER FIX: Erdboden in Welt-Koordinaten! Bewegt sich perfekt mit dem Topf mit.
   ctx.fillStyle = "#04060b";
   ctx.beginPath();
   ctx.moveTo(-5000, 55);
@@ -922,7 +932,7 @@ window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentE
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave110'); 
+    localStorage.removeItem('bonsaiSave111'); 
     location.reload(); 
   }
 };
