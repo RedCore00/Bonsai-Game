@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v8.2 (True Organic Taper)</title>
+<title>Bonsai Master v8.5 (Perfect Balance)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -29,53 +29,21 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   
   body { 
-    margin: 0; 
-    height: 100vh; height: 100dvh; 
-    background: #000; 
-    overflow: hidden; 
-    font-family: var(--font); 
-    color: var(--text); 
-    user-select: none; 
-    -webkit-user-select: none;
+    margin: 0; height: 100vh; height: 100dvh; background: #000; 
+    overflow: hidden; font-family: var(--font); color: var(--text); 
+    user-select: none; -webkit-user-select: none;
   }
   
-  /* --- CANVAS FULLSCREEN --- */
-  .viewport { 
-    position: absolute; top: 0; left: 0; 
-    width: 100%; height: 100%; 
-    z-index: 1; cursor: grab; overflow: hidden; touch-action: none; 
-  }
+  .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: grab; overflow: hidden; touch-action: none; }
   .viewport:active { cursor: grabbing; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
-  /* --- UI LAYER --- */
-  .ui-layer {
-    position: absolute; top: 0; left: 0; 
-    width: 100%; height: 100%;
-    z-index: 10; pointer-events: none; 
-    display: flex; flex-direction: column; justify-content: flex-end;
-  }
+  .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; }
+  .glass { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); pointer-events: auto; }
 
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    pointer-events: auto;
-  }
+  .bottom-area { padding: 0 15px calc(85px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
 
-  /* --- BOTTOM UI AREA --- */
-  .bottom-area {
-    padding: 0 15px calc(85px + env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 10px;
-  }
-
-  /* Stats Panel */
-  .stats-panel {
-    border-radius: 20px; padding: 15px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-    display: flex; flex-direction: column; gap: 12px;
-  }
+  .stats-panel { border-radius: 20px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; flex-direction: column; gap: 12px; }
   .stat-row-top { display: flex; justify-content: space-between; align-items: flex-start; }
   .stat-group { display: flex; gap: 20px; }
   .stat-item { display: flex; align-items: baseline; gap: 8px; }
@@ -85,127 +53,56 @@
   .stat-row-bars { display: flex; gap: 15px; }
   .bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 6px; }
   .bar-header { display: flex; justify-content: space-between; align-items: flex-end; }
-  .bar-bg { 
-    width: 100%; height: 6px; border-radius: 4px; overflow: hidden;
-    background: rgba(0,0,0,0.4); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); 
-  }
+  .bar-bg { width: 100%; height: 6px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,0.4); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }
   .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border-radius: 4px; }
   .water-color { background: linear-gradient(90deg, #0ea5e9, #38bdf8); box-shadow: 0 0 10px var(--accent-glow); }
   .hp-color { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px var(--success-glow); }
 
-  /* Tools Container */
-  .tools-panel {
-    border-radius: 20px; padding: 15px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-  }
+  .tools-panel { border-radius: 20px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.2); }
   .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  
-  .btn {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
-    padding: 12px 4px; border-radius: 14px; font-weight: 600; cursor: pointer;
-    font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
-  }
+  .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text); padding: 12px 4px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); }
   .btn svg { width: 20px; height: 20px; opacity: 0.7; transition: all 0.3s; }
   .btn:active { transform: scale(0.94); }
-  .btn.active { 
-    background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; 
-    box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); 
-  }
+  .btn.active { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); }
   .btn.active svg { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
 
-  /* --- FLOATING DOCK --- */
-  .bottom-dock {
-    position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 50%; transform: translateX(-50%);
-    width: calc(100% - 30px); max-width: 450px; border-radius: 25px;
-    display: flex; justify-content: space-around; align-items: center;
-    padding: 10px; border-top: 1px solid rgba(255,255,255,0.3);
-  }
-  .nav-item {
-    background: transparent; border: none; color: rgba(255,255,255,0.5);
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    font-size: 10px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600;
-  }
+  .bottom-dock { position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 450px; border-radius: 25px; display: flex; justify-content: space-around; align-items: center; padding: 10px; border-top: 1px solid rgba(255,255,255,0.3); }
+  .nav-item { background: transparent; border: none; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600; }
   .nav-item svg { width: 22px; height: 22px; transition: all 0.3s; }
   .nav-item.open { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
   .nav-item.open svg { transform: translateY(-3px) scale(1.1); stroke: var(--accent); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
 
-  /* --- OVERLAYS --- */
-  .overlay-bg {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s;
-  }
+  .overlay-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
   .overlay-bg.open { opacity: 1; pointer-events: auto; }
-
-  .overlay-sheet {
-    position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh; height: 85vh;
-    background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-    border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2);
-    padding: 30px 20px calc(30px + env(safe-area-inset-bottom));
-    z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-    overflow-y: auto; pointer-events: auto;
-  }
+  .overlay-sheet { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh; height: 85vh; background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2); padding: 30px 20px calc(30px + env(safe-area-inset-bottom)); z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1); overflow-y: auto; pointer-events: auto; }
   .overlay-sheet.open { transform: translateY(0); }
-
   .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
   .sheet-header h2 { margin: 0; font-size: 20px; letter-spacing: 1px; font-weight: 700; }
-  .close-btn { 
-    background: rgba(255,255,255,0.1); border: none; color: var(--text); 
-    width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;
-  }
+  .close-btn { background: rgba(255,255,255,0.1); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s; }
   .close-btn:active { background: rgba(255,255,255,0.2); }
 
-  /* Listen Design */
-  .list-item { 
-    display: flex; align-items: center; gap: 15px; 
-    background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 20px; 
-    border: 1px solid rgba(255,255,255,0.05); position: relative; transition: 0.2s;
-  }
+  .list-item { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; transition: 0.2s; }
   .list-item.active-item { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
-  .tree-preview { 
-    width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); 
-    overflow: hidden; display: flex; align-items: center; justify-content: center;
-    border: 1px solid rgba(255,255,255,0.1); font-size: 24px; flex-shrink: 0;
-  }
+  .tree-preview { width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
   .tree-preview img { width: 100%; height: 100%; object-fit: contain; }
-  
   .list-content { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
   .list-title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .list-sub { font-size: 12px; color: var(--text-muted); }
   
-  .action-btn {
-    padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 12px; cursor: pointer;
-    background: rgba(255,255,255,0.1); color: var(--text); transition: 0.2s;
-  }
+  .action-btn { padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; background: rgba(255,255,255,0.1); color: var(--text); transition: 0.2s; }
   .action-btn.buy { background: rgba(251, 191, 36, 0.2); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); }
   .action-btn.sell { background: rgba(248, 113, 113, 0.15); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.4); }
   .action-btn:active { transform: scale(0.95); }
 
-  /* Quests */
-  .quest-btn { 
-    padding: 10px 16px; border-radius: 14px; border: none; font-weight: 700; font-size: 12px;
-    background: rgba(255,255,255,0.1); color: var(--text-muted); transition: 0.3s;
-  }
-  .quest-btn.ready { 
-    background: var(--success); color: #000; box-shadow: 0 0 15px var(--success-glow);
-    animation: pulse 1.5s infinite; cursor: pointer;
-  }
+  .quest-btn { padding: 10px 16px; border-radius: 14px; border: none; font-weight: 700; font-size: 12px; background: rgba(255,255,255,0.1); color: var(--text-muted); transition: 0.3s; }
+  .quest-btn.ready { background: var(--success); color: #000; box-shadow: 0 0 15px var(--success-glow); animation: pulse 1.5s infinite; cursor: pointer; }
   @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
   .set-row { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
   .set-header { display: flex; justify-content: space-between; align-items: baseline; }
   input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
 
-  /* Toasts */
-  .toast { 
-    position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%);
-    background: rgba(20, 25, 35, 0.9); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5);
-    padding: 14px 28px; border-radius: 20px; pointer-events: none; opacity: 0; 
-    transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); 
-    font-weight: 700; font-size: 14px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  }
+  .toast { position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%); background: rgba(20, 25, 35, 0.9); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); padding: 14px 28px; border-radius: 20px; pointer-events: none; opacity: 0; transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); font-weight: 700; font-size: 14px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
   .toast.show { opacity: 1; transform: translate(-50%, 15px); }
 </style>
 </head>
@@ -217,7 +114,6 @@
 </div>
 
 <div class="ui-layer">
-  
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
@@ -309,13 +205,15 @@ const ITEMS = {
   soil_bio:  { type:'soil', name:"Bio-Boost", cost:500, boost:2.0 }
 };
 
-let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 30, leafRate: 0.1, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
+// Leaves Rate and Max updated for fuller tree
+let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
 let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
 let lastT = 0, lastUiT = 0;
+let lastTouchDist = 0;
 const previewCache = {};
 
 class Branch {
@@ -332,15 +230,15 @@ class Tree {
   constructor(k, n) { 
     this.key=k; this.name=n; this.days=0; this.water=100; this.hp=100; 
     this.pot='pot_basic'; this.soil='soil_basic'; 
-    // Der Stamm startet mit einer natürlichen Basisdicke von 35
-    this.root=new Branch(null,0,0,-Math.PI/2,110,35,0); 
+    // ZURÜCK ZUR ELEGANTEN DICKE 20!
+    this.root=new Branch(null,0,0,-Math.PI/2,110,20,0); 
   }
   serialize() { return { key:this.key, name:this.name, days:this.days, water:this.water, hp:this.hp, pot:this.pot, soil:this.soil, root:this.root.serialize() }}
   static deserialize(d) { let t=new Tree(d.key, d.name); t.days=d.days; t.water=d.water; t.hp=d.hp||100; t.pot=d.pot||'pot_basic'; t.soil=d.soil||'soil_basic'; t.root=Branch.deserialize(d.root,null); return t; }
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave82');
+  const saved = localStorage.getItem('bonsaiSave85');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -352,7 +250,7 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave82', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave85', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
@@ -368,16 +266,7 @@ function init() {
 }
 
 function setupInteractions() {
-  const getPos = e => { 
-    let rect=cv.getBoundingClientRect(); 
-    let x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left; 
-    let y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top; 
-    let camBaseY = cv.height * 0.55;
-    MOUSE.worldX=(x-(cv.width/2+CAM.x))/CAM.zoom; 
-    MOUSE.worldY=(y-(camBaseY+CAM.y))/CAM.zoom; 
-    return {x,y}; 
-  };
-  
+  // MAUS & TOUCH ROBUST VERBUNDEN
   const findNearestBranch = (root, tx, ty, maxDist) => {
     let nearest=null, minDist=maxDist;
     const search = b => {
@@ -389,42 +278,67 @@ function setupInteractions() {
     search(root); return nearest;
   };
 
-  cv.addEventListener('pointerdown', e => {
-    MOUSE.down=true; getPos(e); if(!STATE.trees[STATE.activeIdx])return;
-    if(INPUT==='water')return;
-    HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
-    if(HOVER) {
-      if(INPUT==='prune' && !HOVER.cut && HOVER.parent) {
-        HOVER.cut=true;
-        const spec = SPECIES[STATE.trees[STATE.activeIdx].key];
-        function dropChildren(b) {
-             const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
-             ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5 });
-             b.leaves.forEach(l => {
-                 const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
-                 ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7 });
-             });
-            b.children.forEach(dropChildren);
-        }
-        dropChildren(HOVER);
-        HOVER.children=[]; HOVER.leaves=[];
-        STATE.stats.totalPrunes++; notify("Ast geschnitten");
-      } else if(INPUT==='graft') {
-        if(HOVER.cut) { 
-            HOVER.cut=false; HOVER.sprouted=false; notify("Ast geheilt!"); 
-        }
-        else { 
-            let dev=(Math.random()-0.5)*1.5; 
-            let newThick = Math.max(1, HOVER.thick * 0.8); // 80% Dicke für weichen Übergang
-            HOVER.children.push(new Branch(HOVER,0,0,HOVER.angle+dev,HOVER.maxLen*0.7,newThick,HOVER.depth+1)); 
-            notify("Neuer Trieb veredelt!"); 
-        }
-      } else if(INPUT==='bend') { BEND_TARGET=HOVER; }
-    }
-  });
+  function handlePointerDown(clientX, clientY) {
+    MOUSE.down=true; 
+    let rect=cv.getBoundingClientRect(); 
+    MOUSE.x = clientX - rect.left;
+    MOUSE.y = clientY - rect.top;
+    let camBaseY = cv.height * 0.55;
+    MOUSE.worldX=(MOUSE.x-(cv.width/2+CAM.x))/CAM.zoom; 
+    MOUSE.worldY=(MOUSE.y-(camBaseY+CAM.y))/CAM.zoom; 
+    
+    if(!STATE.trees[STATE.activeIdx])return;
 
-  cv.addEventListener('pointermove', e => {
-    getPos(e);
+    if(INPUT==='none') {
+        MOUSE.drag = true;
+    } else if(INPUT!=='water') {
+        HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
+        if(HOVER) {
+          if(INPUT==='prune' && !HOVER.cut && HOVER.parent) {
+            HOVER.cut=true;
+            const spec = SPECIES[STATE.trees[STATE.activeIdx].key];
+            function dropChildren(b) {
+                 const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
+                 ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5 });
+                 b.leaves.forEach(l => {
+                     const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
+                     ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7 });
+                 });
+                b.children.forEach(dropChildren);
+            }
+            dropChildren(HOVER);
+            HOVER.children=[]; HOVER.leaves=[];
+            STATE.stats.totalPrunes++; notify("Ast geschnitten");
+          } else if(INPUT==='graft') {
+            if(HOVER.cut) { 
+                HOVER.cut=false; HOVER.sprouted=false; notify("Ast geheilt!"); 
+            } else { 
+                let dev=(Math.random()-0.5)*1.5; 
+                let newThick = Math.max(1, HOVER.thick * 0.7); // Elegante 0.7 Dicke
+                HOVER.children.push(new Branch(HOVER,0,0,HOVER.angle+dev,HOVER.maxLen*0.7,newThick,HOVER.depth+1)); 
+                notify("Neuer Trieb veredelt!"); 
+            }
+          } else if(INPUT==='bend') { BEND_TARGET=HOVER; }
+        }
+    }
+  }
+
+  function handlePointerMove(clientX, clientY) {
+    let rect=cv.getBoundingClientRect(); 
+    let mx = clientX - rect.left;
+    let my = clientY - rect.top;
+    
+    if(MOUSE.drag) {
+        CAM.x += mx - MOUSE.x;
+        CAM.y += my - MOUSE.y;
+    }
+
+    MOUSE.x = mx;
+    MOUSE.y = my;
+    let camBaseY = cv.height * 0.55;
+    MOUSE.worldX=(mx-(cv.width/2+CAM.x))/CAM.zoom; 
+    MOUSE.worldY=(my-(camBaseY+CAM.y))/CAM.zoom;
+
     if(MOUSE.down && INPUT==='bend' && BEND_TARGET) { 
       let oldAngle = BEND_TARGET.targetAngle;
       BEND_TARGET.targetAngle=Math.atan2(MOUSE.worldY-BEND_TARGET.y, MOUSE.worldX-BEND_TARGET.x); 
@@ -433,12 +347,52 @@ function setupInteractions() {
         b.children.forEach(c => { c.targetAngle += diff * 0.6; propagateBend(c, diff * 0.6); });
       }
       propagateBend(BEND_TARGET, angleDiff);
-    }
-    else if(!MOUSE.down && INPUT!=='water' && STATE.trees[STATE.activeIdx]) { 
+    } else if(!MOUSE.down && INPUT!=='water' && INPUT!=='none' && STATE.trees[STATE.activeIdx]) { 
         HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40); 
     }
+  }
+
+  function handlePointerUp() {
+      MOUSE.down=false; 
+      MOUSE.drag=false;
+      BEND_TARGET=null; 
+  }
+
+  // Mouse Listeners
+  cv.addEventListener('mousedown', e => handlePointerDown(e.clientX, e.clientY));
+  cv.addEventListener('mousemove', e => handlePointerMove(e.clientX, e.clientY));
+  window.addEventListener('mouseup', handlePointerUp);
+
+  // Wheel for zoom
+  cv.addEventListener('wheel', e => {
+      e.preventDefault();
+      CAM.zoom = Math.min(Math.max(0.3, CAM.zoom - e.deltaY * 0.001), 4);
   });
-  window.addEventListener('pointerup', ()=>{ MOUSE.down=false; BEND_TARGET=null; });
+
+  // Touch Listeners (Pinch to Zoom & Pan)
+  cv.addEventListener('touchstart', e => {
+      if(e.touches.length === 2) {
+          lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+          MOUSE.drag = false;
+      } else if (e.touches.length === 1) {
+          handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
+      }
+  }, {passive: false});
+
+  cv.addEventListener('touchmove', e => {
+      if(e.touches.length === 2) {
+          let dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+          CAM.zoom = Math.min(Math.max(0.3, CAM.zoom + (dist - lastTouchDist) * 0.01), 4);
+          lastTouchDist = dist;
+      } else if (e.touches.length === 1) {
+          handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+      e.preventDefault();
+  }, {passive: false});
+
+  cv.addEventListener('touchend', e => {
+      handlePointerUp();
+  });
 }
 
 function setTool(t) { 
@@ -500,19 +454,25 @@ function update(dt) {
     if(!b.cut&&b.len<b.maxLen&&tree.hp>0){
       b.len+=8*dt*growth; 
       
-      // Organischer Taper: Unten wächst er schneller in die Dicke als oben!
-      if(b.len>15) b.thick += 0.15 * dt * growth * SETTINGS.thickMult * (1.5 / (b.depth + 1));
+      // KLASSISCHES DICKEN-WACHSTUM
+      if(b.len>15) b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
       
-      if(b.depth>0&&b.len>b.maxLen*0.85&&b.leaves.length<SETTINGS.maxLeaves&&Math.random()<SETTINGS.leafRate) {
-          b.leaves.push({f:0.85+Math.random()*0.15,r:Math.random()*6.28,s:0.1,ms:(8+Math.random()*6)*SETTINGS.leafSizeMult});
+      // MEHR BLÄTTER, FRÜHER SPAWNEN!
+      const thresh = b.maxLen * 0.7; 
+      if(b.depth>0 && b.len>thresh && b.leaves.length<SETTINGS.maxLeaves && Math.random() < (SETTINGS.leafRate*2)) {
+          b.leaves.push({
+              f:0.6+Math.random()*0.4, // Verteilt sich schöner auf dem Ast
+              r:Math.random()*6.28,
+              s:0.1,
+              ms:(8+Math.random()*6)*SETTINGS.leafSizeMult
+          });
       }
       
       if(b.len>b.maxLen*0.6&&!b.sprouted&&b.thick>3.0&&Math.random()<SETTINGS.sproutChance*growth){ 
           b.sprouted=true; let cnt=Math.random()>0.4?2:1; 
           for(let i=0;i<cnt;i++){ 
               let dev=(Math.random()-0.5)*1.5; if(spec.weeping)dev=Math.abs(dev)+1.2; 
-              // Ein neuer Ast startet mit 80% der Dicke für einen perfekten Übergang
-              b.children.push(new Branch(b,0,0,b.angle+dev,b.maxLen*(0.6+Math.random()*0.3), b.thick*0.8, b.depth+1)); 
+              b.children.push(new Branch(b,0,0,b.angle+dev,b.maxLen*(0.6+Math.random()*0.3), b.thick*0.7, b.depth+1)); 
           }
       }
     }
@@ -528,6 +488,7 @@ function update(dt) {
   sim(tree.root,0,0); checkQuests();
 }
 
+// ---------------- RENDER ----------------
 function draw() {
   const w=cv.width, h=cv.height, t=ENV.dayTime; if(isNaN(t)||w===0||h===0)return;
   
@@ -563,7 +524,7 @@ function drawWorld() {
   ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
   if(BEND_TARGET&&INPUT==='bend'){ ctx.beginPath(); ctx.moveTo(BEND_TARGET.x,BEND_TARGET.y); ctx.lineTo(MOUSE.worldX,MOUSE.worldY); ctx.strokeStyle="rgba(250,204,21,0.6)"; ctx.lineWidth=2; ctx.setLineDash([8,8]); ctx.stroke(); ctx.setLineDash([]); }
 
-  // ZURÜCK ZU ROUND FÜR PERFEKTE ÜBERGÄNGE OHNE KUGELN!
+  // KLASSISCH RUNDE LINIEN FÜR EINEN ELEGANTEN BAUM
   ctx.lineCap="round"; ctx.lineJoin="round";
   
   function render(b) {
@@ -572,7 +533,6 @@ function drawWorld() {
     ctx.lineWidth = b.thick; 
     ctx.strokeStyle = spec.bark[0];
     
-    // Zartes Hintergrund-Leuchten anstatt komplett farbigem Ast
     if(b===HOVER&&INPUT!=='water'&&INPUT!=='none'){ 
         ctx.shadowBlur=15; ctx.shadowColor=(INPUT==='prune'?'#f87171':INPUT==='graft'?'#60a5fa':'#facc15'); 
     } else { ctx.shadowBlur=0; }
@@ -705,11 +665,22 @@ function updateListUI(){
   }); 
   $('collectionList').innerHTML=cH;
   
-  let sH=''; for(let k in SPECIES){ if(!STATE.inventory.species.includes(k)){ let s=SPECIES[k]; sH+=`<div class="list-item"><div class="tree-preview" style="font-size:24px;">${s.icon}</div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; } else { let s=SPECIES[k]; sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview" style="font-size:24px;">${s.icon}</div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; }} $('speciesList').innerHTML=sH;
+  // Generic previews for unbought species
+  let sH=''; 
+  for(let k in SPECIES){ 
+    if(!STATE.inventory.species.includes(k)){ 
+      let s=SPECIES[k]; 
+      sH+=`<div class="list-item"><div class="tree-preview" style="font-size:24px;">🌱</div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; 
+    } else { 
+      let s=SPECIES[k]; 
+      sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview" style="font-size:24px;">🌳</div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; 
+    }
+  } 
+  $('speciesList').innerHTML=sH;
+  
   $('shopMoneyDisplay').innerText=`Guthaben: ${STATE.money} 💰`; let pH='',sH2=''; const tr=STATE.trees[STATE.activeIdx]; for(let k in ITEMS){ let it=ITEMS[k], own=STATE.inventory[it.type+'s'].includes(k), eq=(tr&&tr[it.type]===k), bH=''; if(!own)bH=`<button class="action-btn buy" onclick="buyItem('${k}')">${it.cost} 💰</button>`; else if(!eq)bH=`<button class="action-btn" onclick="equipItem('${k}')">Nutzen</button>`; else bH=`<span style="font-size:12px;color:var(--success)">Aktiv</span>`; let c=`<div class="list-item ${eq?'active-item':''}"><div class="list-content"><div class="list-title">${it.name}</div><div class="list-sub">${it.bonus?'Wachstum +'+Math.round((it.bonus-1)*100)+'%':'Feuchtigkeit +'+Math.round((it.boost-1)*100)+'%'}</div></div>${bH}</div>`; if(it.type==='pot')pH+=c;else sH2+=c; } $('shopPotsList').innerHTML=pH; $('shopSoilsList').innerHTML=sH2;
   let qH=''; STATE.quests.forEach((q,i)=>{ let bc=(q.done&&!q.coll)?'quest-btn ready':'quest-btn', bt=q.coll?'Erledigt':(q.done?`Abholen`:`${Math.floor(q.cur)}/${q.goal}`); qH+=`<div class="list-item"><div class="list-content"><div class="list-title">${q.txt}</div><div class="list-sub">Belohnung: ${q.rew} 💰</div></div><button class="${bc}" onclick="claimQuest(${i})" ${q.coll||(!q.done)?'disabled':''}>${bt}</button></div>`; }); $('questList').innerHTML=qH;
 }
-
 window.switchTree=i=>{ STATE.activeIdx=i; INPUT="none"; document.querySelectorAll('.tools-panel .btn').forEach(b=>b.classList.remove('active')); closeAllPanels(); updateRealtimeUI(); };
 window.buySpecies=k=>{ if(STATE.money>=SPECIES[k].cost){ STATE.money-=SPECIES[k].cost; STATE.inventory.species.push(k); notify(`${SPECIES[k].name} gekauft!`); updateListUI(); }else notify("Zu wenig Guthaben!"); };
 window.plantNew=k=>{ let nr=STATE.trees.length+1; STATE.trees.push(new Tree(k, SPECIES[k].name+" #"+nr)); switchTree(STATE.trees.length-1); notify("Neuer Baum gepflanzt!"); };
@@ -723,7 +694,6 @@ function generateQuests(){
   STATE.quests = []; for(let i=0; i<3; i++) { let q = pool[Math.floor(Math.random()*pool.length)]; STATE.quests.push({id:q.id+Date.now()+i, txt:q.txt, goal:q.goal, cur:0, rew:q.rew, done:false, coll:false, metric:q.metric}); }
   checkQuests();
 }
-
 function checkQuests(){ let c=false; STATE.quests.forEach(q=>{ if(q.done)return; if(q.metric==='money')q.cur=STATE.money; else if(q.metric==='days')q.cur=STATE.trees[STATE.activeIdx]?.days||0; else q.cur=STATE.stats[q.metric]||0; if(q.cur>=q.goal){q.done=true;c=true;notify("Ziel erreicht!");}}); if(c)updateListUI(); }
 
 function bindSettingsUI(){
@@ -731,9 +701,8 @@ function bindSettingsUI(){
   const binds=[{id:'inpWind',key:'windSpeed',min:0,max:2,step:0.1}, {id:'inpSec',key:'secPerDay',min:5,max:120,step:1}, {id:'inpGrow',key:'growMult',min:0.1,max:5,step:0.1}, {id:'inpWarp',key:'timeWarp',min:0.1,max:10,step:0.1}, {id:'inpLeaves',key:'maxLeaves',min:10,max:200,step:5}];
   let h=''; binds.forEach(b=>{ h+=`<div class="set-row"><div class="set-header"><span class="s-label">${labels[b.key]||b.key}</span><span class="s-val" id="v_${b.id}">${SETTINGS[b.key]}</span></div><input type="range" id="${b.id}" min="${b.min}" max="${b.max}" step="${b.step}" value="${SETTINGS[b.key]}"></div>`; }); $('settingsGrid').innerHTML=h; binds.forEach(b=>{ let el=$(b.id); if(el)el.oninput=e=>{ let v=parseFloat(e.target.value); SETTINGS[b.key]=v; $(`v_${b.id}`).innerText=v; }; });
 }
-
 window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>{console.log(e);});}else{if(document.exitFullscreen){document.exitFullscreen();}} };
-window.hardReset=()=>{ if(confirm("ALLES löschen und neu starten?")){ localStorage.removeItem('bonsaiSave82'); location.reload(); }};
+window.hardReset=()=>{ if(confirm("ALLES löschen und neu starten?")){ localStorage.removeItem('bonsaiSave85'); location.reload(); }};
 init();
 </script>
 </body>
