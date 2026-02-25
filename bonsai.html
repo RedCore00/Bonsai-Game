@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
-<title>Bonsai Master v5.1 (Compact Glass)</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#090a0f">
+<title>Bonsai Master v5.2 (App Mode)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -313,6 +317,9 @@
     <h2 style="color:var(--text-muted)">System Settings</h2>
     <button class="close-btn" onclick="closeAllPanels()">✕</button>
   </div>
+  
+  <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:20px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); font-size:13px; padding:12px;">🔲 Browser Vollbild umschalten</button>
+  
   <div id="settingsGrid">
     <label class="s-label">Tempo (Sek/Tag)</label><input type="range" id="inpSecPerDay" min="1" max="120" value="60">
     <label class="s-label" style="display:block; margin-top:10px;">Wachstum Multiplikator</label><input type="range" id="inpGrowMult" min="0" max="20" step="0.5" value="1">
@@ -527,7 +534,6 @@ function draw() {
   ctx.lineTo(w,h); ctx.fill();
 
   ctx.save();
-  // Baum sitzt jetzt bei 55% der Bildschirmhöhe! Dadurch ist er höher und perfekt zentriert über dem UI.
   const camBaseY = h * 0.55; 
   ctx.translate(w/2 + CAM.x, camBaseY + CAM.y);
   ctx.scale(CAM.zoom, CAM.zoom);
@@ -644,7 +650,6 @@ function setTool(t) {
   if(INPUT!=='none') { $('tool'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active'); }
 }
 
-// Mausberechnung angepasst an den neuen h*0.55 Offset
 function getMouseWorld(mx, my) { 
   return { 
       x: (mx - (cv.width/2 + CAM.x)) / CAM.zoom, 
@@ -823,6 +828,17 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
 
 ['Water','Prune','Graft','Bend'].forEach(t=>$('tool'+t).onclick=()=>setTool(t.toLowerCase()));
 
+// Fullscreen API für Browser die es unterstützen
+window.toggleFullScreen = function() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      notify("Vollbild wird hier nicht unterstützt.");
+    });
+  } else {
+    if (document.exitFullscreen) { document.exitFullscreen(); }
+  }
+};
+
 $('inpSecPerDay').oninput=e=>SETTINGS.secPerDay=parseFloat(e.target.value);
 $('inpGrowMult').oninput=e=>SETTINGS.growMult=parseFloat(e.target.value);
 $('inpLeafLimit').oninput=e=>SETTINGS.maxLeaves=parseInt(e.target.value);
@@ -831,17 +847,17 @@ $('inpWind').oninput=e=>SETTINGS.windSpeed=parseFloat(e.target.value);
 $('btnBuyTree').onclick=()=>{ buy('tree', Object.keys(SPECIES)[Math.floor(Math.random()*Object.keys(SPECIES).length)], 100); }
 $('btnPhoto').onclick=()=>{ let a=document.createElement('a'); a.download="bonsai.png"; a.href=cv.toDataURL(); a.click(); };
 
-function saveGame() { localStorage.setItem("bonsai_v51", JSON.stringify({money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})) })); }
+function saveGame() { localStorage.setItem("bonsai_v52", JSON.stringify({money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})) })); }
 function loadGame() {
   try {
-    const d=JSON.parse(localStorage.getItem("bonsai_v51"));
+    const d=JSON.parse(localStorage.getItem("bonsai_v52"));
     if(d) {
        STATE.money=d.money ?? 500; STATE.inventory=d.inv || STATE.inventory; STATE.activeIdx=d.activeIdx || 0;
        STATE.trees=d.trees.map(td=>{ let t=new Tree(td.key, td.name); Object.assign(t, td); t.root = Branch.deserialize(td.root, null); return t; });
     }
   } catch(e) {}
 }
-window.hardReset = () => { localStorage.removeItem("bonsai_v51"); location.reload(); };
+window.hardReset = () => { localStorage.removeItem("bonsai_v52"); location.reload(); };
 setInterval(saveGame, 5000);
 
 init();
