@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v9.1 (Dev Mode)</title>
+<title>Bonsai Master v9.5 (Ninja Pruning)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -215,6 +215,7 @@
 </div>
 
 <div class="ui-layer">
+  
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
@@ -280,9 +281,7 @@
 <div class="overlay-sheet" id="panel_settings">
   <div class="sheet-header"><h2 style="color:var(--text-muted)">Einstellungen</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div>
   <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:15px; background:rgba(255,255,255,0.1); font-size:13px; padding:15px; flex-direction:row;">🔲 Vollbild umschalten</button>
-  
   <button class="btn" onclick="cheatMoney()" style="width:100%; margin-bottom:25px; background:rgba(251, 191, 36, 0.15); color:var(--gold); border-color:var(--gold); font-size:13px; padding:15px; flex-direction:row;">💰 +1000 Geld (Cheat)</button>
-  
   <div id="settingsGrid"></div>
   <br>
   <button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239,68,68,0.15); color:#ef4444; border-color:#ef4444; margin-top:20px; font-size:13px; padding:15px; flex-direction:row;">Spielstand Löschen (Hard Reset)</button>
@@ -317,7 +316,7 @@ const ITEMS = {
 
 let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[] };
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
@@ -346,7 +345,7 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave91');
+  const saved = localStorage.getItem('bonsaiSave95');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -358,7 +357,7 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave91', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave95', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
@@ -373,7 +372,50 @@ function init() {
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
 
+// Schnitt-Helfer (für Einzelklick und Swipe)
+function performCut(branch, treeKey) {
+    if(branch.cut || !branch.parent) return; // Stamm darf nicht abgeschnitten werden
+    branch.cut = true;
+    const spec = SPECIES[treeKey];
+    function dropChildren(b) {
+        const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
+        ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5 });
+        b.leaves.forEach(l => {
+            const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
+            ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7 });
+        });
+        b.children.forEach(dropChildren);
+    }
+    dropChildren(branch);
+    branch.children=[]; 
+    branch.leaves=[];
+    STATE.stats.totalPrunes++;
+}
+
+// Linien-Schnittpunkt-Mathematik für den Swipe-Cut
+function doSegmentsIntersect(p0, p1, p2, p3) {
+    let s1_x = p1.x - p0.x, s1_y = p1.y - p0.y;
+    let s2_x = p3.x - p2.x, s2_y = p3.y - p2.y;
+    let denom = -s2_x * s1_y + s1_x * s2_y;
+    if (denom === 0) return false; // Parallele Linien
+    let s = (-s1_y * (p0.x - p2.x) + s1_x * (p0.y - p2.y)) / denom;
+    let t = ( s2_x * (p0.y - p2.y) - s2_y * (p0.x - p2.x)) / denom;
+    return (s >= 0 && s <= 1 && t >= 0 && t <= 1);
+}
+
 function setupInteractions() {
+  let lastWorldX = null, lastWorldY = null;
+
+  const getPos = e => { 
+    let rect=cv.getBoundingClientRect(); 
+    let x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left; 
+    let y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top; 
+    let camBaseY = cv.height * 0.55;
+    MOUSE.worldX=(x-(cv.width/2+CAM.x))/CAM.zoom; 
+    MOUSE.worldY=(y-(camBaseY+CAM.y))/CAM.zoom; 
+    return {x,y}; 
+  };
+  
   const findNearestBranch = (root, tx, ty, maxDist) => {
     let nearest=null, minDist=maxDist;
     const search = b => {
@@ -385,68 +427,79 @@ function setupInteractions() {
     search(root); return nearest;
   };
 
-  function handlePointerDown(clientX, clientY) {
+  cv.addEventListener('pointerdown', e => {
     MOUSE.down=true; 
-    let rect=cv.getBoundingClientRect(); 
-    MOUSE.x = clientX - rect.left;
-    MOUSE.y = clientY - rect.top;
-    let camBaseY = cv.height * 0.55;
-    MOUSE.worldX=(MOUSE.x-(cv.width/2+CAM.x))/CAM.zoom; 
-    MOUSE.worldY=(MOUSE.y-(camBaseY+CAM.y))/CAM.zoom; 
-    
+    getPos(e); 
+    lastWorldX = MOUSE.worldX;
+    lastWorldY = MOUSE.worldY;
+
     if(!STATE.trees[STATE.activeIdx])return;
 
     if(INPUT==='none') {
         MOUSE.drag = true;
+    } else if(INPUT==='prune') {
+        ENV.swipeTrail = [{x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0}];
+        // Einzelklick-Schnitt weiterhin möglich
+        HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
+        if(HOVER) {
+            performCut(HOVER, STATE.trees[STATE.activeIdx].key);
+            notify("Schnitt!");
+        }
     } else if(INPUT!=='water') {
         HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
         if(HOVER) {
-          if(INPUT==='prune' && !HOVER.cut && HOVER.parent) {
-            HOVER.cut=true;
-            const spec = SPECIES[STATE.trees[STATE.activeIdx].key];
-            function dropChildren(b) {
-                 const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
-                 ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5 });
-                 b.leaves.forEach(l => {
-                     const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
-                     ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7 });
-                 });
-                b.children.forEach(dropChildren);
-            }
-            dropChildren(HOVER);
-            HOVER.children=[]; HOVER.leaves=[];
-            STATE.stats.totalPrunes++; notify("Ast geschnitten");
-          } else if(INPUT==='graft') {
+          if(INPUT==='graft') {
             if(HOVER.cut) { 
                 HOVER.cut=false; HOVER.sprouted=false; notify("Ast geheilt!"); 
             } else { 
                 let dev=(Math.random()-0.5)*1.5; 
-                let newThick = Math.max(1, HOVER.thick * 0.7);
+                let newThick = Math.max(1, HOVER.thick * 0.7); 
                 HOVER.children.push(new Branch(HOVER,0,0,HOVER.angle+dev,HOVER.maxLen*0.7,newThick,HOVER.depth+1)); 
                 notify("Neuer Trieb veredelt!"); 
             }
           } else if(INPUT==='bend') { BEND_TARGET=HOVER; }
         }
     }
-  }
+  });
 
-  function handlePointerMove(clientX, clientY) {
-    let rect=cv.getBoundingClientRect(); 
-    let mx = clientX - rect.left;
-    let my = clientY - rect.top;
+  cv.addEventListener('pointermove', e => {
+    getPos(e);
     
     if(MOUSE.drag) {
+        let rect=cv.getBoundingClientRect(); 
+        let mx = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
+        let my = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
         CAM.x += mx - MOUSE.x;
         CAM.y += my - MOUSE.y;
+        MOUSE.x = mx;
+        MOUSE.y = my;
     }
 
-    MOUSE.x = mx;
-    MOUSE.y = my;
-    let camBaseY = cv.height * 0.55;
-    MOUSE.worldX=(mx-(cv.width/2+CAM.x))/CAM.zoom; 
-    MOUSE.worldY=(my-(camBaseY+CAM.y))/CAM.zoom;
-
-    if(MOUSE.down && INPUT==='bend' && BEND_TARGET) { 
+    // SWIPE TO CUT LOGIC
+    if(MOUSE.down && INPUT === 'prune') {
+        ENV.swipeTrail.push({x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0});
+        if(lastWorldX !== null && lastWorldY !== null && STATE.trees[STATE.activeIdx]) {
+            let p0 = {x: lastWorldX, y: lastWorldY};
+            let p1 = {x: MOUSE.worldX, y: MOUSE.worldY};
+            let cutHappened = false;
+            
+            function checkCut(b) {
+                if(b.cut) return;
+                if(b.parent) {
+                    let b0 = {x: b.x, y: b.y};
+                    let b1 = {x: b.endX, y: b.endY};
+                    if(doSegmentsIntersect(p0, p1, b0, b1)) {
+                        performCut(b, STATE.trees[STATE.activeIdx].key);
+                        cutHappened = true;
+                    }
+                }
+                b.children.forEach(checkCut);
+            }
+            checkCut(STATE.trees[STATE.activeIdx].root);
+            if(cutHappened) notify("Slice!"); 
+        }
+    }
+    else if(MOUSE.down && INPUT==='bend' && BEND_TARGET) { 
       let oldAngle = BEND_TARGET.targetAngle;
       BEND_TARGET.targetAngle=Math.atan2(MOUSE.worldY-BEND_TARGET.y, MOUSE.worldX-BEND_TARGET.x); 
       let angleDiff = BEND_TARGET.targetAngle - oldAngle;
@@ -454,20 +507,30 @@ function setupInteractions() {
         b.children.forEach(c => { c.targetAngle += diff * 0.6; propagateBend(c, diff * 0.6); });
       }
       propagateBend(BEND_TARGET, angleDiff);
-    } else if(!MOUSE.down && INPUT!=='water' && INPUT!=='none' && STATE.trees[STATE.activeIdx]) { 
+    } 
+    else if(!MOUSE.down && INPUT!=='water' && INPUT!=='none' && STATE.trees[STATE.activeIdx]) { 
         HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40); 
     }
-  }
+
+    lastWorldX = MOUSE.worldX;
+    lastWorldY = MOUSE.worldY;
+    if(!MOUSE.drag){
+        let rect=cv.getBoundingClientRect(); 
+        MOUSE.x = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
+        MOUSE.y = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
+    }
+  });
 
   function handlePointerUp() {
       MOUSE.down=false; 
       MOUSE.drag=false;
       BEND_TARGET=null; 
+      lastWorldX = null;
+      lastWorldY = null;
   }
 
-  cv.addEventListener('mousedown', e => handlePointerDown(e.clientX, e.clientY));
-  cv.addEventListener('mousemove', e => handlePointerMove(e.clientX, e.clientY));
   window.addEventListener('mouseup', handlePointerUp);
+  window.addEventListener('touchend', handlePointerUp);
 
   cv.addEventListener('wheel', e => {
       e.preventDefault();
@@ -478,8 +541,6 @@ function setupInteractions() {
       if(e.touches.length === 2) {
           lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
           MOUSE.drag = false;
-      } else if (e.touches.length === 1) {
-          handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
       }
   }, {passive: false});
 
@@ -488,15 +549,9 @@ function setupInteractions() {
           let dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
           CAM.zoom = Math.min(Math.max(0.3, CAM.zoom + (dist - lastTouchDist) * 0.01), 4);
           lastTouchDist = dist;
-      } else if (e.touches.length === 1) {
-          handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
       }
-      e.preventDefault();
+      if(INPUT !== 'none') e.preventDefault();
   }, {passive: false});
-
-  cv.addEventListener('touchend', e => {
-      handlePointerUp();
-  });
 }
 
 function setTool(t) { 
@@ -538,6 +593,12 @@ function update(dt) {
       else if(p.life<=0) ENV.particles.splice(i,1); 
   }
 
+  // Swipe Trail Fade
+  for(let i=ENV.swipeTrail.length-1; i>=0; i--) {
+      ENV.swipeTrail[i].life -= dt * 4;
+      if(ENV.swipeTrail[i].life <= 0) ENV.swipeTrail.splice(i, 1);
+  }
+
   const gravity = 300;
   for(let i=ENV.fallingParts.length-1; i>=0; i--) {
       let p = ENV.fallingParts[i]; p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
@@ -557,17 +618,11 @@ function update(dt) {
     
     if(!b.cut&&b.len<b.maxLen&&tree.hp>0){
       b.len+=8*dt*growth; 
-      
       if(b.len>15) b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
       
       const thresh = b.maxLen * 0.7; 
       if(b.depth>0 && b.len>thresh && b.leaves.length<SETTINGS.maxLeaves && Math.random() < (SETTINGS.leafRate*2)) {
-          b.leaves.push({
-              f:0.6+Math.random()*0.4, 
-              r:Math.random()*6.28,
-              s:0.1,
-              ms:(8+Math.random()*6)*SETTINGS.leafSizeMult
-          });
+          b.leaves.push({ f:0.6+Math.random()*0.4, r:Math.random()*6.28, s:0.1, ms:(8+Math.random()*6)*SETTINGS.leafSizeMult });
       }
       
       if(b.len>b.maxLen*0.6&&!b.sprouted&&b.thick>3.0&&Math.random()<SETTINGS.sproutChance*growth){ 
@@ -634,8 +689,8 @@ function drawWorld() {
     ctx.lineWidth = b.thick; 
     ctx.strokeStyle = spec.bark[0];
     
-    if(b===HOVER&&INPUT!=='water'&&INPUT!=='none'){ 
-        ctx.shadowBlur=15; ctx.shadowColor=(INPUT==='prune'?'#f87171':INPUT==='graft'?'#60a5fa':'#facc15'); 
+    if(b===HOVER&&INPUT!=='water'&&INPUT!=='none'&&INPUT!=='prune'){ 
+        ctx.shadowBlur=15; ctx.shadowColor=(INPUT==='graft'?'#60a5fa':'#facc15'); 
     } else { ctx.shadowBlur=0; }
     
     ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.endX,b.endY); ctx.stroke(); 
@@ -653,6 +708,23 @@ function drawWorld() {
     b.children.forEach(render);
   }
   render(t.root);
+
+  // Schwert-Spur (Swipe Trail) zeichnen
+  if (ENV.swipeTrail.length > 1) {
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.shadowBlur = 15; ctx.shadowColor = "#f87171"; // Rotes Leuchten
+    for (let i = 1; i < ENV.swipeTrail.length; i++) {
+        let p1 = ENV.swipeTrail[i-1];
+        let p2 = ENV.swipeTrail[i];
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${p2.life})`;
+        ctx.lineWidth = 4 * p2.life;
+        ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  }
 
   ENV.fallingParts.forEach(p => {
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
@@ -682,7 +754,6 @@ window.renameActiveTree = function() {
   }
 }
 
-// NEUE FUNKTION: GELD CHEAT (Dev Tool)
 window.cheatMoney = function() {
   STATE.money += 1000;
   notify("+1000 💰 (Cheat aktiviert)");
@@ -788,22 +859,10 @@ function updateListUI(){
   }); 
   $('collectionList').innerHTML=cH;
   
-  let sH=''; 
-  for(let k in SPECIES){ 
-    if(!STATE.inventory.species.includes(k)){ 
-      let s=SPECIES[k]; 
-      sH+=`<div class="list-item"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; 
-    } else { 
-      let s=SPECIES[k]; 
-      sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; 
-    }
-  } 
-  $('speciesList').innerHTML=sH;
-  
+  let sH=''; for(let k in SPECIES){ if(!STATE.inventory.species.includes(k)){ let s=SPECIES[k]; sH+=`<div class="list-item"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; } else { let s=SPECIES[k]; sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; }} $('speciesList').innerHTML=sH;
   $('shopMoneyDisplay').innerText=`Guthaben: ${STATE.money} 💰`; let pH='',sH2=''; const tr=STATE.trees[STATE.activeIdx]; for(let k in ITEMS){ let it=ITEMS[k], own=STATE.inventory[it.type+'s'].includes(k), eq=(tr&&tr[it.type]===k), bH=''; if(!own)bH=`<button class="action-btn buy" onclick="buyItem('${k}')">${it.cost} 💰</button>`; else if(!eq)bH=`<button class="action-btn" onclick="equipItem('${k}')">Nutzen</button>`; else bH=`<span style="font-size:12px;color:var(--success)">Aktiv</span>`; let c=`<div class="list-item ${eq?'active-item':''}"><div class="list-content"><div class="list-title">${it.name}</div><div class="list-sub">${it.bonus?'Wachstum +'+Math.round((it.bonus-1)*100)+'%':'Feuchtigkeit +'+Math.round((it.boost-1)*100)+'%'}</div></div>${bH}</div>`; if(it.type==='pot')pH+=c;else sH2+=c; } $('shopPotsList').innerHTML=pH; $('shopSoilsList').innerHTML=sH2;
   let qH=''; STATE.quests.forEach((q,i)=>{ let bc=(q.done&&!q.coll)?'quest-btn ready':'quest-btn', bt=q.coll?'Erledigt':(q.done?`Abholen`:`${Math.floor(q.cur)}/${q.goal}`); qH+=`<div class="list-item"><div class="list-content"><div class="list-title">${q.txt}</div><div class="list-sub">Belohnung: ${q.rew} 💰</div></div><button class="${bc}" onclick="claimQuest(${i})" ${q.coll||(!q.done)?'disabled':''}>${bt}</button></div>`; }); $('questList').innerHTML=qH;
 }
-
 window.switchTree=i=>{ STATE.activeIdx=i; INPUT="none"; document.querySelectorAll('.tools-panel .btn').forEach(b=>b.classList.remove('active')); closeAllPanels(); updateRealtimeUI(); };
 window.buySpecies=k=>{ if(STATE.money>=SPECIES[k].cost){ STATE.money-=SPECIES[k].cost; STATE.inventory.species.push(k); notify(`${SPECIES[k].name} gekauft!`); updateListUI(); }else notify("Zu wenig Guthaben!"); };
 window.plantNew=k=>{ let nr=STATE.trees.length+1; STATE.trees.push(new Tree(k, SPECIES[k].name+" #"+nr)); switchTree(STATE.trees.length-1); notify("Neuer Baum gepflanzt!"); };
@@ -817,7 +876,6 @@ function generateQuests(){
   STATE.quests = []; for(let i=0; i<3; i++) { let q = pool[Math.floor(Math.random()*pool.length)]; STATE.quests.push({id:q.id+Date.now()+i, txt:q.txt, goal:q.goal, cur:0, rew:q.rew, done:false, coll:false, metric:q.metric}); }
   checkQuests();
 }
-
 function checkQuests(){ let c=false; STATE.quests.forEach(q=>{ if(q.done)return; if(q.metric==='money')q.cur=STATE.money; else if(q.metric==='days')q.cur=STATE.trees[STATE.activeIdx]?.days||0; else q.cur=STATE.stats[q.metric]||0; if(q.cur>=q.goal){q.done=true;c=true;notify("Ziel erreicht!");}}); if(c)updateListUI(); }
 
 function bindSettingsUI(){
@@ -825,12 +883,11 @@ function bindSettingsUI(){
   const binds=[{id:'inpWind',key:'windSpeed',min:0,max:2,step:0.1}, {id:'inpSec',key:'secPerDay',min:5,max:120,step:1}, {id:'inpGrow',key:'growMult',min:0.1,max:5,step:0.1}, {id:'inpWarp',key:'timeWarp',min:0.1,max:10,step:0.1}, {id:'inpLeaves',key:'maxLeaves',min:10,max:200,step:5}];
   let h=''; binds.forEach(b=>{ h+=`<div class="set-row"><div class="set-header"><span class="s-label">${labels[b.key]||b.key}</span><span class="s-val" id="v_${b.id}">${SETTINGS[b.key]}</span></div><input type="range" id="${b.id}" min="${b.min}" max="${b.max}" step="${b.step}" value="${SETTINGS[b.key]}"></div>`; }); $('settingsGrid').innerHTML=h; binds.forEach(b=>{ let el=$(b.id); if(el)el.oninput=e=>{ let v=parseFloat(e.target.value); SETTINGS[b.key]=v; $(`v_${b.id}`).innerText=v; }; });
 }
-
 window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>{console.log(e);});}else{if(document.exitFullscreen){document.exitFullscreen();}} };
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave91'); 
+    localStorage.removeItem('bonsaiSave95'); 
     location.reload(); 
   }
 };
