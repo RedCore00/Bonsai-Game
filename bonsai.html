@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v13.5 (Radial UI)</title>
+<title>Bonsai Master v13.5 (Minimal UI)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -66,30 +66,6 @@
     pointer-events: auto;
   }
 
-  /* --- NEUER HEADER OBEN LINKS --- */
-  .top-header {
-    position: absolute;
-    top: env(safe-area-inset-top, 20px);
-    left: 20px;
-    padding: 10px 16px;
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    pointer-events: auto;
-    cursor: pointer;
-    z-index: 20;
-  }
-  .top-name { 
-    font-size: 16px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
-    display: flex; align-items: center; 
-  }
-  .top-species { 
-    font-size: 11px; color: var(--accent); font-weight: 700; 
-    text-transform: uppercase; letter-spacing: 1px; 
-  }
-
-  /* --- NEUE SMART BAR UNTEN --- */
   .smart-bar {
     border-radius: 22px;
     padding: 10px 15px;
@@ -100,42 +76,52 @@
     gap: 10px; 
   }
   
-  .radial-stats { 
-    display: flex; align-items: center; gap: 12px; flex: 1; 
+  /* --- RADIAL BARS CSS --- */
+  .radial-group { 
+    display: flex; gap: 8px; align-items: center; 
   }
-  
-  .radial-item { 
-    position: relative; width: 40px; height: 40px; 
-    display: flex; align-items: center; justify-content: center; 
+  .radial-wrapper { 
+    position: relative; width: 34px; height: 34px; 
   }
-  
-  .radial-item svg.radial-bg { 
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; 
+  .circular-chart { 
+    display: block; width: 100%; height: 100%; 
   }
-  
-  .radial-icon { 
-    position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; 
+  .circle-bg { 
+    fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3; 
   }
-  
-  #circWater, #circHp { 
-    transition: stroke-dashoffset 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), stroke 0.3s; 
+  .circle { 
+    fill: none; stroke-width: 3; stroke-linecap: round; 
+    transition: stroke-dasharray 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
   }
+  .circular-chart.water .circle { stroke: var(--accent); }
+  .circular-chart.hp .circle { stroke: var(--success); }
+  .circular-chart.danger .circle { stroke: var(--danger) !important; }
   
-  .danger-stroke { stroke: var(--danger) !important; }
-  
+  .inner-icon { 
+    position: absolute; top: 50%; left: 50%; 
+    transform: translate(-50%, -50%); 
+    width: 14px; height: 14px; opacity: 0.9; 
+  }
+
+  .day-season-group { 
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: center; flex: 1; padding-left: 5px;
+  }
+  #uiDayText { font-size: 13px; font-weight: 700; color: #fff; }
+  #uiSeasonText { font-size: 10px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+
   .smart-tools { 
     display: flex; gap: 6px; 
     flex-shrink: 0; 
   }
   
   .tool-btn-mini {
-    width: 34px; height: 34px; 
+    width: 38px; height: 38px; 
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
     border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer;
     transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     padding: 0;
   }
-  .tool-btn-mini svg { width: 16px; height: 16px; opacity: 0.8; }
+  .tool-btn-mini svg { width: 18px; height: 18px; opacity: 0.8; }
   .tool-btn-mini:active { transform: scale(0.92); }
   .tool-btn-mini.active { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2); }
   .tool-btn-mini.active svg { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
@@ -175,7 +161,8 @@
   .tree-preview { width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); font-size: 24px; flex-shrink: 0; }
   .tree-preview img { width: 100%; height: 100%; object-fit: contain; }
   .list-content { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-  .list-title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .list-title:active { opacity: 0.7; }
   .list-sub { font-size: 12px; color: var(--text-muted); }
   .action-btn { padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; background: rgba(255,255,255,0.1); color: var(--text); transition: 0.2s; }
   .action-btn.buy { background: rgba(251, 191, 36, 0.2); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); }
@@ -193,54 +180,69 @@
 </style>
 </head>
 <body>
-<div class="viewport" id="viewport"><canvas id="cv"></canvas><div id="toast" class="toast">Nachricht</div></div>
+
+<div class="viewport" id="viewport">
+  <canvas id="cv"></canvas>
+  <div id="toast" class="toast">Nachricht</div>
+</div>
+
 <div class="ui-layer">
-
-  <div class="top-header glass" onclick="renameActiveTree()" title="Klicken zum Umbenennen">
-    <div class="top-name" id="uiTreeName">Baum Name</div>
-    <div class="top-species" id="uiSpeciesName">Spezies</div>
-  </div>
-
+  
   <div class="smart-bar glass">
-    <div class="radial-stats">
-      <div class="radial-item" title="Wasser">
-        <svg class="radial-bg" width="40" height="40" viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"></circle>
-          <circle id="circWater" cx="20" cy="20" r="17" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 20 20)" stroke-linecap="round"></circle>
+    <div class="radial-group">
+      <div class="radial-wrapper" title="Wasser">
+        <svg viewBox="0 0 36 36" class="circular-chart water" id="svgWater">
+          <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path class="circle" id="circWater" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
         </svg>
-        <div class="radial-icon">
-          <svg id="iconWater" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-        </div>
+        <svg class="inner-icon" id="iconWater" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
       </div>
-      <div class="radial-item" title="Vitalität">
-        <svg class="radial-bg" width="40" height="40" viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"></circle>
-          <circle id="circHp" cx="20" cy="20" r="17" fill="none" stroke="#34d399" stroke-width="4" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 20 20)" stroke-linecap="round"></circle>
+      <div class="radial-wrapper" title="Vitalität">
+        <svg viewBox="0 0 36 36" class="circular-chart hp" id="svgHp">
+          <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path class="circle" id="circHp" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
         </svg>
-        <div class="radial-icon">
-          <svg id="iconHp" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#34d399" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </div>
+        <svg class="inner-icon" id="iconHp" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       </div>
-      <div class="stat-text-info">
-        <span id="uiDaySeason" style="font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.9); display:block; line-height:1.3;">Tag 0<br><span style="color:var(--accent); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Sommer</span></span>
-      </div>
+    </div>
+    
+    <div class="day-season-group">
+      <span id="uiDayText">Tag 0</span>
+      <span id="uiSeasonText">FRÜHLING</span>
     </div>
 
     <div class="smart-tools">
-      <button class="tool-btn-mini" id="toolWater" onclick="setTool('water')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></button>
-      <button class="tool-btn-mini" id="toolPrune" onclick="setTool('prune')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></button>
-      <button class="tool-btn-mini" id="toolGraft" onclick="setTool('graft')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
-      <button class="tool-btn-mini" id="toolBend" onclick="setTool('bend')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg></button>
+      <button class="tool-btn-mini" id="toolWater" onclick="setTool('water')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+      </button>
+      <button class="tool-btn-mini" id="toolPrune" onclick="setTool('prune')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+      </button>
+      <button class="tool-btn-mini" id="toolGraft" onclick="setTool('graft')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+      </button>
+      <button class="tool-btn-mini" id="toolBend" onclick="setTool('bend')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg>
+      </button>
     </div>
   </div>
-  
+
   <div class="bottom-dock glass">
-    <button class="nav-item tab-btn" onclick="openPanel('panel_collection')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg> Bäume</button>
-    <button class="nav-item tab-btn" onclick="openPanel('panel_shop')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Shop</button>
-    <button class="nav-item tab-btn" onclick="openPanel('panel_quests')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Ziele</button>
-    <button class="nav-item tab-btn" onclick="openPanel('panel_settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System</button>
+    <button class="nav-item tab-btn" onclick="openPanel('panel_collection')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg> Bäume
+    </button>
+    <button class="nav-item tab-btn" onclick="openPanel('panel_shop')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Shop
+    </button>
+    <button class="nav-item tab-btn" onclick="openPanel('panel_quests')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Ziele
+    </button>
+    <button class="nav-item tab-btn" onclick="openPanel('panel_settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
+    </button>
   </div>
 </div>
+
 <div class="overlay-bg" id="overlayBg" onclick="closeAllPanels()"></div>
 <div class="overlay-sheet" id="panel_collection"><div class="sheet-header"><h2 style="color:var(--accent)">Baumschule</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div class="s-label" style="margin-bottom:10px;">Deine Bonsais</div><div id="collectionList"></div><div class="s-label" style="margin-top:25px; margin-bottom:10px;">Samen & Setzlinge kaufen</div><div id="speciesList"></div></div>
 <div class="overlay-sheet" id="panel_shop"><div class="sheet-header"><h2 style="color:var(--gold)">Bonsai Shop</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div id="shopMoneyDisplay" style="text-align:right; font-weight:700; color:var(--gold); margin-bottom:20px; font-size:16px;">Guthaben: 0 💰</div><div class="s-label" style="margin-bottom:10px;">Töpfe & Schalen</div><div id="shopPotsList"></div><div class="s-label" style="margin-top:25px; margin-bottom:10px;">Substrate</div><div id="shopSoilsList"></div></div>
@@ -261,8 +263,6 @@ const ctx = cv.getContext('2d', {alpha: false});
 const thumbCanvas = document.createElement('canvas');
 thumbCanvas.width = 150; thumbCanvas.height = 150;
 const thumbCtx = thumbCanvas.getContext('2d');
-
-cv.addEventListener('contextmenu', e => e.preventDefault());
 
 const SPECIES = {
   ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
@@ -286,7 +286,7 @@ const ITEMS = {
 
 let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[], pebbles: [] };
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
@@ -374,26 +374,11 @@ function saveGame() {
   }
 }
 
-function generatePebbles() {
-    ENV.pebbles = [];
-    for(let i=-400; i<400; i+=12) {
-        if(Math.abs(i) < 85) continue; 
-        ENV.pebbles.push({
-            x: i + (Math.random()-0.5)*10,
-            y: 150 + (Math.random())*15, 
-            rx: 3 + Math.random()*3,
-            ry: 2 + Math.random()*2,
-            rot: Math.random()*3.14
-        });
-    }
-}
-
 function init() {
   cv.width=$('viewport').clientWidth||window.innerWidth; cv.height=$('viewport').clientHeight||window.innerHeight;
   loadGame(); bindSettingsUI(); setupInteractions();
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   if(!STATE.quests||STATE.quests.length===0) generateQuests();
-  generatePebbles();
   new ResizeObserver(e=>{for(let E of e){if(E.contentRect.width>0){cv.width=E.contentRect.width;cv.height=E.contentRect.height;}}}).observe($('viewport'));
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
@@ -656,7 +641,7 @@ function setupInteractions() {
 function setTool(t) { 
     INPUT=(INPUT===t?"none":t); 
     document.querySelectorAll('.tool-btn-mini').forEach(b=>b.classList.remove('active')); 
-    if(INPUT!=="none")$(INPUT==='water'?'toolWater':INPUT==='prune'?'toolPrune':INPUT==='graft'?'toolGraft':'toolBend').classList.add('active'); 
+    if(INPUT!=="none")$('tool'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active'); 
 }
 
 function loop(now) {
@@ -825,6 +810,17 @@ function draw() {
   ctx.save(); 
   const camBaseY = h * 0.6; 
   ctx.translate(w/2+CAM.x, camBaseY+CAM.y); ctx.scale(CAM.zoom,CAM.zoom); 
+  
+  ctx.fillStyle = "#04060b";
+  ctx.beginPath();
+  ctx.moveTo(-5000, 55);
+  for(let px = -5000; px <= 5000; px += 100) {
+      ctx.lineTo(px, 55 + Math.sin(px * 0.01) * 15 + Math.cos(px * 0.005) * 10);
+  }
+  ctx.lineTo(5000, 5000);
+  ctx.lineTo(-5000, 5000);
+  ctx.fill();
+
   drawWorld(); 
   ctx.restore();
 }
@@ -855,13 +851,6 @@ function drawWorld() {
   ctx.lineTo(5000, 5000);
   ctx.lineTo(-5000, 5000);
   ctx.fill();
-  
-  ctx.fillStyle = "rgba(60, 50, 40, 0.6)";
-  ENV.pebbles.forEach(p => {
-      ctx.beginPath();
-      ctx.ellipse(p.x, p.y, p.rx, p.ry, p.rot, 0, 6.28);
-      ctx.fill();
-  });
 
   ctx.lineCap="round"; ctx.lineJoin="round";
   
@@ -969,8 +958,9 @@ function notify(m){ const t=$('toast'); t.innerText=m; t.classList.add('show'); 
 function openPanel(id){ $('overlayBg').classList.add('open'); $(id).classList.add('open'); updateListUI(); }
 window.closeAllPanels=()=>{ $('overlayBg').classList.remove('open'); document.querySelectorAll('.overlay-sheet').forEach(s=>s.classList.remove('open')); }
 
-window.renameActiveTree = function() {
-  const tree = STATE.trees[STATE.activeIdx];
+// Baum Umbenennen via Liste
+window.renameTree = function(idx) {
+  const tree = STATE.trees[idx];
   if(!tree) return;
   const newName = prompt("Gib deinem Bonsai einen neuen Namen:", tree.name);
   if(newName && newName.trim() !== "") {
@@ -979,6 +969,11 @@ window.renameActiveTree = function() {
     updateListUI();
     notify("Baum erfolgreich umbenannt!");
   }
+}
+
+// Baum Umbenennen via Top-Header
+window.renameActiveTree = function() {
+  renameTree(STATE.activeIdx);
 }
 
 window.cheatMoney = function() {
@@ -991,30 +986,27 @@ window.cheatMoney = function() {
 function updateRealtimeUI(){ 
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; 
   
-  $('uiTreeName').innerHTML = `
-      <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.name}</span>
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" style="flex-shrink:0; margin-left:6px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-  `;
-  
-  $('uiSpeciesName').innerText=SPECIES[t.key].name; 
+  $('uiTreeName').innerText = t.name;
+  $('uiSpeciesName').innerText = SPECIES[t.key].name;
   
   const seasons = ["Frühling","Sommer","Herbst","Winter"];
-  $('uiDaySeason').innerHTML = `Tag ${Math.floor(t.days)}<br><span style="color:var(--accent); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">${seasons[Math.floor(t.days/30)%4]}</span>`; 
+  $('uiDayText').innerText = `Tag ${Math.floor(t.days)}`;
+  $('uiSeasonText').innerText = seasons[Math.floor(t.days/30)%4];
   
   let wPct = Math.max(0, Math.min(100, t.water));
   let hPct = Math.max(0, Math.min(100, t.hp));
   
+  // Kreisumfang für r=17 ist ~106.8
   let circ = 106.8;
-  
-  $('circWater').style.strokeDashoffset = circ - (wPct / 100) * circ;
-  $('circHp').style.strokeDashoffset = circ - (hPct / 100) * circ;
+  $('circWater').style.strokeDasharray = `${(wPct/100)*circ}, ${circ}`;
+  $('circHp').style.strokeDasharray = `${(hPct/100)*circ}, ${circ}`;
   
   if(t.water < 20) {
       $('circWater').classList.add('danger-stroke');
       $('iconWater').style.stroke = "var(--danger)";
   } else {
       $('circWater').classList.remove('danger-stroke');
-      $('iconWater').style.stroke = "#38bdf8"; 
+      $('iconWater').style.stroke = "var(--accent)"; 
   }
 
   if(t.hp < 20) {
@@ -1022,7 +1014,7 @@ function updateRealtimeUI(){
       $('iconHp').style.stroke = "var(--danger)";
   } else {
       $('circHp').classList.remove('danger-stroke');
-      $('iconHp').style.stroke = "#34d399"; 
+      $('iconHp').style.stroke = "var(--success)"; 
   }
 }
 
@@ -1103,7 +1095,7 @@ function updateListUI(){
       <div class="list-item ${a}" style="flex-wrap: wrap;">
         <div class="tree-preview"><img src="${getRealtimeThumbnail(t)}"></div>
         <div class="list-content">
-            <div class="list-title">${t.name}</div>
+            <div class="list-title" onclick="renameTree(${i})" title="Zum Umbenennen klicken">${t.name} ✏️</div>
             <div class="list-sub">Tag ${Math.floor(t.days)} • ${Math.round(t.hp)}% HP</div>
         </div>
         <div style="display:flex; flex-direction:column; gap:6px; align-items: flex-end;">
