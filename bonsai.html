@@ -5,348 +5,123 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v6.1 (Bugfix Edition)</title>
+<title>Bonsai Master v7.0 (Legacy & Progress)</title>
 <style>
   :root {
-    --accent: #38bdf8; 
-    --accent-glow: rgba(56, 189, 248, 0.6);
-    --success: #34d399; 
-    --success-glow: rgba(52, 211, 153, 0.6);
-    --gold: #fbbf24;
-    --text: #ffffff; 
-    --text-muted: #94a3b8;
-    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-    
-    /* Liquid Glass Variables */
+    --accent: #38bdf8; --accent-glow: rgba(56, 189, 248, 0.6);
+    --success: #34d399; --success-glow: rgba(52, 211, 153, 0.6);
+    --gold: #fbbf24; --gold-glow: rgba(251, 191, 36, 0.5);
+    --text: #ffffff; --text-muted: #94a3b8;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
     --glass-bg: rgba(15, 20, 30, 0.45);
     --glass-border: rgba(255, 255, 255, 0.15);
-    --glass-highlight: rgba(255, 255, 255, 0.05);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
   
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; height: 100dvh; background: #000; overflow: hidden; font-family: var(--font); color: var(--text); user-select: none; }
   
-  body { 
-    margin: 0; height: 100vh; height: 100dvh; background: #000; 
-    overflow: hidden; font-family: var(--font); color: var(--text); 
-    user-select: none; -webkit-user-select: none;
-  }
-  
-  .app-layout { display: flex; flex-direction: column; height: 100%; width: 100%; }
-  
-  /* --- CANVAS FULLSCREEN --- */
-  .viewport { 
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-    z-index: 1; cursor: grab; overflow: hidden; touch-action: none; 
-  }
-  .viewport:active { cursor: grabbing; }
-  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
 
-  /* --- UI LAYER --- */
-  .ui-layer {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 10; pointer-events: none; 
-    display: flex; flex-direction: column; justify-content: space-between;
-  }
+  .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+  .glass { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); pointer-events: auto; }
 
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    pointer-events: auto;
-  }
+  .tree-header { margin: env(safe-area-inset-top, 20px) 20px 0 20px; padding: 8px 16px; border-radius: 18px; align-self: flex-start; }
+  .tree-header h1 { margin: 0; font-size: 16px; font-weight: 700; }
+  .tree-header p { margin: 0; font-size: 10px; color: var(--accent); text-transform: uppercase; font-weight: 600; }
 
-  /* --- TOP HEADER --- */
-  .tree-header {
-    margin: env(safe-area-inset-top, 15px) 15px 0 15px;
-    padding: 8px 16px; border-radius: 18px;
-    align-self: flex-start;
-    border-top: 1px solid rgba(255,255,255,0.3); 
-    border-left: 1px solid rgba(255,255,255,0.2);
-  }
-  .tree-header h1 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-  .tree-header p { margin: 1px 0 0 0; font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-
-  /* --- BOTTOM UI AREA --- */
-  .bottom-area {
-    padding: 0 12px calc(75px + env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 8px;
-  }
-
-  /* Stats Panel */
-  .stats-panel {
-    border-radius: 20px; padding: 12px 16px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .bottom-area { padding: 0 12px calc(75px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+  .stats-panel { border-radius: 20px; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .stat-row-top { display: flex; justify-content: space-between; }
   .stat-group { display: flex; gap: 15px; }
-  .stat-item { display: flex; align-items: baseline; gap: 6px; }
-  .s-label { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-  .s-val { font-size: 13px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+  .s-label { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; font-weight: 700; }
+  .s-val { font-size: 13px; font-weight: 600; }
   
-  .stat-row-bars { display: flex; gap: 15px; }
+  .stat-row-bars { display: flex; gap: 10px; }
   .bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-  .bar-header { display: flex; justify-content: space-between; align-items: flex-end; }
-  .bar-bg { 
-    width: 100%; height: 5px; border-radius: 4px; overflow: hidden;
-    background: rgba(0,0,0,0.4); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); 
-  }
-  .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border-radius: 4px; }
+  .bar-bg { width: 100%; height: 5px; border-radius: 3px; background: rgba(0,0,0,0.4); overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+  .bar-fill { height: 100%; transition: width 0.4s ease; }
   .water-color { background: linear-gradient(90deg, #0ea5e9, #38bdf8); box-shadow: 0 0 10px var(--accent-glow); }
   .hp-color { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px var(--success-glow); }
 
-  /* Tools Container */
-  .tools-panel { border-radius: 20px; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.2); }
-  .section-title { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 8px 4px; font-weight: 700; }
+  .tools-panel { border-radius: 20px; padding: 12px 16px; }
   .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  
-  .btn {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
-    padding: 10px 4px; border-radius: 14px; font-weight: 600; cursor: pointer;
-    font-size: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
-  }
-  .btn svg { width: 18px; height: 18px; opacity: 0.7; transition: all 0.3s; }
-  .btn:active { transform: scale(0.94); }
-  .btn.active { 
-    background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; 
-    box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); 
-    animation: pulseGlow 2s infinite alternate;
-  }
+  .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text); padding: 10px 2px; border-radius: 14px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .btn svg { width: 18px; height: 18px; opacity: 0.7; }
+  .btn.active { background: rgba(56, 189, 248, 0.2); border-color: var(--accent); }
   .btn.active svg { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
-  @keyframes pulseGlow { from{box-shadow: inset 0 0 15px rgba(56,189,248,0.2), 0 0 10px rgba(56,189,248,0.3);} to{box-shadow: inset 0 0 25px rgba(56,189,248,0.4), 0 0 20px rgba(56,189,248,0.5);} }
 
-  /* --- FLOATING DOCK --- */
-  .bottom-dock {
-    position: absolute; bottom: env(safe-area-inset-bottom, 10px); left: 50%; transform: translateX(-50%);
-    width: calc(100% - 24px); max-width: 450px; border-radius: 25px; display: flex; justify-content: space-around; align-items: center;
-    padding: 8px; border-top: 1px solid rgba(255,255,255,0.3);
-  }
-  .nav-item {
-    background: transparent; border: none; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; align-items: center; gap: 3px;
-    font-size: 9px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600;
-  }
-  .nav-item svg { width: 20px; height: 20px; transition: all 0.3s; }
-  .nav-item.open { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
-  .nav-item.open svg { transform: translateY(-3px) scale(1.1); stroke: var(--accent); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
-  
-  .snap-btn { 
-    background: rgba(255,255,255,0.9); color: #000; border-radius: 18px; padding: 8px 14px; 
-    font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 4px; border:none; box-shadow: 0 4px 15px rgba(255,255,255,0.3); transition: transform 0.2s;
-  }
-  .snap-btn:active { transform: scale(0.95); }
+  .bottom-dock { position: absolute; bottom: env(safe-area-inset-bottom, 10px); left: 50%; transform: translateX(-50%); width: calc(100% - 24px); border-radius: 25px; display: flex; justify-content: space-around; padding: 8px; }
+  .nav-item { background: transparent; border: none; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9px; font-weight: 600; cursor: pointer; }
+  .nav-item svg { width: 20px; height: 20px; }
+  .nav-item.open { color: var(--accent); }
 
-  /* --- OVERLAYS --- */
-  .overlay-bg {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s;
-  }
+  .overlay-sheet { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh; background: rgba(10, 15, 25, 0.9); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 32px 32px 0 0; padding: 30px 20px; z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1); overflow-y: auto; pointer-events: auto; }
+  .overlay-sheet.open { transform: translateY(0); }
+  .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .overlay-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: 0.3s; }
   .overlay-bg.open { opacity: 1; pointer-events: auto; }
 
-  .overlay-sheet {
-    position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh;
-    background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-    border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2);
-    padding: 30px 20px calc(30px + env(safe-area-inset-bottom));
-    z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-    overflow-y: auto; box-shadow: 0 -10px 50px rgba(0,0,0,0.7);
-  }
-  .overlay-sheet.open { transform: translateY(0); }
-
-  .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .sheet-header h2 { margin: 0; font-size: 18px; letter-spacing: 1px; font-weight: 700; }
-  .close-btn { 
-    background: rgba(255,255,255,0.1); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 16px; 
-    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;
-  }
-  .close-btn:active { background: rgba(255,255,255,0.2); }
-
-  /* Settings Sliders */
-  .set-row { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
-  .set-header { display: flex; justify-content: space-between; align-items: baseline; }
-  input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
-
-  .list-item { 
-    display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.03); padding: 14px; margin-bottom: 12px; border-radius: 20px; 
-    border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s;
-  }
-  .list-item:active { transform: scale(0.98); }
-  .list-item.selected { border-color: rgba(56, 189, 248, 0.5); background: rgba(56, 189, 248, 0.1); box-shadow: inset 0 0 15px rgba(56,189,248,0.1); }
-  .tree-icon { width: 44px; height: 44px; border-radius: 14px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.3); }
-  .list-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-  .list-title { font-size: 15px; font-weight: 600; }
-  .list-sub { font-size: 12px; color: var(--text-muted); }
+  /* New List Item with Preview */
+  .list-item { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.03); padding: 12px; margin-bottom: 10px; border-radius: 18px; border: 1px solid var(--glass-border); position: relative; }
+  .tree-preview { width: 45px; height: 45px; border-radius: 12px; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); }
+  .tree-preview canvas { width: 80% !important; height: 80% !important; }
+  .list-content { flex: 1; }
+  .list-title { display: block; font-size: 14px; font-weight: 700; }
+  .list-sub { display: block; font-size: 11px; color: var(--text-muted); }
   
-  .tag { font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: var(--success); color: #000; box-shadow: 0 0 10px var(--success-glow);}
+  .quest-btn { padding: 8px 15px; border-radius: 12px; border: none; font-weight: 700; font-size: 12px; background: rgba(255,255,255,0.1); color: var(--text-muted); }
+  .quest-btn.ready { background: var(--success); color: #000; box-shadow: 0 0 15px var(--success-glow); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-  .toast { 
-    position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%);
-    background: rgba(20, 25, 35, 0.85); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.4);
-    padding: 12px 24px; border-radius: 20px; pointer-events: none; opacity: 0; 
-    transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); font-weight: 700; font-size: 14px; z-index: 100;
-    backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(251, 191, 36, 0.2);
-  }
-  .toast.show { opacity: 1; transform: translate(-50%, 15px); }
+  .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+  .badge { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 15px; padding: 10px; text-align: center; opacity: 0.3; filter: grayscale(1); }
+  .badge.unlocked { opacity: 1; filter: grayscale(0); border-color: var(--gold); background: rgba(251, 191, 36, 0.05); }
+  .badge-icon { font-size: 24px; margin-bottom: 5px; display: block; }
+  .badge-name { font-size: 10px; font-weight: 700; display: block; }
 
+  .toast { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(10,15,25,0.9); color: var(--gold); padding: 12px 25px; border-radius: 20px; font-weight: 700; opacity: 0; transition: 0.4s; z-index: 100; border: 1px solid var(--gold); }
+  .toast.show { opacity: 1; transform: translate(-50%, 10px); }
 </style>
 </head>
 <body>
 
-<div class="viewport" id="viewport">
-  <canvas id="cv"></canvas>
-  <div id="toast" class="toast">Nachricht</div>
-</div>
+<div class="viewport" id="viewport"><canvas id="cv"></canvas><div id="toast" class="toast"></div></div>
 
 <div class="ui-layer">
-  
-  <div class="tree-header glass">
-    <h1 id="uiTreeName">Baum</h1>
-    <p id="uiSpeciesName">Spezies</p>
-  </div>
-
+  <div class="tree-header glass"><h1 id="uiTreeName">Baum</h1><p id="uiSpeciesName">Spezies</p></div>
   <div class="bottom-area">
     <div class="stats-panel glass">
-      <div class="stat-row-top">
-        <div class="stat-group">
-          <div class="stat-item"><span class="s-label">Alter</span><span class="s-val" id="uiDay">Tag 1</span></div>
-          <div class="stat-item"><span class="s-label">Saison</span><span class="s-val" id="uiSeason" style="color:var(--accent); text-shadow:0 0 8px var(--accent-glow)">Sommer</span></div>
-        </div>
-      </div>
+      <div class="stat-row-top"><div class="stat-group"><div class="stat-item"><span class="s-label">Alter</span><span class="s-val" id="uiDay">Tag 0</span></div><div class="stat-item"><span class="s-label">Saison</span><span class="s-val" id="uiSeason">Frühling</span></div></div></div>
       <div class="stat-row-bars">
-        <div class="bar-wrap">
-          <div class="bar-header"><span class="s-label" style="color:#fff">Wasser</span><span class="s-label" id="uiWaterVal" style="color:#fff">100%</span></div>
-          <div class="bar-bg"><div class="bar-fill water-color" id="barWater" style="width:100%"></div></div>
-        </div>
-        <div class="bar-wrap">
-          <div class="bar-header"><span class="s-label" style="color:#fff">Vitalität</span><span class="s-label" id="uiHpVal" style="color:#fff">100%</span></div>
-          <div class="bar-bg"><div class="bar-fill hp-color" id="barHp" style="width:100%"></div></div>
-        </div>
+        <div class="bar-wrap"><div class="bar-header"><span class="s-label">Wasser</span><span class="s-label" id="uiWaterVal">100%</span></div><div class="bar-bg"><div class="bar-fill water-color" id="barWater"></div></div></div>
+        <div class="bar-wrap"><div class="bar-header"><span class="s-label">Vitalität</span><span class="s-label" id="uiHpVal">100%</span></div><div class="bar-bg"><div class="bar-fill hp-color" id="barHp"></div></div></div>
       </div>
     </div>
-
-    <div class="tools-panel glass">
-      <h3 class="section-title">Werkzeuge</h3>
-      <div class="btn-grid">
-        <button class="btn" id="toolWater">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Gießen
-        </button>
-        <button class="btn" id="toolPrune">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Schnitt
-        </button>
-        <button class="btn" id="toolGraft">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg> Veredeln
-        </button>
-        <button class="btn" id="toolBend">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg> Biegen
-        </button>
-      </div>
-    </div>
+    <div class="tools-panel glass"><div class="btn-grid">
+      <button class="btn" id="toolWater"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>Gießen</button>
+      <button class="btn" id="toolPrune"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>Schnitt</button>
+      <button class="btn" id="toolGraft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Veredeln</button>
+      <button class="btn" id="toolBend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg>Biegen</button>
+    </div></div>
   </div>
-
   <div class="bottom-dock glass">
-    <button class="nav-item tab-btn" data-target="panel_collection">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg> Bäume
-    </button>
-    <button class="nav-item tab-btn" data-target="panel_shop">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Shop
-    </button>
-    <button class="nav-item tab-btn" data-target="panel_quests">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Ziele
-    </button>
-    <button class="nav-item tab-btn" data-target="panel_settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
-    </button>
-    <button class="snap-btn" id="btnPhoto">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> SNAP
-    </button>
+    <button class="nav-item tab-btn" data-target="panel_collection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg>Bäume</button>
+    <button class="nav-item tab-btn" data-target="panel_shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Shop</button>
+    <button class="nav-item tab-btn" data-target="panel_quests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Ziele</button>
+    <button class="nav-item tab-btn" data-target="panel_settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>System</button>
   </div>
 </div>
 
-<div class="overlay-bg" id="overlayBg" onclick="closeAllPanels()"></div>
-
-<div class="overlay-sheet" id="panel_collection">
-  <div class="sheet-header">
-    <h2 style="color:var(--accent); text-shadow:0 0 10px var(--accent-glow)">Sammlung</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div id="collectionList"></div>
-  <button class="btn" style="width:100%; margin-top:15px; background:rgba(52, 211, 153, 0.15); color:var(--success); border-color:var(--success); font-size:13px; padding:12px;" id="btnBuyTree">🌱 Neuer Setzling (100 💰)</button>
-</div>
-
-<div class="overlay-sheet" id="panel_shop">
-  <div class="sheet-header">
-    <h2 style="color:var(--gold); text-shadow:0 0 10px rgba(251, 191, 36, 0.5)">Bonsai Shop</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div style="text-align:right; font-weight:700; color:var(--gold); margin-bottom:15px; font-size:15px;">Guthaben: <span id="shopMoney">0</span> 💰</div>
-  <div class="section-title">Töpfe & Schalen</div><div id="shopPotsList"></div>
-  <div class="section-title" style="margin-top:25px">Substrate</div><div id="shopSoilsList"></div>
-</div>
-
+<div class="overlay-bg" id="overlayBg"></div>
+<div class="overlay-sheet" id="panel_collection"><div class="sheet-header"><h2>Baumschule</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div id="collectionList"></div></div>
+<div class="overlay-sheet" id="panel_shop"><div class="sheet-header"><h2>Zen Shop</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div id="shopMoneyDisplay" style="margin-bottom:15px; color:var(--gold); font-weight:700;">Guthaben: 0 💰</div><div id="shopPotsList"></div><div id="shopSoilsList"></div></div>
 <div class="overlay-sheet" id="panel_quests">
-  <div class="sheet-header">
-    <h2 style="color:var(--success); text-shadow:0 0 10px var(--success-glow)">Aufträge</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div id="questList"></div>
+  <div class="sheet-header"><h2>Deine Reise</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div>
+  <div class="s-label">Tägliche Aufgaben</div><div id="questList" style="margin-top:10px"></div>
+  <div class="s-label" style="margin-top:25px">Medaillen</div><div class="badge-grid" id="badgeGrid"></div>
 </div>
-
-<div class="overlay-sheet" id="panel_settings">
-  <div class="sheet-header">
-    <h2 style="color:var(--text-muted)">Natur Kontrolle (System)</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  
-  <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:20px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); font-size:13px; padding:12px; flex-direction:row;">🔲 Browser Vollbild umschalten</button>
-  
-  <div id="settingsGrid">
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Spieltempo (Sek/Tag)</span><span class="s-val" id="valSec">60</span></div>
-      <input type="range" id="inpSecPerDay" min="1" max="120" value="60">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Wachstum Multiplikator</span><span class="s-val" id="valGrow">1.0</span></div>
-      <input type="range" id="inpGrowMult" min="0" max="10" step="0.1" value="1">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Ast-Dicke Multiplikator</span><span class="s-val" id="valThick">1.0</span></div>
-      <input type="range" id="inpThickMult" min="0.1" max="5" step="0.1" value="1">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Verzweigungs-Chance</span><span class="s-val" id="valSprout">3%</span></div>
-      <input type="range" id="inpSproutChance" min="0" max="0.2" step="0.01" value="0.03">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Max. Blätter (pro Ast)</span><span class="s-val" id="valLeaves">30</span></div>
-      <input type="range" id="inpLeafLimit" min="0" max="100" value="30">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Blatt-Wachstumsrate</span><span class="s-val" id="valLeafRate">10%</span></div>
-      <input type="range" id="inpLeafRate" min="0" max="1" step="0.05" value="0.1">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Blatt-Größe Multiplikator</span><span class="s-val" id="valLeafSize">1.0</span></div>
-      <input type="range" id="inpLeafSize" min="0.1" max="3" step="0.1" value="1.0">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Wasserverbrauch</span><span class="s-val" id="valWater">5.0</span></div>
-      <input type="range" id="inpWaterDrain" min="0" max="20" step="0.5" value="5.0">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Windgeschwindigkeit</span><span class="s-val" id="valWindSpd">0.3</span></div>
-      <input type="range" id="inpWindSpeed" min="0" max="3" step="0.1" value="0.3">
-    </div>
-    <div class="set-row">
-      <div class="set-header"><span class="s-label">Wind-Biegung (Stärke)</span><span class="s-val" id="valWindSway">0.05</span></div>
-      <input type="range" id="inpWindSway" min="0" max="0.2" step="0.01" value="0.05">
-    </div>
-  </div>
-  
-  <br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239, 68, 68, 0.15); color:#ef4444; border-color:#ef4444; margin-top:15px; font-size:13px; padding:12px; flex-direction:row;">Spielstand Löschen</button>
-</div>
+<div class="overlay-sheet" id="panel_settings"><div class="sheet-header"><h2>Natur Kontrolle</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div id="settingsGrid"></div><button class="btn" onclick="hardReset()" style="margin-top:20px; width:100%; border-color:#ef4444; color:#ef4444">Daten Löschen</button></div>
 
 <script>
 (function(){
@@ -355,592 +130,239 @@ const cv = $('cv');
 const ctx = cv.getContext('2d', {alpha: false});
 
 const SPECIES = {
-  ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0 },
-  pine:  { name: "Schwarzkiefer", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6 },
-  maple: { name: "Roter Ahorn", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8 },
-  sakura:{ name: "Sakura Kirsche", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9 },
-  willow:{ name: "Trauerweide", leaf: "long", color:["#365314","#bef264"], bark:["#424242","#212121"], growth: 1.3, weeping:true },
-  jade:  { name: "Geldbaum", leaf: "fat", color:["#14532d","#22c55e"], bark:["#795548","#5d4037"], growth: 0.7 },
-  blue:  { name: "Blue Mystique", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1 },
-  hemp:  { name: "Green Power", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5 },
+  ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
+  pine:  { name: "Schwarzkiefer", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6, cost: 300 },
+  maple: { name: "Roter Ahorn", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8, cost: 500 },
+  sakura:{ name: "Sakura Kirsche", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9, cost: 800 },
+  willow:{ name: "Trauerweide", leaf: "long", color:["#365314","#bef264"], bark:["#424242","#212121"], growth: 1.3, weeping:true, cost: 1200 },
+  jade:  { name: "Geldbaum", leaf: "fat", color:["#14532d","#22c55e"], bark:["#795548","#5d4037"], growth: 0.7, cost: 1500 },
+  blue:  { name: "Blue Mystique", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1, cost: 2000 },
+  hemp:  { name: "Green Power", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5, cost: 4200 },
 };
 
 const ITEMS = {
-  pot_basic: { type:'pot', name:"Plastiktopf", cost:0, bonus:1.0 },
   pot_clay:  { type:'pot', name:"Terrakotta", cost:300, bonus:1.1 },
   pot_zen:   { type:'pot', name:"Zen Schale", cost:900, bonus:1.25 },
-  soil_basic:{ type:'soil', name:"Blumenerde", cost:0, boost:1.0 },
   soil_aka:  { type:'soil', name:"Akadama", cost:200, boost:1.3 },
   soil_bio:  { type:'soil', name:"Bio-Boost", cost:500, boost:2.0 }
 };
 
-// DER FIX: timeWarp ist wieder da!
-let SETTINGS = { 
-  secPerDay: 60, 
-  growMult: 1.0, 
-  thickMult: 1.0,
-  sproutChance: 0.03,
-  maxLeaves: 30, 
-  leafRate: 0.1,
-  leafSizeMult: 1.0,
-  waterDrain: 5.0,
-  windSpeed: 0.3, 
-  windSway: 0.05,
-  timeWarp: 1.0 
-};
-
-let STATE = {
-  money: 500,
-  trees: [],
-  activeIdx: 0,
-  inventory: { pots:['pot_basic'], soils:['soil_basic'] },
-  quests: []
-};
+let SETTINGS = { secPerDay:60, growMult:1.0, thickMult:1.0, sproutChance:0.03, maxLeaves:30, leafRate:0.1, leafSizeMult:1.0, waterDrain:5.0, windSpeed:0.3, windSway:0.05, timeWarp:1.0 };
+let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0 }, quests: [] };
 
 class Branch {
-  constructor(parent, x, y, angle, maxLen, thick, depth) {
-    this.parent = parent; this.depth = depth || 0;
-    this.x=x; this.y=y; this.endX=x; this.endY=y;
-    this.angle=angle; this.targetAngle=angle;
-    this.len=0.1; this.maxLen=maxLen; this.thick=thick;
-    this.children=[]; this.leaves=[];
-    this.cut=false; this.sprouted=false; this.grafted=false;
-    this.windPhase = Math.random()*10;
-  }
-  serialize() { return { 
-    x:this.x, y:this.y, a:this.angle, ta:this.targetAngle, l:this.len, ml:this.maxLen, 
-    th:this.thick, d:this.depth, cut:this.cut, spr:this.sprouted, gr:this.grafted,
-    leaves: this.leaves,
-    c:this.children.map(c=>c.serialize()) 
-  };}
-  static deserialize(d, p) {
-    let b = new Branch(p, d.x, d.y, d.a, d.ml, d.th, d.d);
-    b.len=d.l; b.targetAngle=d.ta; b.cut=d.cut; b.sprouted=d.spr; b.grafted=d.gr;
-    if(d.leaves) b.leaves = d.leaves;
-    if(d.c) b.children=d.c.map(cd=>Branch.deserialize(cd, b));
-    return b;
-  }
+  constructor(p, x, y, a, ml, th, d) { this.parent=p; this.x=x; this.y=y; this.endX=x; this.endY=y; this.angle=a; this.targetAngle=a; this.len=0.1; this.maxLen=ml; this.thick=th; this.depth=d; this.children=[]; this.leaves=[]; this.cut=false; this.sprouted=false; this.grafted=false; this.windPhase=Math.random()*10; }
+  serialize() { return { x:this.x, y:this.y, a:this.angle, ta:this.targetAngle, l:this.len, ml:this.maxLen, th:this.thick, d:this.depth, cut:this.cut, spr:this.sprouted, gr:this.grafted, leaves:this.leaves, c:this.children.map(c=>c.serialize()) }; }
+  static deserialize(d, p) { let b=new Branch(p,d.x,d.y,d.a,d.ml,d.th,d.d); b.len=d.l; b.targetAngle=d.ta; b.cut=d.cut; b.sprouted=d.spr; b.grafted=d.gr; b.leaves=d.leaves||[]; if(d.c) b.children=d.c.map(cd=>Branch.deserialize(cd,b)); return b; }
 }
 
-class Tree {
-  constructor(key, name) {
-    this.key=key; this.name=name; this.days=0; this.water=100; this.hp=100;
-    this.pot='pot_basic'; this.soil='soil_basic';
-    this.root = new Branch(null, 0, 0, -Math.PI/2, 110, 20, 0);
-  }
-}
+class Tree { constructor(k, n) { this.key=k; this.name=n; this.days=0; this.water=100; this.hp=100; this.pot='pot_basic'; this.soil='soil_basic'; this.root=new Branch(null,0,0,-Math.PI/2,110,20,0); } }
 
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[] };
-
+let ENV = { dayTime:0.3, clouds:[], particles:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0 };
 let INPUT="none", HOVER=null, BEND_TARGET=null, WATERING=false;
 
 function init() {
-  // Sicherheits-Initialisierung des Canvas gegen den 0x0 Glitch
-  cv.width = $('viewport').clientWidth || 400;
-  cv.height = $('viewport').clientHeight || 600;
-
   loadGame();
-  bindSettingsUI();
-  
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
-  generateQuests();
+  if(STATE.quests.length === 0) generateQuests();
   
-  const ro = new ResizeObserver(entries => {
-    for(let e of entries) {
-      if(e.contentRect.width > 0 && e.contentRect.height > 0) {
-        cv.width = e.contentRect.width;
-        cv.height = e.contentRect.height;
-      }
-    }
-  });
+  const ro = new ResizeObserver(entries => { for(let e of entries) { if(e.contentRect.width>0) { cv.width=e.contentRect.width; cv.height=e.contentRect.height; } } });
   ro.observe($('viewport'));
-  
   updateListUI();
   updateRealtimeUI();
-  
-  lastT = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function loop(t) {
+  let dt = (t - (lastT||t))/1000; if(dt>0.1) dt=0.1; lastT=t;
+  update(dt); draw();
+  if(t - (lastUiT||0) > 500) { updateRealtimeUI(); lastUiT=t; }
   requestAnimationFrame(loop);
 }
 
 function update(dt) {
-  const tree = STATE.trees[STATE.activeIdx];
-  if(!tree) return;
+  const tree = STATE.trees[STATE.activeIdx]; if(!tree) return;
   const spec = SPECIES[tree.key];
-  const soil = ITEMS[tree.soil] || ITEMS['soil_basic'];
-  const pot = ITEMS[tree.pot] || ITEMS['pot_basic'];
+  const soil = ITEMS[tree.soil] || {boost:1};
+  const pot = ITEMS[tree.pot] || {bonus:1};
   
-  // timeWarp Bugfix in Action
-  ENV.dayTime += (dt/SETTINGS.secPerDay) * (SETTINGS.timeWarp || 1.0);
-  if(ENV.dayTime>1) { ENV.dayTime-=1; tree.days++; updateListUI(); }
-  
+  ENV.dayTime += (dt/SETTINGS.secPerDay)*SETTINGS.timeWarp;
+  if(ENV.dayTime>1) { ENV.dayTime-=1; tree.days++; STATE.stats.totalDays++; updateListUI(); }
   if(tree.water>0) tree.water -= (SETTINGS.waterDrain * soil.boost / SETTINGS.secPerDay) * dt;
   const growth = (tree.water>0?1:0) * spec.growth * soil.boost * pot.bonus * SETTINGS.growMult;
 
-  if(ENV.clouds.length<5 && Math.random()<0.01) ENV.clouds.push({x:-200, y:Math.random()*300, s:1+Math.random(), v:0.2+Math.random()*0.3});
-
   if(WATERING && INPUT === 'water') {
-     for(let i=0; i<3; i++) {
-        ENV.particles.push({
-           x: MOUSE.worldX + (Math.random()-0.5)*30,
-           y: Math.min(MOUSE.worldY, -50) + (Math.random()-0.5)*10,
-           vx: (Math.random()-0.5)*15,
-           vy: 120 + Math.random()*80,
-           life: 2.0
-        });
-     }
+    for(let i=0; i<3; i++) ENV.particles.push({ x:MOUSE.worldX+(Math.random()-0.5)*30, y:Math.min(MOUSE.worldY,-50)+(Math.random()-0.5)*10, vx:(Math.random()-0.5)*15, vy:120+Math.random()*80, life:2.0 });
   }
-
-  for(let i = ENV.particles.length - 1; i >= 0; i--) {
-     let p = ENV.particles[i];
-     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-     if(p.y > 0 && p.y < 70 && p.x > -90 && p.x < 90) {
-         tree.water = Math.min(100, tree.water + 0.5);
-         ENV.particles.splice(i, 1);
-     } else if(p.life <= 0) { ENV.particles.splice(i, 1); }
+  for(let i=ENV.particles.length-1; i>=0; i--) {
+    let p=ENV.particles[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt;
+    if(p.y>0 && p.y<70 && p.x>-90 && p.x<90) { tree.water=Math.min(100, tree.water+0.5); STATE.stats.totalWaters+=0.05; ENV.particles.splice(i,1); }
+    else if(p.life<=0) ENV.particles.splice(i,1);
   }
 
   function sim(b, rx, ry) {
     if(!b.parent) { b.x=rx; b.y=ry; } else { b.x=b.parent.endX; b.y=b.parent.endY; }
     b.angle += (b.targetAngle-b.angle)*3*dt;
-    
     if(!b.cut && b.len<b.maxLen) {
       b.len += 8*dt*growth;
       if(b.len>15) b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
-      
-      const thresh = b.maxLen*0.85;
-      if(b.depth>0 && b.len>thresh) {
-         if(b.leaves.length < SETTINGS.maxLeaves && Math.random() < SETTINGS.leafRate) {
-            b.leaves.push({ f:0.85+Math.random()*0.15, r:Math.random()*6.28, s:0.1, ms:(8+Math.random()*6)*SETTINGS.leafSizeMult });
-         }
-      }
-      
-      if(b.len>b.maxLen*0.6 && !b.sprouted && b.thick>3.0) {
-         if(Math.random() < SETTINGS.sproutChance * growth) {
-            b.sprouted=true;
-            let cnt=(Math.random()>0.4)?2:1;
-            for(let i=0;i<cnt;i++) {
-               let dev = (Math.random()-0.5)*1.5;
-               if(spec.weeping) dev=Math.abs(dev)+1.2;
-               b.children.push(new Branch(b,0,0,b.angle+dev, b.maxLen*(0.6+Math.random()*0.3), b.thick*0.7, b.depth+1));
-            }
-         }
+      if(b.depth>0 && b.len>b.maxLen*0.85 && b.leaves.length < SETTINGS.maxLeaves && Math.random() < SETTINGS.leafRate) b.leaves.push({ f:0.85+Math.random()*0.15, r:Math.random()*6.28, s:0.1, ms:(8+Math.random()*6)*SETTINGS.leafSizeMult });
+      if(b.len>b.maxLen*0.6 && !b.sprouted && b.thick>3.0 && Math.random() < SETTINGS.sproutChance * growth) {
+        b.sprouted=true; let cnt=Math.random()>0.4?2:1;
+        for(let i=0;i<cnt;i++) b.children.push(new Branch(b,0,0,b.angle+(Math.random()-0.5)*1.5, b.maxLen*(0.6+Math.random()*0.3), b.thick*0.7, b.depth+1));
       }
     }
-    for(let l of b.leaves) if(l.s < l.ms) l.s += 10*dt; 
-    
+    for(let l of b.leaves) if(l.s < l.ms) l.s += 10*dt;
     const sway = Math.sin(Date.now()*0.002*SETTINGS.windSpeed + b.windPhase) * (SETTINGS.windSway * b.len) / (Math.max(1,b.thick));
-    b.endX = b.x + Math.cos(b.angle+sway)*b.len;
-    b.endY = b.y + Math.sin(b.angle+sway)*b.len;
+    b.endX = b.x + Math.cos(b.angle+sway)*b.len; b.endY = b.y + Math.sin(b.angle+sway)*b.len;
     b.children.forEach(c=>sim(c,0,0));
   }
   sim(tree.root, 0, 0);
+  checkQuests();
 }
 
-// ---------------- RENDER ----------------
 function draw() {
-  const w=cv.width, h=cv.height, t=ENV.dayTime;
-  
-  if(isNaN(t) || w===0 || h===0) return; // Crash-Schutz
-
-  const sky=[[5,10,25],[255,120,70],[80,160,230],[20,15,45]];
-  let si = Math.floor(t * 4) % 4, ni = (si + 1) % 4, f = (t * 4) % 1;
-  const mix=(a,b)=>Math.round(a+(b-a)*f);
-  const col=`rgb(${mix(sky[si][0],sky[ni][0])},${mix(sky[si][1],sky[ni][1])},${mix(sky[si][2],sky[ni][2])})`;
-  
-  const grd=ctx.createLinearGradient(0,0,0,h);
-  grd.addColorStop(0,col); grd.addColorStop(1, si===0||si===3 ? "#020617" : "#e2e8f0");
+  const w=cv.width, h=cv.height, t=ENV.dayTime; if(isNaN(t)) return;
+  const grd=ctx.createLinearGradient(0,0,0,h); grd.addColorStop(0,"#050a19"); grd.addColorStop(1, t<0.25||t>0.75?"#020617":"#e2e8f0");
   ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
-
-  if(t<0.25 || t>0.75) {
-     ctx.fillStyle="#fff";
-     ENV.stars.forEach(s=>{ 
-       ctx.globalAlpha=(t<0.25?1-t*4:(t-0.75)*4)*Math.random(); 
-       ctx.beginPath(); ctx.arc(s.x*w, s.y*h*0.6, s.s,0,6.28); ctx.fill();
-     });
-     ctx.globalAlpha=1;
-  }
-
-  const cx=w/2, cy=h*0.8 + 150, r=h*0.5 + 100, ang=(t-0.5)*Math.PI;
-  ctx.shadowBlur=50; ctx.shadowColor="gold"; ctx.fillStyle="#fbbf24"; 
-  ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r, cy+Math.cos(ang)*r, 45,0,6.28); ctx.fill();
-  ctx.shadowBlur=30; ctx.shadowColor="#fff"; ctx.fillStyle="#f8fafc"; 
-  ctx.beginPath(); ctx.arc(cx+Math.sin(ang+Math.PI)*r, cy+Math.cos(ang+Math.PI)*r, 35,0,6.28); ctx.fill();
-  ctx.shadowBlur=0;
-
-  ctx.fillStyle="rgba(255,255,255,0.15)";
-  ENV.clouds.forEach(c=>{ c.x+=c.v; if(c.x>w+200) c.x=-200; drawPuff(c.x,c.y,c.s); });
-
-  ctx.fillStyle="#04060b";
-  ctx.beginPath(); ctx.moveTo(0,h);
-  for(let x=0;x<=w;x+=20) ctx.lineTo(x, h*0.65 - Math.abs(Math.sin(x*0.002)*100 + Math.cos(x*0.008)*30));
-  ctx.lineTo(w,h); ctx.fill();
-
-  ctx.save();
-  const camBaseY = h * 0.55; 
-  ctx.translate(w/2 + CAM.x, camBaseY + CAM.y);
-  ctx.scale(CAM.zoom, CAM.zoom);
-  drawWorld();
-  ctx.restore();
-}
-
-function drawPuff(x,y,s) {
-  ctx.beginPath();
-  ctx.arc(x,y,40*s,0,6.28); ctx.arc(x+35*s,y-15*s,45*s,0,6.28); ctx.arc(x+70*s,y+5*s,35*s,0,6.28);
-  ctx.fill();
+  ctx.save(); ctx.translate(w/2+CAM.x, h*0.55+CAM.y); ctx.scale(CAM.zoom, CAM.zoom); drawWorld(); ctx.restore();
 }
 
 function drawWorld() {
-  const t=STATE.trees[STATE.activeIdx];
-  if(!t) return;
-  const spec=SPECIES[t.key], potH=60;
-  
-  ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill();
-  ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
-
-  ctx.lineCap="round";
+  const t=STATE.trees[STATE.activeIdx]; if(!t) return;
+  const spec=SPECIES[t.key];
   function render(b) {
-    if(b.len<1) return;
     ctx.lineWidth=b.thick; ctx.strokeStyle=spec.bark[0];
-    if(b===HOVER) { ctx.shadowBlur=10; ctx.shadowColor="#fff"; ctx.strokeStyle = (INPUT==='prune'?'#f87171':INPUT==='graft'?'#60a5fa':INPUT==='bend'?'#facc15':'#fff'); }
-    else ctx.shadowBlur=0;
-    
-    ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.endX, b.endY); ctx.stroke();
-    ctx.shadowBlur=0;
-    
-    if(b.cut) { ctx.fillStyle="#aaa"; ctx.beginPath(); ctx.arc(b.endX,b.endY,b.thick*0.4,0,6.28); ctx.fill(); }
-    if(b.grafted) { ctx.fillStyle="#fffc"; ctx.beginPath(); ctx.arc(b.x,b.y,b.thick*0.6,0,6.28); ctx.fill(); }
-
-    if(!b.cut && b.leaves.length) {
-       const sIdx = Math.floor(t.days/30)%4; 
-       let cols = spec.color;
-       if(sIdx===2 && spec.leaf!=='needle') cols = ["#b45309", "#d97706"]; 
-       
-       for(let l of b.leaves) {
-          ctx.save();
-          const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
-          ctx.translate(px,py); ctx.rotate(b.angle + l.r); 
-          
-          if(spec.leaf === 'needle') {
-             ctx.strokeStyle=cols[0]; ctx.lineWidth=1;
-             for(let i=0;i<5;i++) { ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo((Math.random()-0.5)*l.s*3, -l.s*2); ctx.stroke(); }
-          } else {
-             ctx.fillStyle = cols[0];
-             ctx.beginPath(); ctx.ellipse(l.s, 0, l.s, l.s*(spec.leaf==='fat'?0.5:0.4), 0,0,6.28); ctx.fill();
-             ctx.fillStyle = cols[1];
-             ctx.beginPath(); ctx.ellipse(l.s, 0, l.s*0.6, l.s*0.15, 0,0,6.28); ctx.fill();
-          }
-          ctx.restore();
-       }
+    if(b===HOVER) { ctx.shadowBlur=10; ctx.shadowColor="#fff"; }
+    ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.endX, b.endY); ctx.stroke(); ctx.shadowBlur=0;
+    if(!b.cut) {
+      for(let l of b.leaves) {
+        ctx.save(); ctx.translate(b.x+(b.endX-b.x)*l.f, b.y+(b.endY-b.y)*l.f); ctx.rotate(b.angle+l.r);
+        ctx.fillStyle=spec.color[0]; ctx.beginPath(); ctx.ellipse(l.s,0,l.s,l.s*0.5,0,0,6.28); ctx.fill();
+        ctx.restore();
+      }
     }
     b.children.forEach(render);
   }
   render(t.root);
-
-  const pg=ctx.createLinearGradient(0,0,0,potH);
-  pg.addColorStop(0,"#2a2a2e"); pg.addColorStop(1,"#09090b");
-  if(t.pot==='pot_clay') { pg.addColorStop(0,"#785346"); pg.addColorStop(1,"#2d1d18"); }
-  else if(t.pot==='pot_zen') { pg.addColorStop(0,"#1e293b"); pg.addColorStop(1,"#020617"); }
-  ctx.fillStyle=pg;
-  ctx.beginPath(); ctx.moveTo(-85,0); 
-  ctx.quadraticCurveTo(-85,potH, -55,potH); ctx.lineTo(55,potH); 
-  ctx.quadraticCurveTo(85,potH, 85,0); ctx.fill();
-
-  ctx.fillStyle = "rgba(56, 189, 248, 0.8)";
-  ENV.particles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
-}
-
-let lastT=0; let lastUiT=0;
-function loop(now) {
-  if(!now) now = performance.now();
-  let dt = (now-lastT)/1000; if(dt>0.1) dt=0.1; lastT=now;
-  update(dt); draw();
-  if(now - lastUiT > 500) { updateRealtimeUI(); lastUiT = now; }
-  requestAnimationFrame(loop);
-}
-
-function bindSettingsUI() {
-  const binds = [
-    { id: 'inpSecPerDay', key: 'secPerDay', valId: 'valSec', parser: parseFloat },
-    { id: 'inpGrowMult', key: 'growMult', valId: 'valGrow', parser: parseFloat },
-    { id: 'inpThickMult', key: 'thickMult', valId: 'valThick', parser: parseFloat },
-    { id: 'inpSproutChance', key: 'sproutChance', valId: 'valSprout', parser: parseFloat, display: v=>Math.round(v*100)+"%" },
-    { id: 'inpLeafLimit', key: 'maxLeaves', valId: 'valLeaves', parser: parseInt },
-    { id: 'inpLeafRate', key: 'leafRate', valId: 'valLeafRate', parser: parseFloat, display: v=>Math.round(v*100)+"%" },
-    { id: 'inpLeafSize', key: 'leafSizeMult', valId: 'valLeafSize', parser: parseFloat },
-    { id: 'inpWaterDrain', key: 'waterDrain', valId: 'valWater', parser: parseFloat },
-    { id: 'inpWindSpeed', key: 'windSpeed', valId: 'valWindSpd', parser: parseFloat },
-    { id: 'inpWindSway', key: 'windSway', valId: 'valWindSway', parser: parseFloat }
-  ];
-
-  binds.forEach(b => {
-    let el = $(b.id);
-    if(el) {
-      el.value = SETTINGS[b.key]; 
-      if(b.valId) $(b.valId).innerText = b.display ? b.display(SETTINGS[b.key]) : SETTINGS[b.key];
-      
-      el.oninput = e => {
-        let val = b.parser(e.target.value);
-        SETTINGS[b.key] = val;
-        if(b.valId) $(b.valId).innerText = b.display ? b.display(val) : val;
-      };
-    }
-  });
+  ctx.fillStyle="rgba(56,189,248,0.8)"; ENV.particles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,3,0,6.28); ctx.fill(); });
 }
 
 function generateQuests() {
-  STATE.quests = [];
-  const acts = ["water","prune","grow"];
-  for(let i=0;i<3;i++) {
-     let type=acts[Math.floor(Math.random()*acts.length)];
-     let n = Math.floor(Math.random()*5)+3;
-     STATE.quests.push({ txt:`Daily: ${type==='water'?'Gieße':'Nutze'} ${n}x`, reward: n*20, done:false });
-  }
-  for(let i=1;i<=3;i++) STATE.quests.push({txt:`Habe ${i} Bäume`, reward:i*200, done:false});
-  updateListUI();
+  STATE.quests = [
+    { id:'q1', txt:"Gieße deinen Baum 5x", goal:5, cur:0, rew:100, done:false, coll:false },
+    { id:'q2', txt:"Nutze die Schere 3x", goal:3, cur:0, rew:150, done:false, coll:false },
+    { id:'q3', txt:"Erreiche Tag 5", goal:5, cur:0, rew:300, done:false, coll:false }
+  ];
 }
 
-window.buy = function(what, key, cost) {
-  if(STATE.money>=cost) {
-     STATE.money-=cost;
-     if(what==='tree') {
-       if(STATE.trees.length>=10) return notify("Platz voll!");
-       const t=new Tree(key, SPECIES[key].name);
-       STATE.trees.push(t); STATE.activeIdx=STATE.trees.length-1;
-     } else { STATE.inventory[what+'s'].push(key); }
-     notify("Erfolgreich Gekauft!"); updateListUI();
-  } else notify("Zu wenig Guthaben");
-}
-
-window.selectTree = function(idx) { STATE.activeIdx = idx; updateListUI(); window.closeAllPanels(); }
-window.equipPot = function(k) { STATE.trees[STATE.activeIdx].pot = k; updateListUI(); }
-window.equipSoil = function(k) { STATE.trees[STATE.activeIdx].soil = k; updateListUI(); }
-
-function setTool(t) { 
-  INPUT = (INPUT===t ? 'none' : t); 
-  document.querySelectorAll('.btn-grid .btn').forEach(b=>b.classList.remove('active'));
-  if(INPUT!=='none') { $('tool'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active'); }
-}
-
-function getMouseWorld(mx, my) { 
-  return { 
-      x: (mx - (cv.width/2 + CAM.x)) / CAM.zoom, 
-      y: (my - (cv.height*0.55 + CAM.y)) / CAM.zoom 
-  }; 
-}
-
-function findHover(wx, wy) {
-  let best=null, dist=9999; const t = STATE.trees[STATE.activeIdx]; if(!t) return;
-  function walk(b) {
-     const cx=(b.x+b.endX)/2, cy=(b.y+b.endY)/2;
-     const d=(cx-wx)**2+(cy-wy)**2;
-     if(d < 500 * Math.max(1,b.thick) && d<dist) { dist=d; best=b; }
-     b.children.forEach(walk);
-  }
-  walk(t.root); HOVER = best;
-}
-
-function processActionClick() {
-  if(!HOVER) return;
-  if(INPUT==='prune') { HOVER.cut=true; HOVER.leaves=[]; HOVER.children=[]; notify("Schnipp!"); }
-  else if(INPUT==='graft') { 
-     if(HOVER.cut && !HOVER.grafted) {
-        HOVER.grafted=true; HOVER.cut=false; 
-        HOVER.children.push(new Branch(HOVER,0,0, HOVER.angle-0.5, 30, HOVER.thick*0.8, HOVER.depth+1));
-        HOVER.children.push(new Branch(HOVER,0,0, HOVER.angle+0.5, 30, HOVER.thick*0.8, HOVER.depth+1));
-        notify("Veredelt");
-     } else notify("Geht hier nicht");
-  }
-}
-
-function handlePointerDown(clientX, clientY) {
-  const rect = cv.getBoundingClientRect();
-  MOUSE.x = clientX - rect.left; MOUSE.y = clientY - rect.top;
-  const w = getMouseWorld(MOUSE.x, MOUSE.y);
-  MOUSE.worldX = w.x; MOUSE.worldY = w.y;
-
-  if(INPUT==='none') { MOUSE.drag=true; } 
-  else if(INPUT==='water') { WATERING = true; } 
-  else if(INPUT==='bend') { findHover(w.x, w.y); if(HOVER) BEND_TARGET = HOVER; } 
-  else { findHover(w.x, w.y); processActionClick(); }
-}
-
-function handlePointerMove(clientX, clientY) {
-  const rect = cv.getBoundingClientRect();
-  const mx = clientX - rect.left, my = clientY - rect.top;
-  const dx = mx - MOUSE.x, dy = my - MOUSE.y;
-  MOUSE.x = mx; MOUSE.y = my;
-  const w = getMouseWorld(mx, my); MOUSE.worldX = w.x; MOUSE.worldY = w.y;
-
-  if(MOUSE.drag){ CAM.x+=dx; CAM.y+=dy; } 
-  else if(BEND_TARGET && INPUT==='bend') { BEND_TARGET.targetAngle = Math.atan2(w.y - BEND_TARGET.y, w.x - BEND_TARGET.x); } 
-  else if(INPUT!=='none') { findHover(w.x, w.y); cv.style.cursor=HOVER?'crosshair':'default'; }
-}
-
-function handlePointerUp() { MOUSE.drag=false; BEND_TARGET=null; WATERING=false; HOVER=null; }
-
-cv.onmousedown = e => handlePointerDown(e.clientX, e.clientY);
-cv.onmousemove = e => handlePointerMove(e.clientX, e.clientY);
-window.onmouseup = handlePointerUp;
-cv.oncontextmenu = e => e.preventDefault();
-cv.onwheel = e => { e.preventDefault(); CAM.zoom = Math.min(Math.max(0.5, CAM.zoom - e.deltaY*0.001), 4); };
-
-let lastTouchDist = 0;
-cv.addEventListener('touchstart', e => {
-  if(e.touches.length === 2) { lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } 
-  else if(e.touches.length === 1) { handlePointerDown(e.touches[0].clientX, e.touches[0].clientY); }
-  e.preventDefault(); 
-}, {passive: false});
-
-cv.addEventListener('touchmove', e => {
-  if(e.touches.length === 2) {
-      let dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      CAM.zoom = Math.min(Math.max(0.5, CAM.zoom + (dist - lastTouchDist)*0.01), 4); lastTouchDist = dist;
-  } else if(e.touches.length === 1) { handlePointerMove(e.touches[0].clientX, e.touches[0].clientY); }
-  e.preventDefault();
-}, {passive: false});
-
-cv.addEventListener('touchend', e => { handlePointerUp(); e.preventDefault(); }, {passive: false});
-
-function notify(m) { 
-  const t=$('toast'); t.innerText=m; t.classList.add('show'); 
-  setTimeout(()=>t.classList.remove('show'), 2500); 
-}
-
-function updateRealtimeUI() {
-  const t = STATE.trees[STATE.activeIdx]; if(!t) return;
-  
-  $('uiDay').innerText="Tag "+t.days;
-  const seasons = ["Frühling", "Sommer", "Herbst", "Winter"];
-  const seasonColors = ["var(--success)", "var(--gold)", "#f97316", "var(--text-muted)"];
-  const sIdx = Math.floor(t.days/30)%4;
-  $('uiSeason').innerText = seasons[sIdx]; $('uiSeason').style.color = seasonColors[sIdx];
-  
-  let w = Math.max(0, Math.min(100, t.water));
-  $('barWater').style.width = w+"%"; $('uiWaterVal').innerText = Math.round(w)+"%";
-  let hp = Math.max(0, Math.min(100, t.hp));
-  $('barHp').style.width = hp+"%"; $('uiHpVal').innerText = Math.round(hp)+"%";
-}
-
-window.updateListUI = function() {
-  let h="";
-  STATE.trees.forEach((t,i)=>{
-     let isSel = i===STATE.activeIdx;
-     h += `<div class="list-item ${isSel?'selected':''}" onclick="selectTree(${i})">
-        <div class="tree-icon" style="background:${SPECIES[t.key].color[0]}"></div>
-        <div class="list-info"><span class="list-title">${t.name}</span><span class="list-sub">${SPECIES[t.key].name}</span></div>
-     </div>`;
+function checkQuests() {
+  STATE.quests.forEach(q => {
+    if(q.done) return;
+    if(q.id==='q1') q.cur = Math.floor(STATE.stats.totalWaters);
+    if(q.id==='q2') q.cur = STATE.stats.totalPrunes;
+    if(q.id==='q3') q.cur = STATE.trees[STATE.activeIdx].days;
+    if(q.cur >= q.goal) q.done = true;
   });
-  $('collectionList').innerHTML = h; 
-  if(STATE.trees[STATE.activeIdx]) {
-      $('uiTreeName').innerText = STATE.trees[STATE.activeIdx].name;
-      $('uiSpeciesName').innerText = SPECIES[STATE.trees[STATE.activeIdx].key].name;
-  }
-  
-  $('shopMoney').innerText = STATE.money;
-  
-  let potsHtml = "";
-  Object.keys(ITEMS).forEach(k => {
-     if(ITEMS[k].type !== 'pot') return;
-     let item = ITEMS[k], owned = STATE.inventory.pots.includes(k), isActive = STATE.trees[STATE.activeIdx]?.pot === k;
-     potsHtml += `<div class="list-item ${isActive?'selected':''}">
-        <div class="list-info"><span class="list-title">${item.name}</span><span class="list-sub">Bonus: +${Math.round((item.bonus-1)*100)}%</span></div>
-        ${owned ? `<button class="btn" style="padding:8px 16px; font-size:12px; flex-direction:row;" onclick="equipPot('${k}')">${isActive?'Aktiv':'Nutzen'}</button>` 
-                : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--gold); border-color:var(--gold); flex-direction:row;" onclick="buy('pot', '${k}', ${item.cost})">${item.cost} 💰</button>`}
-     </div>`;
-  });
-  $('shopPotsList').innerHTML = potsHtml;
-
-  let soilsHtml = "";
-  Object.keys(ITEMS).forEach(k => {
-     if(ITEMS[k].type !== 'soil') return;
-     let item = ITEMS[k], owned = STATE.inventory.soils.includes(k), isActive = STATE.trees[STATE.activeIdx]?.soil === k;
-     soilsHtml += `<div class="list-item ${isActive?'selected':''}">
-        <div class="list-info"><span class="list-title">${item.name}</span><span class="list-sub">Speed: +${Math.round((item.boost-1)*100)}%</span></div>
-        ${owned ? `<button class="btn" style="padding:8px 16px; font-size:12px; flex-direction:row;" onclick="equipSoil('${k}')">${isActive?'Aktiv':'Nutzen'}</button>` 
-                : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--gold); border-color:var(--gold); flex-direction:row;" onclick="buy('soil', '${k}', ${item.cost})">${item.cost} 💰</button>`}
-     </div>`;
-  });
-  $('shopSoilsList').innerHTML = soilsHtml;
-
-  let qHtml = "";
-  STATE.quests.forEach((q, i) => {
-     qHtml += `<div class="list-item" style="opacity:${q.done?0.5:1}">
-        <div class="list-info"><span class="list-title">${q.txt}</span></div>
-        ${q.done ? `<span class="tag">Fertig</span>` 
-                 : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--success); border-color:var(--success); flex-direction:row;" onclick="claimQuest(${i})">${q.reward} 💰</button>`}
-     </div>`;
-  });
-  $('questList').innerHTML = qHtml;
 }
 
 window.claimQuest = function(idx) {
-  if(!STATE.quests[idx].done) {
-     STATE.quests[idx].done = true; STATE.money += STATE.quests[idx].reward;
-     notify(`+${STATE.quests[idx].reward} 💰`); updateListUI();
+  const q = STATE.quests[idx];
+  if(q.done && !q.coll) {
+    q.coll = true; STATE.money += q.rew;
+    notify(`+${q.rew} 💰 erhalten!`); updateListUI();
   }
-};
-
-window.closeAllPanels = function() {
-  document.querySelectorAll('.overlay-sheet').forEach(p=>p.classList.remove('open'));
-  $('overlayBg').classList.remove('open');
-  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('open'));
-};
-
-document.querySelectorAll('.tab-btn').forEach(b=>{ 
-  if(!b.dataset.target) return;
-  b.onclick=()=>{ 
-    let t=$(b.dataset.target);
-    let wasOpen = t.classList.contains('open');
-    closeAllPanels();
-    if(!wasOpen) { t.classList.add('open'); $('overlayBg').classList.add('open'); b.classList.add('open'); }
-    updateListUI(); 
-  }
-});
-
-['Water','Prune','Graft','Bend'].forEach(t=>$('tool'+t).onclick=()=>setTool(t.toLowerCase()));
-
-window.toggleFullScreen = function() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(err => {
-      notify("Vollbild wird hier nicht unterstützt.");
-    });
-  } else {
-    if (document.exitFullscreen) { document.exitFullscreen(); }
-  }
-};
-
-$('btnBuyTree').onclick=()=>{ buy('tree', Object.keys(SPECIES)[Math.floor(Math.random()*Object.keys(SPECIES).length)], 100); }
-$('btnPhoto').onclick=()=>{ let a=document.createElement('a'); a.download="bonsai.png"; a.href=cv.toDataURL(); a.click(); };
-
-function saveGame() { 
-  localStorage.setItem("bonsai_v60", JSON.stringify({
-      money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, 
-      trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})),
-      settings: SETTINGS
-  })); 
 }
 
-function loadGame() {
-  try {
-    const d=JSON.parse(localStorage.getItem("bonsai_v60"));
-    if(d) {
-       STATE.money=d.money ?? 500; STATE.inventory=d.inv || STATE.inventory; STATE.activeIdx=d.activeIdx || 0;
-       if(d.settings) {
-           SETTINGS = {...SETTINGS, ...d.settings};
-           if(SETTINGS.timeWarp === undefined) SETTINGS.timeWarp = 1.0; // Rettung
-       }
-       STATE.trees=d.trees.map(td=>{ let t=new Tree(td.key, td.name); Object.assign(t, td); t.root = Branch.deserialize(td.root, null); return t; });
-    }
-  } catch(e) {}
+window.unlockSpecies = function(key) {
+  const spec = SPECIES[key];
+  if(STATE.money >= spec.cost && !STATE.inventory.species.includes(key)) {
+    STATE.money -= spec.cost; STATE.inventory.species.push(key);
+    notify(`${spec.name} freigeschaltet!`); updateListUI();
+  }
 }
 
-window.hardReset = () => { localStorage.removeItem("bonsai_v60"); location.reload(); };
+window.selectTreeSpecies = function(key) {
+  if(STATE.inventory.species.includes(key)) {
+    const t = new Tree(key, SPECIES[key].name);
+    STATE.trees.push(t); STATE.activeIdx = STATE.trees.length-1;
+    closeAllPanels(); updateListUI();
+  }
+}
+
+function updateListUI() {
+  $('shopMoneyDisplay').innerText = `Guthaben: ${STATE.money} 💰`;
+  
+  // COLLECTION
+  let colHtml = "";
+  Object.keys(SPECIES).forEach(k => {
+    const owned = STATE.inventory.species.includes(k);
+    colHtml += `<div class="list-item">
+      <div class="tree-preview" style="background:${SPECIES[k].bark[0]}"><div style="width:10px;height:25px;background:${SPECIES[k].bark[1]};border-radius:5px"></div></div>
+      <div class="list-content"><span class="list-title">${SPECIES[k].name}</span><span class="list-sub">${owned?'Freigeschaltet':SPECIES[k].cost+' 💰'}</span></div>
+      ${owned ? `<button class="quest-btn ready" onclick="selectTreeSpecies('${k}')">Wählen</button>` : `<button class="quest-btn" onclick="unlockSpecies('${k}')">Kaufen</button>`}
+    </div>`;
+  });
+  $('collectionList').innerHTML = colHtml;
+
+  // QUESTS
+  let qHtml = "";
+  STATE.quests.forEach((q, i) => {
+    qHtml += `<div class="list-item">
+      <div class="list-content"><span class="list-title">${q.txt}</span><span class="list-sub">Fortschritt: ${q.cur}/${q.goal}</span></div>
+      <button class="quest-btn ${q.done&&!q.coll?'ready':''}" onclick="claimQuest(${i})">${q.coll?'✅':q.rew+' 💰'}</button>
+    </div>`;
+  });
+  $('questList').innerHTML = qHtml;
+  
+  // BADGES
+  let bHtml = "";
+  const badges = [{i:'🌱',n:'Anfänger',u:STATE.stats.totalDays>=1},{i:'🧘',n:'Zen Meister',u:STATE.stats.totalDays>=10},{i:'💰',n:'Sammler',u:STATE.inventory.species.length>=3}];
+  badges.forEach(b => bHtml += `<div class="badge ${b.u?'unlocked':''}"><span class="badge-icon">${b.i}</span><span class="badge-name">${b.n}</span></div>`);
+  $('badgeGrid').innerHTML = bHtml;
+}
+
+// System Events & UI
+let lastT=0, lastUiT=0;
+window.closeAllPanels = () => { document.querySelectorAll('.overlay-sheet, .overlay-bg, .nav-item').forEach(el=>el.classList.remove('open')); };
+document.querySelectorAll('.tab-btn').forEach(b => b.onclick=() => { let t=$(b.dataset.target); let open=t.classList.contains('open'); closeAllPanels(); if(!open){t.classList.add('open');$('overlayBg').classList.add('open');b.classList.add('open');} });
+['Water','Prune','Graft','Bend'].forEach(t=>$( 'tool'+t).onclick=()=> { INPUT=INPUT===t.toLowerCase()?'none':t.toLowerCase(); document.querySelectorAll('.btn-grid .btn').forEach(b=>b.classList.remove('active')); if(INPUT!=='none')$('tool'+t).classList.add('active'); });
+
+function notify(m) { let t=$('toast'); t.innerText=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+function updateRealtimeUI() { 
+  const t=STATE.trees[STATE.activeIdx]; if(!t) return;
+  $('uiTreeName').innerText=t.name; $('uiSpeciesName').innerText=SPECIES[t.key].name;
+  $('uiDay').innerText="Tag "+t.days; $('barWater').style.width=t.water+"%"; $('uiWaterVal').innerText=Math.round(t.water)+"%"; $('barHp').style.width=t.hp+"%"; $('uiHpVal').innerText=Math.round(t.hp)+"%";
+}
+
+function handlePointerDown(e) { 
+  let x = e.clientX||e.touches[0].clientX, y = e.clientY||e.touches[0].clientY;
+  const rect=cv.getBoundingClientRect(); MOUSE.x=x-rect.left; MOUSE.y=y-rect.top;
+  MOUSE.worldX=(MOUSE.x-(cv.width/2+CAM.x))/CAM.zoom; MOUSE.worldY=(MOUSE.y-(cv.height*0.55+CAM.y))/CAM.zoom;
+  if(INPUT==='none') MOUSE.drag=true; else if(INPUT==='water') WATERING=true; else if(INPUT==='bend'){ findHover(); if(HOVER) BEND_TARGET=HOVER; } else { findHover(); if(HOVER && INPUT==='prune'){HOVER.cut=true;STATE.stats.totalPrunes++;notify("Schnitt!");} }
+}
+function handlePointerMove(e) {
+  let x = e.clientX||(e.touches&&e.touches[0].clientX), y = e.clientY||(e.touches&&e.touches[0].clientY);
+  const rect=cv.getBoundingClientRect(); let mx=x-rect.left, my=y-rect.top;
+  if(MOUSE.drag){ CAM.x+=mx-MOUSE.x; CAM.y+=my-MOUSE.y; }
+  MOUSE.x=mx; MOUSE.y=my; MOUSE.worldX=(mx-(cv.width/2+CAM.x))/CAM.zoom; MOUSE.worldY=(my-(cv.height*0.55+CAM.y))/CAM.zoom;
+  if(BEND_TARGET) BEND_TARGET.targetAngle = Math.atan2(MOUSE.worldY-BEND_TARGET.y, MOUSE.worldX-BEND_TARGET.x);
+}
+function findHover() {
+  let dist=9999; HOVER=null;
+  function walk(b){ let d=Math.hypot((b.x+b.endX)/2-MOUSE.worldX, (b.y+b.endY)/2-MOUSE.worldY); if(d<20&&d<dist){dist=d;HOVER=b;} b.children.forEach(walk); }
+  walk(STATE.trees[STATE.activeIdx].root);
+}
+cv.onmousedown=handlePointerDown; cv.onmousemove=handlePointerMove; window.onmouseup=()=>{MOUSE.drag=false;WATERING=false;BEND_TARGET=null;};
+cv.ontouchstart=e=>{handlePointerDown(e);e.preventDefault();}; cv.ontouchmove=e=>{handlePointerMove(e);e.preventDefault();}; cv.ontouchend=()=> {MOUSE.drag=false;WATERING=false;BEND_TARGET=null;};
+
+function saveGame() { localStorage.setItem("bonsai_v70", JSON.stringify(STATE)); }
+function loadGame() { let d=JSON.parse(localStorage.getItem("bonsai_v70")); if(d){ STATE=d; STATE.trees=d.trees.map(td=>{ let t=new Tree(td.key, td.name); Object.assign(t,td); t.root=Branch.deserialize(td.root,null); return t; }); } }
+function hardReset() { localStorage.removeItem("bonsai_v70"); location.reload(); }
 setInterval(saveGame, 5000);
-
 init();
-
 })();
 </script>
 </body>
