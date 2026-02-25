@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v6.0 (Nature Control)</title>
+<title>Bonsai Master v6.1 (Bugfix Edition)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -22,6 +22,7 @@
     /* Liquid Glass Variables */
     --glass-bg: rgba(15, 20, 30, 0.45);
     --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-highlight: rgba(255, 255, 255, 0.05);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
   
@@ -373,7 +374,7 @@ const ITEMS = {
   soil_bio:  { type:'soil', name:"Bio-Boost", cost:500, boost:2.0 }
 };
 
-// 10 NEUE GLOBALE EINSTELLUNGEN
+// DER FIX: timeWarp ist wieder da!
 let SETTINGS = { 
   secPerDay: 60, 
   growMult: 1.0, 
@@ -383,8 +384,9 @@ let SETTINGS = {
   leafRate: 0.1,
   leafSizeMult: 1.0,
   waterDrain: 5.0,
-  windSpeed: 0.3, // Um 70% reduziert
-  windSway: 0.05
+  windSpeed: 0.3, 
+  windSway: 0.05,
+  timeWarp: 1.0 
 };
 
 let STATE = {
@@ -435,6 +437,10 @@ let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0 };
 let INPUT="none", HOVER=null, BEND_TARGET=null, WATERING=false;
 
 function init() {
+  // Sicherheits-Initialisierung des Canvas gegen den 0x0 Glitch
+  cv.width = $('viewport').clientWidth || 400;
+  cv.height = $('viewport').clientHeight || 600;
+
   loadGame();
   bindSettingsUI();
   
@@ -443,8 +449,10 @@ function init() {
   
   const ro = new ResizeObserver(entries => {
     for(let e of entries) {
-      cv.width = e.contentRect.width;
-      cv.height = e.contentRect.height;
+      if(e.contentRect.width > 0 && e.contentRect.height > 0) {
+        cv.width = e.contentRect.width;
+        cv.height = e.contentRect.height;
+      }
     }
   });
   ro.observe($('viewport'));
@@ -463,10 +471,10 @@ function update(dt) {
   const soil = ITEMS[tree.soil] || ITEMS['soil_basic'];
   const pot = ITEMS[tree.pot] || ITEMS['pot_basic'];
   
-  ENV.dayTime += (dt/SETTINGS.secPerDay)*SETTINGS.timeWarp;
+  // timeWarp Bugfix in Action
+  ENV.dayTime += (dt/SETTINGS.secPerDay) * (SETTINGS.timeWarp || 1.0);
   if(ENV.dayTime>1) { ENV.dayTime-=1; tree.days++; updateListUI(); }
   
-  // Wasserverbrauch über Settings steuerbar
   if(tree.water>0) tree.water -= (SETTINGS.waterDrain * soil.boost / SETTINGS.secPerDay) * dt;
   const growth = (tree.water>0?1:0) * spec.growth * soil.boost * pot.bonus * SETTINGS.growMult;
 
@@ -499,21 +507,16 @@ function update(dt) {
     
     if(!b.cut && b.len<b.maxLen) {
       b.len += 8*dt*growth;
-      
-      // Astdicke über Settings steuerbar
       if(b.len>15) b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
       
       const thresh = b.maxLen*0.85;
       if(b.depth>0 && b.len>thresh) {
-         // Blattmenge und Rate über Settings steuerbar
          if(b.leaves.length < SETTINGS.maxLeaves && Math.random() < SETTINGS.leafRate) {
-            // Blattgröße über Settings steuerbar
             b.leaves.push({ f:0.85+Math.random()*0.15, r:Math.random()*6.28, s:0.1, ms:(8+Math.random()*6)*SETTINGS.leafSizeMult });
          }
       }
       
       if(b.len>b.maxLen*0.6 && !b.sprouted && b.thick>3.0) {
-         // Verzweigungs-Wahrscheinlichkeit über Settings steuerbar
          if(Math.random() < SETTINGS.sproutChance * growth) {
             b.sprouted=true;
             let cnt=(Math.random()>0.4)?2:1;
@@ -527,7 +530,6 @@ function update(dt) {
     }
     for(let l of b.leaves) if(l.s < l.ms) l.s += 10*dt; 
     
-    // Wind Physik wurde in Tempo und Biegung getrennt
     const sway = Math.sin(Date.now()*0.002*SETTINGS.windSpeed + b.windPhase) * (SETTINGS.windSway * b.len) / (Math.max(1,b.thick));
     b.endX = b.x + Math.cos(b.angle+sway)*b.len;
     b.endY = b.y + Math.sin(b.angle+sway)*b.len;
@@ -540,10 +542,13 @@ function update(dt) {
 function draw() {
   const w=cv.width, h=cv.height, t=ENV.dayTime;
   
+  if(isNaN(t) || w===0 || h===0) return; // Crash-Schutz
+
   const sky=[[5,10,25],[255,120,70],[80,160,230],[20,15,45]];
   let si = Math.floor(t * 4) % 4, ni = (si + 1) % 4, f = (t * 4) % 1;
   const mix=(a,b)=>Math.round(a+(b-a)*f);
   const col=`rgb(${mix(sky[si][0],sky[ni][0])},${mix(sky[si][1],sky[ni][1])},${mix(sky[si][2],sky[ni][2])})`;
+  
   const grd=ctx.createLinearGradient(0,0,0,h);
   grd.addColorStop(0,col); grd.addColorStop(1, si===0||si===3 ? "#020617" : "#e2e8f0");
   ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
@@ -655,9 +660,6 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-// ---------------- SYSTEM ----------------
-
-// Bindet HTML Inputs an das SETTINGS Objekt inkl. Label-Update
 function bindSettingsUI() {
   const binds = [
     { id: 'inpSecPerDay', key: 'secPerDay', valId: 'valSec', parser: parseFloat },
@@ -675,7 +677,7 @@ function bindSettingsUI() {
   binds.forEach(b => {
     let el = $(b.id);
     if(el) {
-      el.value = SETTINGS[b.key]; // Initial set
+      el.value = SETTINGS[b.key]; 
       if(b.valId) $(b.valId).innerText = b.display ? b.display(SETTINGS[b.key]) : SETTINGS[b.key];
       
       el.oninput = e => {
@@ -925,7 +927,10 @@ function loadGame() {
     const d=JSON.parse(localStorage.getItem("bonsai_v60"));
     if(d) {
        STATE.money=d.money ?? 500; STATE.inventory=d.inv || STATE.inventory; STATE.activeIdx=d.activeIdx || 0;
-       if(d.settings) SETTINGS = {...SETTINGS, ...d.settings};
+       if(d.settings) {
+           SETTINGS = {...SETTINGS, ...d.settings};
+           if(SETTINGS.timeWarp === undefined) SETTINGS.timeWarp = 1.0; // Rettung
+       }
        STATE.trees=d.trees.map(td=>{ let t=new Tree(td.key, td.name); Object.assign(t, td); t.root = Branch.deserialize(td.root, null); return t; });
     }
   } catch(e) {}
