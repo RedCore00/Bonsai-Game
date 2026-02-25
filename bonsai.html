@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v7.4 (Clean UI)</title>
+<title>Bonsai Master v7.5 (Complete & Polished)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -53,7 +53,7 @@
     position: absolute; top: 0; left: 0; 
     width: 100%; height: 100%;
     z-index: 10; pointer-events: none; 
-    display: flex; flex-direction: column; justify-content: flex-end;
+    display: flex; flex-direction: column; justify-content: space-between;
   }
 
   .glass {
@@ -63,6 +63,19 @@
     box-shadow: var(--glass-shadow);
     pointer-events: auto;
   }
+
+  /* --- TOP HEADER --- */
+  .tree-header {
+    margin: env(safe-area-inset-top, 20px) 20px 0 20px;
+    padding: 10px 18px; border-radius: 18px;
+    align-self: flex-start;
+    border-top: 1px solid rgba(255,255,255,0.3); 
+    border-left: 1px solid rgba(255,255,255,0.2);
+    display: flex; justify-content: space-between; align-items: center; min-width: 200px;
+  }
+  .tree-info h1 { margin: 0; font-size: 18px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+  .tree-info p { margin: 2px 0 0 0; font-size: 11px; color: var(--accent); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+  .money-display { font-weight: 700; color: var(--gold); text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 14px; }
 
   /* --- BOTTOM UI AREA --- */
   .bottom-area {
@@ -76,7 +89,7 @@
     border-top: 1px solid rgba(255,255,255,0.2);
     display: flex; flex-direction: column; gap: 12px;
   }
-  .stat-row-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; }
   .stat-group { display: flex; gap: 20px; }
   .stat-item { display: flex; align-items: baseline; gap: 8px; }
   .s-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
@@ -231,16 +244,20 @@
 
 <div class="ui-layer">
   
+  <div class="tree-header glass">
+    <div class="tree-info">
+      <h1 id="uiTreeName">Baum</h1>
+      <p id="uiSpeciesName">Spezies</p>
+    </div>
+    <div class="money-display" id="uiMoneyTop">0 💰</div>
+  </div>
+
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
         <div class="stat-group">
           <div class="stat-item"><span class="s-label">Alter</span><span class="s-val" id="uiDay">Tag 0</span></div>
           <div class="stat-item"><span class="s-label">Saison</span><span class="s-val" id="uiSeason" style="color:var(--accent); text-shadow:0 0 8px var(--accent-glow)">Sommer</span></div>
-        </div>
-        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; margin-left: 10px;">
-          <span class="s-val" id="uiTreeName" style="font-size: 15px; font-weight: 700;">Baum</span>
-          <span class="s-label" id="uiSpeciesName" style="color: var(--accent); margin-top: 2px;">Spezies</span>
         </div>
       </div>
       <div class="stat-row-bars">
@@ -428,7 +445,7 @@ class Tree {
 }
 
 // Environment & Input State
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[] };
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
@@ -542,6 +559,30 @@ function setupInteractions() {
     if(HOVER) {
       if(INPUT === 'prune' && !HOVER.cut && HOVER.parent) {
         HOVER.cut = true;
+        
+        // --- Falling Parts Logic (Physik für abgeschnittene Äste) ---
+        const spec = SPECIES[STATE.trees[STATE.activeIdx].key];
+        function dropChildren(b) {
+          // Aststück zur Physik-Engine hinzufügen
+          ENV.fallingParts.push({ 
+            type: 'branch', x: b.x, y: b.y, ex: b.endX, ey: b.endY, 
+            a: b.angle, th: b.thick, col: spec.bark[0], 
+            vx: (Math.random() - 0.5) * 50, vy: Math.random() * 50, vr: (Math.random() - 0.5) * 5 
+          });
+          // Blätter zur Physik-Engine hinzufügen
+          b.leaves.forEach(l => {
+            const px = b.x + (b.endX - b.x) * l.f;
+            const py = b.y + (b.endY - b.y) * l.f;
+            ENV.fallingParts.push({ 
+              type: 'leaf', x: px, y: py, a: b.angle + l.r, s: l.s, 
+              cols: spec.color, leafType: spec.leaf, 
+              vx: (Math.random() - 0.5) * 60, vy: Math.random() * 60, vr: (Math.random() - 0.5) * 7 
+            });
+          });
+          b.children.forEach(dropChildren);
+        }
+        
+        dropChildren(HOVER);
         HOVER.children = []; 
         HOVER.leaves = [];
         STATE.stats.totalPrunes++;
@@ -649,6 +690,7 @@ function update(dt) {
     }
   }
 
+  // Wassertropfen Update
   for(let i = ENV.particles.length - 1; i >= 0; i--) {
     let p = ENV.particles[i];
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
@@ -659,6 +701,18 @@ function update(dt) {
     } else if(p.life <= 0) {
       ENV.particles.splice(i, 1);
     }
+  }
+
+  // Fallende Teile (Physik) Update
+  const gravity = 300;
+  for(let i = ENV.fallingParts.length - 1; i >= 0; i--) {
+    let p = ENV.fallingParts[i];
+    p.vy += gravity * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.a += p.vr * dt;
+    // Verschwinden lassen wenn sie weit unter dem Topf sind
+    if(p.y > 250) ENV.fallingParts.splice(i, 1);
   }
 
   function sim(b, rx, ry) {
@@ -794,6 +848,7 @@ function drawWorld() {
     ctx.lineWidth = b.thick; 
     ctx.strokeStyle = spec.bark[0];
     
+    // Neuer Hover Effekt (Sanftes Leuchten statt weißer Füllung)
     if(b === HOVER && INPUT !== 'water' && INPUT !== 'none') { 
       ctx.shadowBlur = 15; 
       ctx.shadowColor = (INPUT==='prune' ? '#f87171' : INPUT==='graft' ? '#60a5fa' : '#facc15'); 
@@ -806,7 +861,9 @@ function drawWorld() {
     ctx.lineTo(b.endX, b.endY); 
     ctx.stroke();
     
-    ctx.shadowBlur = 0; 
+    ctx.shadowBlur = 0; // Shadow direkt resetten
+    
+    // Die weißen und grauen Punkte an Schnittstellen (b.cut und b.grafted) wurden hier komplett entfernt!
     
     if(!b.cut && b.leaves.length) {
        const sIdx = Math.floor(t.days / 30) % 4; 
@@ -835,6 +892,37 @@ function drawWorld() {
     b.children.forEach(render);
   }
   render(t.root);
+
+  // Fallende Teile Rendern
+  ENV.fallingParts.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.a);
+      if(p.type === 'branch') {
+          ctx.strokeStyle = p.col;
+          ctx.lineWidth = p.th;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          const len = Math.hypot(p.ex - p.x, p.ey - p.y);
+          ctx.moveTo(-len/2, 0);
+          ctx.lineTo(len/2, 0);
+          ctx.stroke();
+      } else if (p.type === 'leaf') {
+          if(p.leafType === 'needle') {
+              ctx.strokeStyle = p.cols[0];
+              ctx.lineWidth = 1;
+              for(let i=0; i<5; i++) {
+                  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * p.s * 3, -p.s * 2); ctx.stroke();
+              }
+          } else {
+              ctx.fillStyle = p.cols[0];
+              ctx.beginPath(); ctx.ellipse(p.s, 0, p.s, p.s * (p.leafType === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill();
+              ctx.fillStyle = p.cols[1];
+              ctx.beginPath(); ctx.ellipse(p.s, 0, p.s * 0.6, p.s * 0.15, 0, 0, 6.28); ctx.fill();
+          }
+      }
+      ctx.restore();
+  });
 
   const pg = ctx.createLinearGradient(0, 0, 0, potH);
   pg.addColorStop(0, "#2a2a2e"); pg.addColorStop(1, "#09090b");
