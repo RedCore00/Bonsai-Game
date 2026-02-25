@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v7.6 (Fixed Physics)</title>
+<title>Bonsai Master v7.7 (Wind & Previews)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -19,207 +19,69 @@
     --text: #ffffff; 
     --text-muted: #94a3b8;
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    
-    /* Liquid Glass Variables */
     --glass-bg: rgba(15, 20, 30, 0.45);
     --glass-border: rgba(255, 255, 255, 0.15);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
-  
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  
-  body { 
-    margin: 0; 
-    height: 100vh; height: 100dvh; 
-    background: #000; 
-    overflow: hidden; 
-    font-family: var(--font); 
-    color: var(--text); 
-    user-select: none; 
-    -webkit-user-select: none;
-  }
-  
-  /* --- CANVAS FULLSCREEN --- */
-  .viewport { 
-    position: absolute; top: 0; left: 0; 
-    width: 100%; height: 100%; 
-    z-index: 1; cursor: grab; overflow: hidden; touch-action: none; 
-  }
+  body { margin: 0; height: 100vh; height: 100dvh; background: #000; overflow: hidden; font-family: var(--font); color: var(--text); user-select: none; -webkit-user-select: none; }
+  .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: grab; overflow: hidden; touch-action: none; }
   .viewport:active { cursor: grabbing; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-
-  /* --- UI LAYER --- */
-  .ui-layer {
-    position: absolute; top: 0; left: 0; 
-    width: 100%; height: 100%;
-    z-index: 10; pointer-events: none; 
-    display: flex; flex-direction: column; justify-content: flex-end;
-  }
-
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    pointer-events: auto;
-  }
-
-  /* --- BOTTOM UI AREA --- */
-  .bottom-area {
-    padding: 0 15px calc(85px + env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 10px;
-  }
-
-  /* Stats Panel */
-  .stats-panel {
-    border-radius: 20px; padding: 15px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-    display: flex; flex-direction: column; gap: 12px;
-  }
+  .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; }
+  .glass { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); pointer-events: auto; }
+  .bottom-area { padding: 0 15px calc(85px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
+  .stats-panel { border-radius: 20px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; flex-direction: column; gap: 12px; }
   .stat-row-top { display: flex; justify-content: space-between; align-items: flex-start; }
   .stat-group { display: flex; gap: 20px; }
   .stat-item { display: flex; align-items: baseline; gap: 8px; }
   .s-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
   .s-val { font-size: 14px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-  
   .stat-row-bars { display: flex; gap: 15px; }
   .bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 6px; }
   .bar-header { display: flex; justify-content: space-between; align-items: flex-end; }
-  .bar-bg { 
-    width: 100%; height: 6px; border-radius: 4px; overflow: hidden;
-    background: rgba(0,0,0,0.4); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); 
-  }
+  .bar-bg { width: 100%; height: 6px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,0.4); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }
   .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border-radius: 4px; }
   .water-color { background: linear-gradient(90deg, #0ea5e9, #38bdf8); box-shadow: 0 0 10px var(--accent-glow); }
   .hp-color { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px var(--success-glow); }
-
-  /* Tools Container */
-  .tools-panel {
-    border-radius: 20px; padding: 15px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-  }
+  .tools-panel { border-radius: 20px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.2); }
   .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  
-  .btn {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
-    padding: 12px 4px; border-radius: 14px; font-weight: 600; cursor: pointer;
-    font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
-  }
+  .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text); padding: 12px 4px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); }
   .btn svg { width: 20px; height: 20px; opacity: 0.7; transition: all 0.3s; }
   .btn:active { transform: scale(0.94); }
-  .btn.active { 
-    background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; 
-    box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); 
-  }
+  .btn.active { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); }
   .btn.active svg { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
-
-  /* --- FLOATING DOCK --- */
-  .bottom-dock {
-    position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 50%; transform: translateX(-50%);
-    width: calc(100% - 30px); max-width: 450px; border-radius: 25px;
-    display: flex; justify-content: space-around; align-items: center;
-    padding: 10px; border-top: 1px solid rgba(255,255,255,0.3);
-  }
-  .nav-item {
-    background: transparent; border: none; color: rgba(255,255,255,0.5);
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    font-size: 10px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600;
-  }
+  .bottom-dock { position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 450px; border-radius: 25px; display: flex; justify-content: space-around; align-items: center; padding: 10px; border-top: 1px solid rgba(255,255,255,0.3); }
+  .nav-item { background: transparent; border: none; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600; }
   .nav-item svg { width: 22px; height: 22px; transition: all 0.3s; }
   .nav-item.open { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
   .nav-item.open svg { transform: translateY(-3px) scale(1.1); stroke: var(--accent); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
-
-  /* --- OVERLAYS --- */
-  .overlay-bg {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s;
-  }
+  .overlay-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
   .overlay-bg.open { opacity: 1; pointer-events: auto; }
-
-  .overlay-sheet {
-    position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh; height: 85vh;
-    background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-    border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2);
-    padding: 30px 20px calc(30px + env(safe-area-inset-bottom));
-    z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-    overflow-y: auto; pointer-events: auto;
-  }
+  .overlay-sheet { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh; height: 85vh; background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2); padding: 30px 20px calc(30px + env(safe-area-inset-bottom)); z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1); overflow-y: auto; pointer-events: auto; }
   .overlay-sheet.open { transform: translateY(0); }
-
   .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
   .sheet-header h2 { margin: 0; font-size: 20px; letter-spacing: 1px; font-weight: 700; }
-  .close-btn { 
-    background: rgba(255,255,255,0.1); border: none; color: var(--text); 
-    width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;
-  }
+  .close-btn { background: rgba(255,255,255,0.1); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s; }
   .close-btn:active { background: rgba(255,255,255,0.2); }
-
-  /* Listen Design (Sammlung/Shop/Quests) */
-  .list-item { 
-    display: flex; align-items: center; gap: 15px; 
-    background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 20px; 
-    border: 1px solid rgba(255,255,255,0.05); position: relative; transition: 0.2s;
-  }
+  .list-item { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; transition: 0.2s; }
   .list-item.active-item { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
-  .tree-preview { 
-    width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); 
-    overflow: hidden; display: flex; align-items: center; justify-content: center;
-    border: 1px solid rgba(255,255,255,0.1); font-size: 24px;
-  }
-  
+  .tree-preview { width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); }
+  .tree-preview img { width: 100%; height: 100%; object-fit: cover; }
   .list-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   .list-title { font-size: 15px; font-weight: 700; }
   .list-sub { font-size: 12px; color: var(--text-muted); }
-  
-  .action-btn {
-    padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 12px; cursor: pointer;
-    background: rgba(255,255,255,0.1); color: var(--text); transition: 0.2s;
-  }
+  .action-btn { padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; background: rgba(255,255,255,0.1); color: var(--text); transition: 0.2s; }
   .action-btn.buy { background: rgba(251, 191, 36, 0.2); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); }
   .action-btn:active { transform: scale(0.95); }
-
-  /* Quests & Badges */
-  .quest-btn { 
-    padding: 10px 16px; border-radius: 14px; border: none; font-weight: 700; font-size: 12px;
-    background: rgba(255,255,255,0.1); color: var(--text-muted); transition: 0.3s;
-  }
-  .quest-btn.ready { 
-    background: var(--success); color: #000; box-shadow: 0 0 15px var(--success-glow);
-    animation: pulse 1.5s infinite; cursor: pointer;
-  }
+  .quest-btn { padding: 10px 16px; border-radius: 14px; border: none; font-weight: 700; font-size: 12px; background: rgba(255,255,255,0.1); color: var(--text-muted); transition: 0.3s; }
+  .quest-btn.ready { background: var(--success); color: #000; box-shadow: 0 0 15px var(--success-glow); animation: pulse 1.5s infinite; cursor: pointer; }
   @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-
-  .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
-  .badge { 
-    background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); 
-    border-radius: 16px; padding: 12px; text-align: center; 
-    opacity: 0.4; filter: grayscale(1); transition: 0.4s;
-  }
-  .badge.unlocked { 
-    opacity: 1; filter: grayscale(0); border-color: var(--gold); 
-    background: rgba(251, 191, 36, 0.1); box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.1);
-  }
-  .badge-icon { font-size: 28px; margin-bottom: 8px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
-  .badge-name { font-size: 11px; font-weight: 700; display: block; color: var(--text); }
-
-  /* Settings Sliders */
   .set-row { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
   .set-header { display: flex; justify-content: space-between; align-items: baseline; }
   input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
-
-  /* Toasts */
-  .toast { 
-    position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%);
-    background: rgba(20, 25, 35, 0.9); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5);
-    padding: 14px 28px; border-radius: 20px; pointer-events: none; opacity: 0; 
-    transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); 
-    font-weight: 700; font-size: 14px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  }
+  .toast { position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%); background: rgba(20, 25, 35, 0.9); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); padding: 14px 28px; border-radius: 20px; pointer-events: none; opacity: 0; transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); font-weight: 700; font-size: 14px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
   .toast.show { opacity: 1; transform: translate(-50%, 15px); }
-
 </style>
 </head>
 <body>
@@ -230,7 +92,6 @@
 </div>
 
 <div class="ui-layer">
-  
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
@@ -290,67 +151,26 @@
 </div>
 
 <div class="overlay-bg" id="overlayBg" onclick="closeAllPanels()"></div>
-
-<div class="overlay-sheet" id="panel_collection">
-  <div class="sheet-header">
-    <h2 style="color:var(--accent); text-shadow:0 0 10px var(--accent-glow)">Baumschule</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div class="s-label" style="margin-bottom: 10px;">Deine Bonsais</div>
-  <div id="collectionList"></div>
-  <div class="s-label" style="margin-top: 25px; margin-bottom: 10px;">Samen & Setzlinge kaufen</div>
-  <div id="speciesList"></div>
-</div>
-
-<div class="overlay-sheet" id="panel_shop">
-  <div class="sheet-header">
-    <h2 style="color:var(--gold); text-shadow:0 0 10px rgba(251, 191, 36, 0.5)">Bonsai Shop</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div id="shopMoneyDisplay" style="text-align:right; font-weight:700; color:var(--gold); margin-bottom:20px; font-size:16px;">Guthaben: 0 💰</div>
-  <div class="s-label" style="margin-bottom: 10px;">Töpfe & Schalen</div>
-  <div id="shopPotsList"></div>
-  <div class="s-label" style="margin-top:25px; margin-bottom: 10px;">Substrate</div>
-  <div id="shopSoilsList"></div>
-</div>
-
-<div class="overlay-sheet" id="panel_quests">
-  <div class="sheet-header">
-    <h2 style="color:var(--success); text-shadow:0 0 10px var(--success-glow)">Deine Reise</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div class="s-label">Tägliche Aufgaben</div>
-  <div id="questList" style="margin-top:10px"></div>
-</div>
-
-<div class="overlay-sheet" id="panel_settings">
-  <div class="sheet-header">
-    <h2 style="color:var(--text-muted)">Natur Kontrolle</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:25px; background:rgba(255,255,255,0.1); font-size:13px; padding:15px; flex-direction:row;">🔲 Browser Vollbild umschalten</button>
-  <div id="settingsGrid"></div>
-  <br>
-  <button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239, 68, 68, 0.15); color:#ef4444; border-color:#ef4444; margin-top:20px; font-size:13px; padding:15px; flex-direction:row;">Spielstand Löschen</button>
-</div>
+<div class="overlay-sheet" id="panel_collection"><div class="sheet-header"><h2 style="color:var(--accent)">Baumschule</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div class="s-label" style="margin-bottom:10px;">Deine Bonsais</div><div id="collectionList"></div><div class="s-label" style="margin-top:25px; margin-bottom:10px;">Samen & Setzlinge kaufen</div><div id="speciesList"></div></div>
+<div class="overlay-sheet" id="panel_shop"><div class="sheet-header"><h2 style="color:var(--gold)">Bonsai Shop</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div id="shopMoneyDisplay" style="text-align:right; font-weight:700; color:var(--gold); margin-bottom:20px; font-size:16px;">Guthaben: 0 💰</div><div class="s-label" style="margin-bottom:10px;">Töpfe & Schalen</div><div id="shopPotsList"></div><div class="s-label" style="margin-top:25px; margin-bottom:10px;">Substrate</div><div id="shopSoilsList"></div></div>
+<div class="overlay-sheet" id="panel_quests"><div class="sheet-header"><h2 style="color:var(--success)">Deine Reise</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div class="s-label">Aktuelle Ziele</div><div id="questList" style="margin-top:10px"></div></div>
+<div class="overlay-sheet" id="panel_settings"><div class="sheet-header"><h2 style="color:var(--text-muted)">Einstellungen</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:25px; background:rgba(255,255,255,0.1); font-size:13px; padding:15px;">🔲 Vollbild umschalten</button><div id="settingsGrid"></div><br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239,68,68,0.15); color:#ef4444; border-color:#ef4444; margin-top:20px; font-size:13px; padding:15px;">Spielstand Löschen</button></div>
 
 <script>
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 const ctx = cv.getContext('2d', {alpha: false});
 
-// Spieldaten & Konstanten
 const SPECIES = {
-  ficus: { name: "Ficus Retusa", icon: "🌳", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
-  pine:  { name: "Schwarzkiefer", icon: "🌲", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6, cost: 300 },
-  maple: { name: "Roter Ahorn", icon: "🍁", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8, cost: 500 },
-  sakura:{ name: "Sakura Kirsche", icon: "🌸", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9, cost: 800 },
-  willow:{ name: "Trauerweide", icon: "🌿", leaf: "long", color:["#365314","#bef264"], bark:["#424242","#212121"], growth: 1.3, weeping:true, cost: 1200 },
-  jade:  { name: "Geldbaum", icon: "🪴", leaf: "fat", color:["#14532d","#22c55e"], bark:["#795548","#5d4037"], growth: 0.7, cost: 1500 },
-  blue:  { name: "Blue Mystique", icon: "💠", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1, cost: 2000 },
-  hemp:  { name: "Green Power", icon: "🌿", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5, cost: 4200 }
+  ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
+  pine:  { name: "Schwarzkiefer", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6, cost: 300 },
+  maple: { name: "Roter Ahorn", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8, cost: 500 },
+  sakura:{ name: "Sakura Kirsche", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9, cost: 800 },
+  willow:{ name: "Trauerweide", leaf: "long", color:["#365314","#bef264"], bark:["#424242","#212121"], growth: 1.3, weeping:true, cost: 1200 },
+  jade:  { name: "Geldbaum", leaf: "fat", color:["#14532d","#22c55e"], bark:["#795548","#5d4037"], growth: 0.7, cost: 1500 },
+  blue:  { name: "Blue Mystique", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1, cost: 2000 },
+  hemp:  { name: "Green Power", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5, cost: 4200 }
 };
-
 const ITEMS = {
   pot_basic: { type:'pot', name:"Plastiktopf", cost:0, bonus:1.0 },
   pot_clay:  { type:'pot', name:"Terrakotta", cost:300, bonus:1.1 },
@@ -359,514 +179,175 @@ const ITEMS = {
   soil_aka:  { type:'soil', name:"Akadama", cost:200, boost:1.3 },
   soil_bio:  { type:'soil', name:"Bio-Boost", cost:500, boost:2.0 }
 };
-
-let SETTINGS = { 
-  secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, 
-  maxLeaves: 30, leafRate: 0.1, leafSizeMult: 1.0, waterDrain: 5.0, 
-  windSpeed: 0.3, windSway: 0.05, timeWarp: 1.0 
-};
-
-let STATE = { 
-  money: 500, trees: [], activeIdx: 0, 
-  inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, 
-  stats: { totalWaters:0, totalPrunes:0, totalDays:0 }, quests: [] 
-};
-
-// Klassen
-class Branch {
-  constructor(parent, x, y, angle, maxLen, thick, depth) {
-    this.parent = parent;
-    this.depth = depth || 0;
-    this.x = x; this.y = y; this.endX = x; this.endY = y;
-    this.angle = angle; this.targetAngle = angle;
-    this.len = 0.1; this.maxLen = maxLen; this.thick = thick;
-    this.children = []; this.leaves = [];
-    this.cut = false; this.sprouted = false; this.grafted = false;
-    this.windPhase = Math.random() * 10;
-  }
-
-  serialize() {
-    return {
-      x: this.x, y: this.y, a: this.angle, ta: this.targetAngle,
-      l: this.len, ml: this.maxLen, th: this.thick, d: this.depth,
-      cut: this.cut, spr: this.sprouted, gr: this.grafted,
-      leaves: this.leaves, c: this.children.map(c => c.serialize())
-    };
-  }
-
-  static deserialize(d, p) {
-    let b = new Branch(p, d.x, d.y, d.a, d.ml, d.th, d.d);
-    b.len = d.l; b.targetAngle = d.ta; b.cut = d.cut; b.sprouted = d.spr; 
-    b.grafted = d.gr; b.leaves = d.leaves || [];
-    if (d.c) b.children = d.c.map(cd => Branch.deserialize(cd, b));
-    return b;
-  }
-}
-
-class Tree {
-  constructor(key, name) {
-    this.key = key; this.name = name; this.days = 0;
-    this.water = 100; this.hp = 100; this.pot = 'pot_basic'; this.soil = 'soil_basic';
-    this.root = new Branch(null, 0, 0, -Math.PI/2, 110, 20, 0);
-  }
-  
-  serialize() {
-    return {
-      key: this.key, name: this.name, days: this.days,
-      water: this.water, hp: this.hp, pot: this.pot, soil: this.soil,
-      root: this.root.serialize()
-    }
-  }
-
-  static deserialize(d) {
-    let t = new Tree(d.key, d.name);
-    t.days = d.days; t.water = d.water; t.hp = d.hp || 100;
-    t.pot = d.pot || 'pot_basic'; t.soil = d.soil || 'soil_basic';
-    t.root = Branch.deserialize(d.root, null);
-    return t;
-  }
-}
-
-// Environment & Input State
+let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 30, leafRate: 0.1, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
+let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
 let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
 let lastT = 0, lastUiT = 0;
+const previewCache = {};
 
-// Init & Save System
+class Branch {
+  constructor(p, x, y, a, ml, th, d) { this.parent=p; this.depth=d||0; this.x=x; this.y=y; this.endX=x; this.endY=y; this.angle=a; this.targetAngle=a; this.len=0.1; this.maxLen=ml; this.thick=th; this.children=[]; this.leaves=[]; this.cut=false; this.sprouted=false; this.grafted=false; this.windPhase=Math.random()*10; }
+  serialize() { return { x:this.x, y:this.y, a:this.angle, ta:this.targetAngle, l:this.len, ml:this.maxLen, th:this.thick, d:this.depth, cut:this.cut, spr:this.sprouted, gr:this.grafted, leaves:this.leaves, c:this.children.map(c=>c.serialize()) }; }
+  static deserialize(d, p) { let b=new Branch(p,d.x,d.y,d.a,d.ml,d.th,d.d); b.len=d.l; b.targetAngle=d.ta; b.cut=d.cut; b.sprouted=d.spr; b.grafted=d.gr; b.leaves=d.leaves||[]; if(d.c) b.children=d.c.map(cd=>Branch.deserialize(cd,b)); return b; }
+}
+class Tree {
+  constructor(k, n) { this.key=k; this.name=n; this.days=0; this.water=100; this.hp=100; this.pot='pot_basic'; this.soil='soil_basic'; this.root=new Branch(null,0,0,-Math.PI/2,110,20,0); }
+  serialize() { return { key:this.key, name:this.name, days:this.days, water:this.water, hp:this.hp, pot:this.pot, soil:this.soil, root:this.root.serialize() }}
+  static deserialize(d) { let t=new Tree(d.key, d.name); t.days=d.days; t.water=d.water; t.hp=d.hp||100; t.pot=d.pot||'pot_basic'; t.soil=d.soil||'soil_basic'; t.root=Branch.deserialize(d.root,null); return t; }
+}
+
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave7');
-  if(saved) {
-    try {
-      let data = JSON.parse(saved);
-      STATE.money = data.money || 500;
-      STATE.inventory = data.inventory || { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] };
-      STATE.stats = data.stats || { totalWaters:0, totalPrunes:0, totalDays:0 };
-      STATE.quests = data.quests || [];
-      if(data.trees && data.trees.length) {
-        STATE.trees = data.trees.map(t => Tree.deserialize(t));
-      }
-      STATE.activeIdx = data.activeIdx || 0;
-      if(STATE.activeIdx >= STATE.trees.length) STATE.activeIdx = 0; 
-    } catch(e) { console.error("Savegame error", e); }
-  }
+  const saved = localStorage.getItem('bonsaiSave77');
+  if(saved) { try { let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; STATE.stats=data.stats||{totalWaters:0,totalPrunes:0,totalDays:0,itemsBought:0}; STATE.quests=data.quests||[]; if(data.trees&&data.trees.length){ STATE.trees=data.trees.map(t=>Tree.deserialize(t)); } STATE.activeIdx=data.activeIdx||0; if(STATE.activeIdx>=STATE.trees.length) STATE.activeIdx=0; } catch(e){console.error(e);} }
 }
-
-function saveGame() {
-  const data = {
-    money: STATE.money, activeIdx: STATE.activeIdx,
-    inventory: STATE.inventory, stats: STATE.stats,
-    quests: STATE.quests, trees: STATE.trees.map(t => t.serialize())
-  };
-  localStorage.setItem('bonsaiSave7', JSON.stringify(data));
-}
+function saveGame() { localStorage.setItem('bonsaiSave77', JSON.stringify({ money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) })); }
 
 function init() {
-  cv.width = $('viewport').clientWidth || window.innerWidth;
-  cv.height = $('viewport').clientHeight || window.innerHeight;
-
-  loadGame();
-  bindSettingsUI();
-  setupInteractions();
-  
-  if(!STATE.trees.length) {
-    STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
-  }
-  if(!STATE.quests || STATE.quests.length === 0) {
-    generateQuests();
-  }
-  
-  const ro = new ResizeObserver(entries => {
-    for(let e of entries) {
-      if(e.contentRect.width > 0 && e.contentRect.height > 0) {
-        cv.width = e.contentRect.width; cv.height = e.contentRect.height;
-      }
-    }
-  });
-  ro.observe($('viewport'));
-  
-  updateListUI();
-  updateRealtimeUI();
-  requestAnimationFrame(loop);
-  setInterval(saveGame, 5000); 
+  cv.width=$('viewport').clientWidth||window.innerWidth; cv.height=$('viewport').clientHeight||window.innerHeight;
+  loadGame(); bindSettingsUI(); setupInteractions();
+  if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
+  if(!STATE.quests||STATE.quests.length===0) generateQuests();
+  new ResizeObserver(e=>{for(let E of e){if(E.contentRect.width>0){cv.width=E.contentRect.width;cv.height=E.contentRect.height;}}}).observe($('viewport'));
+  updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
 
-// Interaktions Logik (Touch & Mouse)
 function setupInteractions() {
-  const getPos = (e) => {
-    let rect = cv.getBoundingClientRect();
-    let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    
-    let camBaseY = cv.height * 0.55;
-    MOUSE.worldX = (x - (cv.width/2 + CAM.x)) / CAM.zoom;
-    MOUSE.worldY = (y - (camBaseY + CAM.y)) / CAM.zoom;
-    return {x,y};
-  };
-
-  const findNearestBranch = (root, targetX, targetY, maxDist) => {
-    let nearest = null;
-    let minDist = maxDist;
-    const search = (b) => {
-      let dx = b.endX - targetX;
-      let dy = b.endY - targetY;
-      let dist = Math.sqrt(dx*dx + dy*dy);
-      let mx = b.x + (b.endX - b.x)/2;
-      let my = b.y + (b.endY - b.y)/2;
-      let mDist = Math.sqrt((mx-targetX)**2 + (my-targetY)**2);
-      
-      let finalDist = Math.min(dist, mDist);
-
-      if(finalDist < minDist) {
-        minDist = finalDist;
-        nearest = b;
-      }
+  const getPos = e => { let rect=cv.getBoundingClientRect(); let x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left; let y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top; MOUSE.worldX=(x-(cv.width/2+CAM.x))/CAM.zoom; MOUSE.worldY=(y-(cv.height*0.55+CAM.y))/CAM.zoom; return {x,y}; };
+  const findNearestBranch = (root, tx, ty, maxDist) => {
+    let nearest=null, minDist=maxDist;
+    const search = b => {
+      let mx=b.x+(b.endX-b.x)/2, my=b.y+(b.endY-b.y)/2;
+      let dist=Math.min(Math.hypot(b.endX-tx, b.endY-ty), Math.hypot(mx-tx, my-ty));
+      if(dist<minDist){ minDist=dist; nearest=b; }
       b.children.forEach(search);
     };
-    search(root);
-    return nearest;
+    search(root); return nearest;
   };
 
   cv.addEventListener('pointerdown', e => {
-    MOUSE.down = true;
-    getPos(e);
-    
-    if(!STATE.trees[STATE.activeIdx]) return;
-    let root = STATE.trees[STATE.activeIdx].root;
-
-    if(INPUT === 'water') return; 
-    
-    HOVER = findNearestBranch(root, MOUSE.worldX, MOUSE.worldY, 40);
-    
+    MOUSE.down=true; getPos(e); if(!STATE.trees[STATE.activeIdx])return;
+    if(INPUT==='water')return;
+    HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
     if(HOVER) {
-      if(INPUT === 'prune' && !HOVER.cut && HOVER.parent) {
-        HOVER.cut = true;
-        
-        // --- Falling Parts Logic (Physik für abgeschnittene Äste) ---
+      if(INPUT==='prune' && !HOVER.cut && HOVER.parent) {
+        HOVER.cut=true;
         const spec = SPECIES[STATE.trees[STATE.activeIdx].key];
         function dropChildren(b) {
-          // Echte Länge für das Holzstück berechnen (verhindert das Langziehen-Bug!)
-          const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
-          ENV.fallingParts.push({ 
-            type: 'branch', x: b.x, y: b.y, len: branchLen, 
-            a: b.angle, th: b.thick, col: spec.bark[0], 
-            vx: (Math.random() - 0.5) * 50, vy: Math.random() * 50, vr: (Math.random() - 0.5) * 5 
-          });
-          // Blätter
-          b.leaves.forEach(l => {
-            const px = b.x + (b.endX - b.x) * l.f;
-            const py = b.y + (b.endY - b.y) * l.f;
-            ENV.fallingParts.push({ 
-              type: 'leaf', x: px, y: py, a: b.angle + l.r, s: l.s, 
-              cols: spec.color, leafType: spec.leaf, 
-              vx: (Math.random() - 0.5) * 60, vy: Math.random() * 60, vr: (Math.random() - 0.5) * 7 
-            });
-          });
-          b.children.forEach(dropChildren);
+             const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
+             ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5 });
+             b.leaves.forEach(l => {
+                 const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
+                 ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7 });
+             });
+            b.children.forEach(dropChildren);
         }
-        
         dropChildren(HOVER);
-        HOVER.children = []; 
-        HOVER.leaves = [];
-        STATE.stats.totalPrunes++;
-        notify("Ast geschnitten");
-      } 
-      else if(INPUT === 'graft') {
-        if(HOVER.cut) {
-           HOVER.cut = false;
-           HOVER.sprouted = false;
-           notify("Ast geheilt!");
-        } else {
-           let dev = (Math.random() - 0.5) * 1.5;
-           let newThick = Math.max(1, HOVER.thick * 0.7);
-           HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, newThick, HOVER.depth + 1));
-           notify("Neuer Trieb veredelt!");
-        }
-      }
-      else if(INPUT === 'bend') {
-        BEND_TARGET = HOVER;
-      }
+        HOVER.children=[]; HOVER.leaves=[];
+        STATE.stats.totalPrunes++; notify("Ast geschnitten");
+      } else if(INPUT==='graft') {
+        if(HOVER.cut) { HOVER.cut=false; HOVER.sprouted=false; notify("Ast geheilt!"); }
+        else { let dev=(Math.random()-0.5)*1.5; HOVER.children.push(new Branch(HOVER,0,0,HOVER.angle+dev,HOVER.maxLen*0.7,Math.max(1,HOVER.thick*0.7),HOVER.depth+1)); notify("Neuer Trieb veredelt!"); }
+      } else if(INPUT==='bend') { BEND_TARGET=HOVER; }
     }
   });
-
   cv.addEventListener('pointermove', e => {
     getPos(e);
-    if(MOUSE.down && INPUT === 'bend' && BEND_TARGET) {
-      let dx = MOUSE.worldX - BEND_TARGET.x;
-      let dy = MOUSE.worldY - BEND_TARGET.y;
-      BEND_TARGET.targetAngle = Math.atan2(dy, dx);
-    } else if(!MOUSE.down && INPUT !== 'water') {
-      if(STATE.trees[STATE.activeIdx]) {
-        HOVER = findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
-      }
-    }
+    if(MOUSE.down && INPUT==='bend' && BEND_TARGET) { BEND_TARGET.targetAngle=Math.atan2(MOUSE.worldY-BEND_TARGET.y, MOUSE.worldX-BEND_TARGET.x); }
+    else if(!MOUSE.down && INPUT!=='water' && STATE.trees[STATE.activeIdx]) { HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40); }
   });
-
-  window.addEventListener('pointerup', () => {
-    MOUSE.down = false;
-    BEND_TARGET = null;
-  });
+  window.addEventListener('pointerup', ()=>{ MOUSE.down=false; BEND_TARGET=null; });
 }
 
-// Tools UI
-function setTool(toolName) {
-  INPUT = (INPUT === toolName) ? "none" : toolName;
-  document.querySelectorAll('.tools-panel .btn').forEach(b => b.classList.remove('active'));
-  if(INPUT !== "none") {
-    let btnMap = { 'water':'toolWater', 'prune':'toolPrune', 'graft':'toolGraft', 'bend':'toolBend'};
-    $(btnMap[INPUT]).classList.add('active');
-  }
-}
+function setTool(t) { INPUT=(INPUT===t?"none":t); document.querySelectorAll('.tools-panel .btn').forEach(b=>b.classList.remove('active')); if(INPUT!=="none")$(INPUT==='water'?'toolWater':INPUT==='prune'?'toolPrune':INPUT==='graft'?'toolGraft':'toolBend').classList.add('active'); }
 
-// Game Loop
 function loop(now) {
-  if(!now) now = performance.now();
-  let dt = (now - lastT) / 1000;
-  if(dt > 0.1) dt = 0.1;
-  lastT = now;
-  
-  update(dt);
-  draw();
-  
-  if(now - lastUiT > 500) {
-    updateRealtimeUI();
-    lastUiT = now;
-  }
+  if(!now)now=performance.now(); let dt=(now-lastT)/1000; if(dt>0.1)dt=0.1; lastT=now;
+  update(dt); draw();
+  if(now-lastUiT>500){ updateRealtimeUI(); lastUiT=now; }
   requestAnimationFrame(loop);
 }
 
 function update(dt) {
-  const tree = STATE.trees[STATE.activeIdx];
-  if(!tree) return;
-  const spec = SPECIES[tree.key];
-  const soil = ITEMS[tree.soil] || {boost: 1.0};
-  const pot = ITEMS[tree.pot] || {bonus: 1.0};
-  
-  ENV.dayTime += (dt / SETTINGS.secPerDay) * (SETTINGS.timeWarp || 1.0);
-  if(ENV.dayTime > 1) {
-    ENV.dayTime -= 1;
-    tree.days++;
-    STATE.stats.totalDays++;
-  }
-  
-  if(tree.water > 0) {
-    tree.water -= (SETTINGS.waterDrain * soil.boost / SETTINGS.secPerDay) * dt;
-  } else {
-    tree.hp -= 2 * dt; 
-  }
-  tree.water = Math.max(0, Math.min(100, tree.water));
-  tree.hp = Math.max(0, Math.min(100, tree.hp));
+  const tree=STATE.trees[STATE.activeIdx]; if(!tree)return;
+  const spec=SPECIES[tree.key], soil=ITEMS[tree.soil]||{boost:1}, pot=ITEMS[tree.pot]||{bonus:1};
+  ENV.dayTime+=(dt/SETTINGS.secPerDay)*(SETTINGS.timeWarp||1); if(ENV.dayTime>1){ ENV.dayTime-=1; tree.days++; STATE.stats.totalDays++; }
+  if(tree.water>0) tree.water-=(SETTINGS.waterDrain*soil.boost/SETTINGS.secPerDay)*dt; else tree.hp-=2*dt;
+  tree.water=Math.max(0,Math.min(100,tree.water)); tree.hp=Math.max(0,Math.min(100,tree.hp));
+  const growth=(tree.water>10?1:0.1)*spec.growth*soil.boost*pot.bonus*SETTINGS.growMult;
+  if(ENV.clouds.length<5&&Math.random()<0.01) ENV.clouds.push({x:-200,y:Math.random()*300,s:1+Math.random(),v:0.2+Math.random()*0.3});
 
-  const growth = (tree.water > 10 ? 1 : 0.1) * spec.growth * soil.boost * pot.bonus * SETTINGS.growMult;
+  if(INPUT==='water'&&MOUSE.down) for(let i=0;i<3;i++) ENV.particles.push({x:MOUSE.worldX+(Math.random()-0.5)*30, y:Math.min(MOUSE.worldY,-50)+(Math.random()-0.5)*10, vx:(Math.random()-0.5)*15, vy:120+Math.random()*80, life:2.0});
+  for(let i=ENV.particles.length-1;i>=0;i--) { let p=ENV.particles[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; if(p.y>0&&p.y<70&&p.x>-90&&p.x<90){ tree.water=Math.min(100,tree.water+1.5); STATE.stats.totalWaters+=0.05; ENV.particles.splice(i,1); } else if(p.life<=0) ENV.particles.splice(i,1); }
 
-  if(ENV.clouds.length < 5 && Math.random() < 0.01) {
-    ENV.clouds.push({x: -200, y: Math.random() * 300, s: 1 + Math.random(), v: 0.2 + Math.random() * 0.3});
-  }
-
-  if(INPUT === 'water' && MOUSE.down) {
-    for(let i=0; i<3; i++) {
-      ENV.particles.push({
-        x: MOUSE.worldX + (Math.random() - 0.5) * 30,
-        y: Math.min(MOUSE.worldY, -50) + (Math.random() - 0.5) * 10,
-        vx: (Math.random() - 0.5) * 15, vy: 120 + Math.random() * 80, life: 2.0
-      });
-    }
-  }
-
-  // Wassertropfen Update
-  for(let i = ENV.particles.length - 1; i >= 0; i--) {
-    let p = ENV.particles[i];
-    p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-    if(p.y > 0 && p.y < 70 && p.x > -90 && p.x < 90) {
-      tree.water = Math.min(100, tree.water + 1.5);
-      STATE.stats.totalWaters += 0.05;
-      ENV.particles.splice(i, 1);
-    } else if(p.life <= 0) {
-      ENV.particles.splice(i, 1);
-    }
-  }
-
-  // Fallende Teile (Physik) Update
   const gravity = 300;
-  for(let i = ENV.fallingParts.length - 1; i >= 0; i--) {
-    let p = ENV.fallingParts[i];
-    p.vy += gravity * dt;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.a += p.vr * dt;
-    if(p.y > 250) ENV.fallingParts.splice(i, 1);
+  for(let i=ENV.fallingParts.length-1; i>=0; i--) {
+      let p = ENV.fallingParts[i]; p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
+      if(p.y > 250) ENV.fallingParts.splice(i, 1);
   }
 
-  function sim(b, rx, ry) {
-    if(!b.parent) { b.x = rx; b.y = ry; } 
-    else { b.x = b.parent.endX; b.y = b.parent.endY; }
+  function sim(b,rx,ry) {
+    if(!b.parent){b.x=rx;b.y=ry;}else{b.x=b.parent.endX;b.y=b.parent.endY;}
     
-    b.angle += (b.targetAngle - b.angle) * 3 * dt;
-    
-    if(!b.cut && b.len < b.maxLen && tree.hp > 0) {
-      b.len += 8 * dt * growth;
-      if(b.len > 15) b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
-      
-      const thresh = b.maxLen * 0.85;
-      if(b.depth > 0 && b.len > thresh) {
-         if(b.leaves.length < SETTINGS.maxLeaves && Math.random() < SETTINGS.leafRate) {
-            b.leaves.push({
-              f: 0.85 + Math.random() * 0.15, r: Math.random() * 6.28,
-              s: 0.1, ms: (8 + Math.random() * 6) * SETTINGS.leafSizeMult
-            });
-         }
-      }
-      
-      if(b.len > b.maxLen * 0.6 && !b.sprouted && b.thick > 3.0) {
-         if(Math.random() < SETTINGS.sproutChance * growth) {
-            b.sprouted = true;
-            let cnt = (Math.random() > 0.4) ? 2 : 1;
-            for(let i=0; i<cnt; i++) {
-               let dev = (Math.random() - 0.5) * 1.5;
-               if(spec.weeping) dev = Math.abs(dev) + 1.2;
-               b.children.push(new Branch(b, 0, 0, b.angle + dev, b.maxLen * (0.6 + Math.random() * 0.3), b.thick * 0.7, b.depth + 1));
-            }
-         }
-      }
+    // --- NEUE WIND PHYSIK ---
+    let finalTargetAngle = b.targetAngle;
+    if (b.depth > 0 && SETTINGS.windSpeed > 0.01) {
+        // Windstärke nimmt mit der Höhe (Tiefe) zu und wirkt stärker auf dünne Äste
+        const windIntensity = (SETTINGS.windSpeed * 0.08) * (b.depth / Math.max(1, b.thick * 0.8));
+        // Sanftere Oszillation
+        const windOscillation = Math.sin(Date.now() * 0.0008 * SETTINGS.windSpeed + b.windPhase + b.depth * 0.3);
+        finalTargetAngle += windOscillation * windIntensity;
     }
+    // Sanfte Bewegung zum Zielwinkel
+    b.angle += (finalTargetAngle - b.angle) * (2.5 * dt);
     
-    if(b.cut && b.leaves.length > 0) {
-      b.leaves.forEach(l => { l.s = Math.max(0, l.s - 5*dt); });
-      b.leaves = b.leaves.filter(l => l.s > 0);
-    } else {
-      for(let l of b.leaves) { if(l.s < l.ms) l.s += 10 * dt; }
+    if(!b.cut&&b.len<b.maxLen&&tree.hp>0){
+      b.len+=8*dt*growth; if(b.len>15)b.thick+=0.1*dt*growth*SETTINGS.thickMult;
+      if(b.depth>0&&b.len>b.maxLen*0.85&&b.leaves.length<SETTINGS.maxLeaves&&Math.random()<SETTINGS.leafRate) b.leaves.push({f:0.85+Math.random()*0.15,r:Math.random()*6.28,s:0.1,ms:(8+Math.random()*6)*SETTINGS.leafSizeMult});
+      if(b.len>b.maxLen*0.6&&!b.sprouted&&b.thick>3.0&&Math.random()<SETTINGS.sproutChance*growth){ b.sprouted=true; let cnt=Math.random()>0.4?2:1; for(let i=0;i<cnt;i++){ let dev=(Math.random()-0.5)*1.5; if(spec.weeping)dev=Math.abs(dev)+1.2; b.children.push(new Branch(b,0,0,b.angle+dev,b.maxLen*(0.6+Math.random()*0.3),b.thick*0.7,b.depth+1)); }}
     }
+    if(b.cut&&b.leaves.length>0){ b.leaves.forEach(l=>l.s=Math.max(0,l.s-5*dt)); b.leaves=b.leaves.filter(l=>l.s>0); } else for(let l of b.leaves)if(l.s<l.ms)l.s+=10*dt;
     
-    const sway = Math.sin(Date.now() * 0.002 * SETTINGS.windSpeed + b.windPhase) * (SETTINGS.windSway * b.len) / (Math.max(1, b.thick));
-    b.endX = b.x + Math.cos(b.angle + sway) * b.len;
-    b.endY = b.y + Math.sin(b.angle + sway) * b.len;
+    // Endposition basierend auf dem neuen Winkel berechnen (kein zusätzlicher "Sway" mehr nötig)
+    b.endX = b.x + Math.cos(b.angle) * b.len;
+    b.endY = b.y + Math.sin(b.angle) * b.len;
     
-    b.children.forEach(c => sim(c, 0, 0));
+    b.children.forEach(c=>sim(c,0,0));
   }
-  
-  sim(tree.root, 0, 0);
-  checkQuests();
+  sim(tree.root,0,0); checkQuests();
 }
 
-// ---------------- RENDER ----------------
 function draw() {
-  const w = cv.width, h = cv.height, t = ENV.dayTime;
-  if(isNaN(t) || w === 0 || h === 0) return;
-
-  const sky = [[5,10,25], [255,120,70], [80,160,230], [20,15,45]];
-  let si = Math.floor(t * 4) % 4, ni = (si + 1) % 4, f = (t * 4) % 1;
-  const mix = (a, b) => Math.round(a + (b - a) * f);
-  const col = `rgb(${mix(sky[si][0],sky[ni][0])},${mix(sky[si][1],sky[ni][1])},${mix(sky[si][2],sky[ni][2])})`;
-  
-  const grd = ctx.createLinearGradient(0, 0, 0, h);
-  grd.addColorStop(0, col);
-  grd.addColorStop(1, si === 0 || si === 3 ? "#020617" : "#e2e8f0");
-  ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
-
-  if(t < 0.25 || t > 0.75) {
-     ctx.fillStyle = "#fff";
-     ENV.stars.forEach(s => { 
-       ctx.globalAlpha = (t < 0.25 ? 1 - t * 4 : (t - 0.75) * 4) * Math.random(); 
-       ctx.beginPath(); ctx.arc(s.x * w, s.y * h * 0.6, s.s, 0, 6.28); ctx.fill();
-     });
-     ctx.globalAlpha = 1;
-  }
-
-  const cx = w / 2, cy = h * 0.8 + 150, r = h * 0.5 + 100, ang = (t - 0.5) * Math.PI;
-  ctx.shadowBlur = 50; ctx.shadowColor = "gold"; ctx.fillStyle = "#fbbf24"; 
-  ctx.beginPath(); ctx.arc(cx + Math.sin(ang) * r, cy + Math.cos(ang) * r, 45, 0, 6.28); ctx.fill();
-  
-  ctx.shadowBlur = 30; ctx.shadowColor = "#fff"; ctx.fillStyle = "#f8fafc"; 
-  ctx.beginPath(); ctx.arc(cx + Math.sin(ang + Math.PI) * r, cy + Math.cos(ang + Math.PI) * r, 35, 0, 6.28); ctx.fill();
-  ctx.shadowBlur = 0;
-
-  ctx.fillStyle = "rgba(255,255,255,0.15)";
-  ENV.clouds.forEach(c => { 
-    c.x += c.v; if(c.x > w + 200) c.x = -200; 
-    drawPuff(c.x, c.y, c.s); 
-  });
-
-  ctx.fillStyle = "#04060b";
-  ctx.beginPath(); ctx.moveTo(0, h);
-  for(let x=0; x<=w; x+=20) {
-    ctx.lineTo(x, h * 0.65 - Math.abs(Math.sin(x * 0.002) * 100 + Math.cos(x * 0.008) * 30));
-  }
-  ctx.lineTo(w, h); ctx.fill();
-
-  ctx.save();
-  const camBaseY = h * 0.55; 
-  ctx.translate(w / 2 + CAM.x, camBaseY + CAM.y);
-  ctx.scale(CAM.zoom, CAM.zoom);
-  drawWorld();
-  ctx.restore();
+  const w=cv.width, h=cv.height, t=ENV.dayTime; if(isNaN(t)||w===0||h===0)return;
+  const sky=[[5,10,25],[255,120,70],[80,160,230],[20,15,45]]; let si=Math.floor(t*4)%4, ni=(si+1)%4, f=(t*4)%1; const mix=(a,b)=>Math.round(a+(b-a)*f); const col=`rgb(${mix(sky[si][0],sky[ni][0])},${mix(sky[si][1],sky[ni][1])},${mix(sky[si][2],sky[ni][2])})`;
+  const grd=ctx.createLinearGradient(0,0,0,h); grd.addColorStop(0,col); grd.addColorStop(1,si===0||si===3?"#020617":"#e2e8f0"); ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
+  if(t<0.25||t>0.75){ ctx.fillStyle="#fff"; ENV.stars.forEach(s=>{ ctx.globalAlpha=(t<0.25?1-t*4:(t-0.75)*4)*Math.random(); ctx.beginPath(); ctx.arc(s.x*w,s.y*h*0.6,s.s,0,6.28); ctx.fill(); }); ctx.globalAlpha=1; }
+  const cx=w/2, cy=h*0.8+150, r=h*0.5+100, ang=(t-0.5)*Math.PI; ctx.shadowBlur=50; ctx.shadowColor="gold"; ctx.fillStyle="#fbbf24"; ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r,cy+Math.cos(ang)*r,45,0,6.28); ctx.fill();
+  ctx.shadowBlur=30; ctx.shadowColor="#fff"; ctx.fillStyle="#f8fafc"; ctx.beginPath(); ctx.arc(cx+Math.sin(ang+Math.PI)*r,cy+Math.cos(ang+Math.PI)*r,35,0,6.28); ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle="rgba(255,255,255,0.15)"; ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+200)c.x=-200; drawPuff(c.x,c.y,c.s);});
+  ctx.fillStyle="#04060b"; ctx.beginPath(); ctx.moveTo(0,h); for(let x=0;x<=w;x+=20)ctx.lineTo(x,h*0.65-Math.abs(Math.sin(x*0.002)*100+Math.cos(x*0.008)*30)); ctx.lineTo(w,h); ctx.fill();
+  ctx.save(); ctx.translate(w/2+CAM.x, h*0.55+CAM.y); ctx.scale(CAM.zoom,CAM.zoom); drawWorld(); ctx.restore();
 }
-
-function drawPuff(x, y, s) {
-  ctx.beginPath();
-  ctx.arc(x, y, 40 * s, 0, 6.28);
-  ctx.arc(x + 35 * s, y - 15 * s, 45 * s, 0, 6.28);
-  ctx.arc(x + 70 * s, y + 5 * s, 35 * s, 0, 6.28);
-  ctx.fill();
-}
+function drawPuff(x,y,s){ ctx.beginPath(); ctx.arc(x,y,40*s,0,6.28); ctx.arc(x+35*s,y-15*s,45*s,0,6.28); ctx.arc(x+70*s,y+5*s,35*s,0,6.28); ctx.fill(); }
 
 function drawWorld() {
-  const t = STATE.trees[STATE.activeIdx];
-  if(!t) return;
-  const spec = SPECIES[t.key];
-  const potH = 60;
-  
-  ctx.fillStyle = "#18181b"; ctx.beginPath(); ctx.ellipse(0, 0, 85, 22, 0, 0, 6.28); ctx.fill();
-  ctx.fillStyle = "#271c19"; ctx.beginPath(); ctx.ellipse(0, 0, 78, 18, 0, 0, 6.28); ctx.fill();
+  const t=STATE.trees[STATE.activeIdx]; if(!t)return; const spec=SPECIES[t.key], potH=60;
+  ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
+  if(BEND_TARGET&&INPUT==='bend'){ ctx.beginPath(); ctx.moveTo(BEND_TARGET.x,BEND_TARGET.y); ctx.lineTo(MOUSE.worldX,MOUSE.worldY); ctx.strokeStyle="rgba(250,204,21,0.6)"; ctx.lineWidth=2; ctx.setLineDash([8,8]); ctx.stroke(); ctx.setLineDash([]); }
 
-  if(BEND_TARGET && INPUT === 'bend') {
-    ctx.beginPath(); ctx.moveTo(BEND_TARGET.x, BEND_TARGET.y); ctx.lineTo(MOUSE.worldX, MOUSE.worldY);
-    ctx.strokeStyle = "rgba(250, 204, 21, 0.6)"; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.stroke(); ctx.setLineDash([]);
-  }
-
-  ctx.lineCap = "round";
+  ctx.lineCap="round";
   function render(b) {
-    if(b.len < 1) return;
-    
-    ctx.lineWidth = b.thick; 
-    ctx.strokeStyle = spec.bark[0];
-    
-    // Neuer Hover Effekt (Sanftes Leuchten statt weißer Füllung)
-    if(b === HOVER && INPUT !== 'water' && INPUT !== 'none') { 
-      ctx.shadowBlur = 15; 
-      ctx.shadowColor = (INPUT==='prune' ? '#f87171' : INPUT==='graft' ? '#60a5fa' : '#facc15'); 
-    } else { 
-      ctx.shadowBlur = 0; 
-    }
-    
-    ctx.beginPath(); 
-    ctx.moveTo(b.x, b.y); 
-    ctx.lineTo(b.endX, b.endY); 
-    ctx.stroke();
-    
-    ctx.shadowBlur = 0; // Shadow direkt resetten
-    
-    if(!b.cut && b.leaves.length) {
-       const sIdx = Math.floor(t.days / 30) % 4; 
-       let cols = spec.color;
-       if(sIdx === 2 && spec.leaf !== 'needle') cols = ["#b45309", "#d97706"]; 
-       
-       for(let l of b.leaves) {
-          ctx.save();
-          const px = b.x + (b.endX - b.x) * l.f; const py = b.y + (b.endY - b.y) * l.f;
-          ctx.translate(px, py); ctx.rotate(b.angle + l.r); 
-          
-          if(spec.leaf === 'needle') {
-             ctx.strokeStyle = cols[0]; ctx.lineWidth = 1;
-             for(let i=0; i<5; i++) {
-               ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * l.s * 3, -l.s * 2); ctx.stroke();
-             }
-          } else {
-             ctx.fillStyle = cols[0];
-             ctx.beginPath(); ctx.ellipse(l.s, 0, l.s, l.s * (spec.leaf === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill();
-             ctx.fillStyle = cols[1];
-             ctx.beginPath(); ctx.ellipse(l.s, 0, l.s * 0.6, l.s * 0.15, 0, 0, 6.28); ctx.fill();
-          }
+    if(b.len<1)return; ctx.lineWidth=b.thick; ctx.strokeStyle=spec.bark[0];
+    if(b===HOVER&&INPUT!=='water'&&INPUT!=='none'){ ctx.shadowBlur=15; ctx.shadowColor=(INPUT==='prune'?'#f87171':INPUT==='graft'?'#60a5fa':'#facc15'); } else ctx.shadowBlur=0;
+    ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.endX,b.endY); ctx.stroke(); ctx.shadowBlur=0;
+    if(!b.cut&&b.leaves.length){
+       const sIdx=Math.floor(t.days/30)%4; let cols=spec.color; if(sIdx===2&&spec.leaf!=='needle')cols=["#b45309","#d97706"];
+       for(let l of b.leaves){
+          ctx.save(); ctx.translate(b.x+(b.endX-b.x)*l.f, b.y+(b.endY-b.y)*l.f); ctx.rotate(b.angle+l.r);
+          if(spec.leaf==='needle'){ ctx.strokeStyle=cols[0]; ctx.lineWidth=1; for(let i=0;i<5;i++){ ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo((Math.random()-0.5)*l.s*3,-l.s*2); ctx.stroke(); }}
+          else{ ctx.fillStyle=cols[0]; ctx.beginPath(); ctx.ellipse(l.s,0,l.s,l.s*(spec.leaf==='fat'?0.5:0.4),0,0,6.28); ctx.fill(); ctx.fillStyle=cols[1]; ctx.beginPath(); ctx.ellipse(l.s,0,l.s*0.6,l.s*0.15,0,0,6.28); ctx.fill(); }
           ctx.restore();
        }
     }
@@ -874,267 +355,81 @@ function drawWorld() {
   }
   render(t.root);
 
-  // Fallende Teile Rendern (Mit gefixter Längen-Berechnung)
   ENV.fallingParts.forEach(p => {
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.a);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
       if(p.type === 'branch') {
-          ctx.strokeStyle = p.col;
-          ctx.lineWidth = p.th;
-          ctx.lineCap = "round";
-          ctx.beginPath();
-          // Hier wird die vorberechnete, feste Länge benutzt!
-          ctx.moveTo(-p.len/2, 0);
-          ctx.lineTo(p.len/2, 0);
-          ctx.stroke();
+          ctx.strokeStyle = p.col; ctx.lineWidth = p.th; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-p.len/2, 0); ctx.lineTo(p.len/2, 0); ctx.stroke();
       } else if (p.type === 'leaf') {
-          if(p.leafType === 'needle') {
-              ctx.strokeStyle = p.cols[0];
-              ctx.lineWidth = 1;
-              for(let i=0; i<5; i++) {
-                  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * p.s * 3, -p.s * 2); ctx.stroke();
-              }
-          } else {
-              ctx.fillStyle = p.cols[0];
-              ctx.beginPath(); ctx.ellipse(p.s, 0, p.s, p.s * (p.leafType === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill();
-              ctx.fillStyle = p.cols[1];
-              ctx.beginPath(); ctx.ellipse(p.s, 0, p.s * 0.6, p.s * 0.15, 0, 0, 6.28); ctx.fill();
-          }
+           if(p.leafType === 'needle') { ctx.strokeStyle = p.cols[0]; ctx.lineWidth = 1; for(let i=0; i<5; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * p.s * 3, -p.s * 2); ctx.stroke(); } }
+           else { ctx.fillStyle = p.cols[0]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s, p.s * (p.leafType === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill(); ctx.fillStyle = p.cols[1]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s * 0.6, p.s * 0.15, 0, 0, 6.28); ctx.fill(); }
       }
       ctx.restore();
   });
 
-  const pg = ctx.createLinearGradient(0, 0, 0, potH);
-  pg.addColorStop(0, "#2a2a2e"); pg.addColorStop(1, "#09090b");
-  if(t.pot === 'pot_clay') { pg.addColorStop(0, "#785346"); pg.addColorStop(1, "#2d1d18"); }
-  else if(t.pot === 'pot_zen') { pg.addColorStop(0, "#1e293b"); pg.addColorStop(1, "#020617"); }
-  
-  ctx.fillStyle = pg; ctx.beginPath(); ctx.moveTo(-85, 0); 
-  ctx.quadraticCurveTo(-85, potH, -55, potH); ctx.lineTo(55, potH); 
-  ctx.quadraticCurveTo(85, potH, 85, 0); ctx.fill();
-
-  ctx.fillStyle = "rgba(56, 189, 248, 0.8)";
-  ENV.particles.forEach(p => { 
-    ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
-  });
+  const pg=ctx.createLinearGradient(0,0,0,potH); pg.addColorStop(0,"#2a2a2e"); pg.addColorStop(1,"#09090b"); if(t.pot==='pot_clay'){pg.addColorStop(0,"#785346");pg.addColorStop(1,"#2d1d18");} else if(t.pot==='pot_zen'){pg.addColorStop(0,"#1e293b");pg.addColorStop(1,"#020617");}
+  ctx.fillStyle=pg; ctx.beginPath(); ctx.moveTo(-85,0); ctx.quadraticCurveTo(-85,potH,-55,potH); ctx.lineTo(55,potH); ctx.quadraticCurveTo(85,potH,85,0); ctx.fill();
+  ctx.fillStyle="rgba(56,189,248,0.8)"; ENV.particles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,4,0,6.28); ctx.fill(); });
 }
 
-// ---------------- UI & SYSTEMS ----------------
-function notify(msg) {
-  const t = $('toast');
-  t.innerText = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
+function notify(m){ const t=$('toast'); t.innerText=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+function openPanel(id){ $('overlayBg').classList.add('open'); $(id).classList.add('open'); updateListUI(); }
+window.closeAllPanels=()=>{ $('overlayBg').classList.remove('open'); document.querySelectorAll('.overlay-sheet').forEach(s=>s.classList.remove('open')); }
+function updateRealtimeUI(){ const t=STATE.trees[STATE.activeIdx]; if(!t)return; $('uiTreeName').innerText=t.name; $('uiSpeciesName').innerText=SPECIES[t.key].name; $('uiDay').innerText=`Tag ${Math.floor(t.days)}`; $('uiSeason').innerText=["Frühling","Sommer","Herbst","Winter"][Math.floor(t.days/30)%4]; $('uiWaterVal').innerText=Math.round(t.water)+'%'; $('barWater').style.width=t.water+'%'; $('uiHpVal').innerText=Math.round(t.hp)+'%'; $('barHp').style.width=t.hp+'%'; }
 
-function openPanel(id) {
-  $('overlayBg').classList.add('open');
-  $(id).classList.add('open');
-  updateListUI();
-}
-window.closeAllPanels = function() {
-  $('overlayBg').classList.remove('open');
-  document.querySelectorAll('.overlay-sheet').forEach(s => s.classList.remove('open'));
-}
-
-function updateRealtimeUI() {
-  const tree = STATE.trees[STATE.activeIdx];
-  if(!tree) return;
-  $('uiTreeName').innerText = tree.name;
-  $('uiSpeciesName').innerText = SPECIES[tree.key].name;
-  $('uiDay').innerText = `Tag ${Math.floor(tree.days)}`;
-  const seasons = ["Frühling", "Sommer", "Herbst", "Winter"];
-  $('uiSeason').innerText = seasons[Math.floor(tree.days / 30) % 4];
-  
-  $('uiWaterVal').innerText = Math.round(tree.water) + '%';
-  $('barWater').style.width = tree.water + '%';
-  $('uiHpVal').innerText = Math.round(tree.hp) + '%';
-  $('barHp').style.width = tree.hp + '%';
-}
-
-function updateListUI() {
-  let collHtml = '';
-  STATE.trees.forEach((t, i) => {
-    let active = (i === STATE.activeIdx) ? 'active-item' : '';
-    let btn = (i === STATE.activeIdx) ? `<span style="font-size:12px; color:var(--accent)">Aktiv</span>` : `<button class="action-btn" onclick="switchTree(${i})">Auswählen</button>`;
-    collHtml += `
-      <div class="list-item ${active}">
-        <div class="tree-preview">${SPECIES[t.key].icon}</div>
-        <div class="list-content"><div class="list-title">${t.name}</div><div class="list-sub">Tag ${Math.floor(t.days)} • ${Math.round(t.hp)}% HP</div></div>
-        ${btn}
-      </div>`;
-  });
-  $('collectionList').innerHTML = collHtml;
-
-  let specHtml = '';
-  for(let key in SPECIES) {
-    if(!STATE.inventory.species.includes(key)) {
-      let spec = SPECIES[key];
-      specHtml += `
-        <div class="list-item">
-          <div class="tree-preview">${spec.icon}</div>
-          <div class="list-content"><div class="list-title">${spec.name}</div><div class="list-sub">Wachstum x${spec.growth}</div></div>
-          <button class="action-btn buy" onclick="buySpecies('${key}')">${spec.cost} 💰</button>
-        </div>`;
-    } else {
-       let spec = SPECIES[key];
-       specHtml += `
-        <div class="list-item" style="opacity:0.6">
-          <div class="tree-preview">${spec.icon}</div>
-          <div class="list-content"><div class="list-title">${spec.name}</div><div class="list-sub">Freigeschaltet</div></div>
-          <button class="action-btn" onclick="plantNew('${key}')">Pflanzen</button>
-        </div>`;
-    }
+function getPreview(key) {
+  if(previewCache[key]) return previewCache[key];
+  const pc = document.createElement('canvas'); pc.width=50; pc.height=50; const pctx = pc.getContext('2d');
+  const spec = SPECIES[key];
+  pctx.translate(25, 45); pctx.strokeStyle = spec.bark[0]; pctx.lineWidth = 4; pctx.lineCap = "round";
+  pctx.beginPath(); pctx.moveTo(0,0); pctx.lineTo(0, -15); pctx.stroke();
+  pctx.beginPath(); pctx.moveTo(0,-15); pctx.lineTo(-10, -30); pctx.stroke();
+  pctx.beginPath(); pctx.moveTo(0,-15); pctx.lineTo(10, -25); pctx.stroke();
+  pctx.fillStyle = spec.color[0];
+  if(spec.leaf === 'needle') {
+    pctx.beginPath(); pctx.moveTo(-15,-25); pctx.lineTo(0,-45); pctx.lineTo(15,-25); pctx.fill();
+  } else {
+    pctx.beginPath(); pctx.arc(0, -30, 15, 0, Math.PI*2); pctx.fill();
+    if(spec.leaf === 'long' || spec.weeping) { pctx.beginPath(); pctx.ellipse(0, -25, 18, 10, Math.PI/2, 0, Math.PI*2); pctx.fill(); }
   }
-  $('speciesList').innerHTML = specHtml;
-
-  $('shopMoneyDisplay').innerText = `Guthaben: ${STATE.money} 💰`;
-  let potHtml = ''; let soilHtml = '';
-  const tree = STATE.trees[STATE.activeIdx];
-  for(let key in ITEMS) {
-    let itm = ITEMS[key];
-    let isOwned = STATE.inventory[itm.type + 's'].includes(key);
-    let isEquipped = (tree && tree[itm.type] === key);
-    let btnHtml = '';
-    
-    if(!isOwned) {
-      btnHtml = `<button class="action-btn buy" onclick="buyItem('${key}')">${itm.cost} 💰</button>`;
-    } else if(!isEquipped) {
-      btnHtml = `<button class="action-btn" onclick="equipItem('${key}')">Nutzen</button>`;
-    } else {
-      btnHtml = `<span style="font-size:12px; color:var(--success)">Aktiv</span>`;
-    }
-
-    let card = `
-      <div class="list-item ${isEquipped ? 'active-item' : ''}">
-        <div class="list-content">
-          <div class="list-title">${itm.name}</div>
-          <div class="list-sub">${itm.bonus ? 'Wachstum +'+Math.round((itm.bonus-1)*100)+'%' : 'Feuchtigkeit +'+Math.round((itm.boost-1)*100)+'%'}</div>
-        </div>
-        ${btnHtml}
-      </div>`;
-    if(itm.type === 'pot') potHtml += card; else soilHtml += card;
-  }
-  $('shopPotsList').innerHTML = potHtml;
-  $('shopSoilsList').innerHTML = soilHtml;
-
-  let qHtml = '';
-  STATE.quests.forEach((q, i) => {
-    let btnClass = (q.done && !q.coll) ? 'quest-btn ready' : 'quest-btn';
-    let btnTxt = q.coll ? 'Erledigt' : (q.done ? `Abholen` : `${Math.floor(q.cur)}/${q.goal}`);
-    qHtml += `
-      <div class="list-item">
-        <div class="list-content"><div class="list-title">${q.txt}</div><div class="list-sub">Belohnung: ${q.rew} 💰</div></div>
-        <button class="${btnClass}" onclick="claimQuest(${i})" ${q.coll||(!q.done)?'disabled':''}>${btnTxt}</button>
-      </div>`;
-  });
-  $('questList').innerHTML = qHtml;
+  return previewCache[key] = pc.toDataURL();
 }
 
-window.switchTree = function(idx) {
-  STATE.activeIdx = idx;
-  INPUT = "none"; document.querySelectorAll('.tools-panel .btn').forEach(b => b.classList.remove('active'));
-  closeAllPanels(); updateRealtimeUI();
-};
-
-window.buySpecies = function(key) {
-  if(STATE.money >= SPECIES[key].cost) {
-    STATE.money -= SPECIES[key].cost;
-    STATE.inventory.species.push(key);
-    notify(`${SPECIES[key].name} gekauft!`);
-    updateListUI();
-  } else { notify("Zu wenig Guthaben!"); }
-};
-
-window.plantNew = function(key) {
-  let nr = STATE.trees.length + 1;
-  STATE.trees.push(new Tree(key, SPECIES[key].name + " #" + nr));
-  switchTree(STATE.trees.length - 1);
-  notify("Neuer Baum gepflanzt!");
-};
-
-window.buyItem = function(key) {
-  let itm = ITEMS[key];
-  if(STATE.money >= itm.cost) {
-    STATE.money -= itm.cost;
-    STATE.inventory[itm.type + 's'].push(key);
-    notify(`${itm.name} gekauft!`);
-    updateListUI();
-  } else { notify("Zu wenig Guthaben!"); }
-};
-
-window.equipItem = function(key) {
-  let itm = ITEMS[key];
-  if(STATE.trees[STATE.activeIdx]) {
-    STATE.trees[STATE.activeIdx][itm.type] = key;
-    updateListUI();
-  }
-};
-
-window.claimQuest = function(idx) {
-  let q = STATE.quests[idx];
-  if(q.done && !q.coll) {
-    q.coll = true; STATE.money += q.rew;
-    notify(`+${q.rew} 💰 erhalten!`);
-    updateListUI(); updateRealtimeUI();
-  }
-};
-
-function generateQuests() {
-  STATE.quests = [
-    { id:'q1', txt:"Gieße deinen Baum (10x)", goal:10, cur:0, rew:100, done:false, coll:false },
-    { id:'q2', txt:"Schneide Äste (5x)", goal:5, cur:0, rew:150, done:false, coll:false },
-    { id:'q3', txt:"Überlebe 5 Tage", goal:5, cur:0, rew:300, done:false, coll:false }
+function updateListUI(){
+  let cH=''; STATE.trees.forEach((t,i)=>{ let a=(i===STATE.activeIdx)?'active-item':'', b=(i===STATE.activeIdx)?`<span style="font-size:12px;color:var(--accent)">Aktiv</span>`:`<button class="action-btn" onclick="switchTree(${i})">Auswählen</button>`; cH+=`<div class="list-item ${a}"><div class="tree-preview"><img src="${getPreview(t.key)}"></div><div class="list-content"><div class="list-title">${t.name}</div><div class="list-sub">Tag ${Math.floor(t.days)} • ${Math.round(t.hp)}% HP</div></div>${b}</div>`; }); $('collectionList').innerHTML=cH;
+  let sH=''; for(let k in SPECIES){ if(!STATE.inventory.species.includes(k)){ let s=SPECIES[k]; sH+=`<div class="list-item"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; } else { let s=SPECIES[k]; sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; }} $('speciesList').innerHTML=sH;
+  $('shopMoneyDisplay').innerText=`Guthaben: ${STATE.money} 💰`; let pH='',sH2=''; const tr=STATE.trees[STATE.activeIdx]; for(let k in ITEMS){ let it=ITEMS[k], own=STATE.inventory[it.type+'s'].includes(k), eq=(tr&&tr[it.type]===k), bH=''; if(!own)bH=`<button class="action-btn buy" onclick="buyItem('${k}')">${it.cost} 💰</button>`; else if(!eq)bH=`<button class="action-btn" onclick="equipItem('${k}')">Nutzen</button>`; else bH=`<span style="font-size:12px;color:var(--success)">Aktiv</span>`; let c=`<div class="list-item ${eq?'active-item':''}"><div class="list-content"><div class="list-title">${it.name}</div><div class="list-sub">${it.bonus?'Wachstum +'+Math.round((it.bonus-1)*100)+'%':'Feuchtigkeit +'+Math.round((it.boost-1)*100)+'%'}</div></div>${bH}</div>`; if(it.type==='pot')pH+=c;else sH2+=c; } $('shopPotsList').innerHTML=pH; $('shopSoilsList').innerHTML=sH2;
+  let qH=''; STATE.quests.forEach((q,i)=>{ let bc=(q.done&&!q.coll)?'quest-btn ready':'quest-btn', bt=q.coll?'Erledigt':(q.done?`Abholen`:`${Math.floor(q.cur)}/${q.goal}`); qH+=`<div class="list-item"><div class="list-content"><div class="list-title">${q.txt}</div><div class="list-sub">Belohnung: ${q.rew} 💰</div></div><button class="${bc}" onclick="claimQuest(${i})" ${q.coll||(!q.done)?'disabled':''}>${bt}</button></div>`; }); $('questList').innerHTML=qH;
+}
+window.switchTree=i=>{ STATE.activeIdx=i; INPUT="none"; document.querySelectorAll('.tools-panel .btn').forEach(b=>b.classList.remove('active')); closeAllPanels(); updateRealtimeUI(); };
+window.buySpecies=k=>{ if(STATE.money>=SPECIES[k].cost){ STATE.money-=SPECIES[k].cost; STATE.inventory.species.push(k); notify(`${SPECIES[k].name} gekauft!`); updateListUI(); }else notify("Zu wenig Guthaben!"); };
+window.plantNew=k=>{ let nr=STATE.trees.length+1; STATE.trees.push(new Tree(k, SPECIES[k].name+" #"+nr)); switchTree(STATE.trees.length-1); notify("Neuer Baum gepflanzt!"); };
+window.buyItem=k=>{ let it=ITEMS[k]; if(STATE.money>=it.cost){ STATE.money-=it.cost; STATE.inventory[it.type+'s'].push(k); STATE.stats.itemsBought++; notify(`${it.name} gekauft!`); updateListUI(); }else notify("Zu wenig Guthaben!"); };
+window.equipItem=k=>{ let it=ITEMS[k]; if(STATE.trees[STATE.activeIdx]){ STATE.trees[STATE.activeIdx][it.type]=k; updateListUI(); }};
+window.claimQuest=i=>{ let q=STATE.quests[i]; if(q.done&&!q.coll){ q.coll=true; STATE.money+=q.rew; notify(`+${q.rew} 💰 erhalten!`); updateListUI(); updateRealtimeUI(); generateQuests(); }};
+function generateQuests(){
+  if(STATE.quests.length > 0 && !STATE.quests.every(q => q.coll)) return;
+  const pool = [
+    {id:'qW',txt:"Gieße deinen Baum (15x)",goal:15,cur:0,rew:150,metric:'totalWaters'},
+    {id:'qP',txt:"Schneide Äste (8x)",goal:8,cur:0,rew:200,metric:'totalPrunes'},
+    {id:'qD',txt:"Erreiche Tag 10",goal:10,cur:0,rew:350,metric:'days'},
+    {id:'qM',txt:"Spare 1000 💰",goal:1000,cur:0,rew:250,metric:'money'},
+    {id:'qI',txt:"Kaufe 2 Items",goal:2,cur:0,rew:300,metric:'itemsBought'}
   ];
-}
-
-function checkQuests() {
-  let changed = false;
-  STATE.quests.forEach(q => {
-    if(q.done) return;
-    if(q.id === 'q1') q.cur = Math.floor(STATE.stats.totalWaters || 0);
-    if(q.id === 'q2') q.cur = STATE.stats.totalPrunes || 0;
-    if(q.id === 'q3') q.cur = STATE.trees[STATE.activeIdx]?.days || 0;
-    
-    if(q.cur >= q.goal) { q.done = true; changed = true; notify("Aufgabe abgeschlossen!"); }
-  });
-  if(changed) updateListUI();
-}
-
-function bindSettingsUI() {
-  const binds = [
-    { id: 'inpSecPerDay', key: 'secPerDay', valId: 'valSec', parser: parseFloat },
-    { id: 'inpGrowMult', key: 'growMult', valId: 'valGrow', parser: parseFloat },
-    { id: 'inpThickMult', key: 'thickMult', valId: 'valThick', parser: parseFloat },
-    { id: 'inpSproutChance', key: 'sproutChance', valId: 'valSprout', parser: parseFloat, display: v=>Math.round(v*100)+"%" },
-    { id: 'inpLeafLimit', key: 'maxLeaves', valId: 'valLeaves', parser: parseInt }
-  ];
-  let html = '';
-  binds.forEach(b => {
-    html += `<div class="set-row">
-        <div class="set-header"><span class="s-label">${b.id.replace('inp','')}</span><span class="s-val" id="${b.valId}">${b.display ? b.display(SETTINGS[b.key]) : SETTINGS[b.key]}</span></div>
-        <input type="range" id="${b.id}" min="${b.key==='secPerDay'?1:0.1}" max="${b.key==='secPerDay'?120:b.key==='maxLeaves'?100:5}" step="0.01" value="${SETTINGS[b.key]}">
-      </div>`;
-  });
-  $('settingsGrid').innerHTML = html;
-  binds.forEach(b => {
-    let el = $(b.id);
-    if(el) el.oninput = e => { let val = b.parser(e.target.value); SETTINGS[b.key] = val; if(b.valId) $(b.valId).innerText = b.display ? b.display(val) : val; };
-  });
-}
-
-window.toggleFullScreen = function() {
-  if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(err); });
-  } else { if (document.exitFullscreen) { document.exitFullscreen(); } }
-};
-
-window.hardReset = function() {
-  if(confirm("Bist du sicher? Dein gesamter Spielstand wird gelöscht!")) {
-    localStorage.removeItem('bonsaiSave7');
-    location.reload();
+  STATE.quests = [];
+  for(let i=0; i<3; i++) {
+      let q = pool[Math.floor(Math.random()*pool.length)];
+      STATE.quests.push({id:q.id+Date.now()+i, txt:q.txt, goal:q.goal, cur:0, rew:q.rew, done:false, coll:false, metric:q.metric});
   }
-};
-
+  checkQuests();
+}
+function checkQuests(){ let c=false; STATE.quests.forEach(q=>{ if(q.done)return; if(q.metric==='money')q.cur=STATE.money; else if(q.metric==='days')q.cur=STATE.trees[STATE.activeIdx]?.days||0; else q.cur=STATE.stats[q.metric]||0; if(q.cur>=q.goal){q.done=true;c=true;notify("Ziel erreicht!");}}); if(c)updateListUI(); }
+function bindSettingsUI(){
+  const labels={secPerDay:"Sekunden pro Tag",growMult:"Wachstums-Tempo",thickMult:"Dicken-Wachstum",sproutChance:"Austrieb-Chance",maxLeaves:"Max. Blätter/Ast",windSpeed:"Windstärke",timeWarp:"Zeit-Raffer"};
+  const binds=[{id:'inpWind',key:'windSpeed',min:0,max:2,step:0.1}, {id:'inpSec',key:'secPerDay',min:5,max:120,step:1}, {id:'inpGrow',key:'growMult',min:0.1,max:5,step:0.1}, {id:'inpWarp',key:'timeWarp',min:0.1,max:10,step:0.1}, {id:'inpLeaves',key:'maxLeaves',min:10,max:200,step:5}];
+  let h=''; binds.forEach(b=>{ h+=`<div class="set-row"><div class="set-header"><span class="s-label">${labels[b.key]||b.key}</span><span class="s-val" id="v_${b.id}">${SETTINGS[b.key]}</span></div><input type="range" id="${b.id}" min="${b.min}" max="${b.max}" step="${b.step}" value="${SETTINGS[b.key]}"></div>`; }); $('settingsGrid').innerHTML=h; binds.forEach(b=>{ let el=$(b.id); if(el)el.oninput=e=>{ let v=parseFloat(e.target.value); SETTINGS[b.key]=v; $(`v_${b.id}`).innerText=v; }; });
+}
+window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>{console.log(e);});}else{if(document.exitFullscreen){document.exitFullscreen();}} };
+window.hardReset=()=>{ if(confirm("ALLES löschen und neu starten?")){ localStorage.removeItem('bonsaiSave77'); location.reload(); }};
 init();
 </script>
 </body>
