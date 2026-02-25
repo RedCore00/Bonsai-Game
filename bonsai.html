@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
-<title>Bonsai Master v5.0 (Liquid Glass Edition)</title>
+<title>Bonsai Master v5.1 (Compact Glass)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -56,94 +56,98 @@
 
   /* --- TOP HEADER --- */
   .tree-header {
-    margin: env(safe-area-inset-top, 20px) 20px 0 20px;
-    padding: 12px 20px; border-radius: 20px;
+    margin: env(safe-area-inset-top, 15px) 15px 0 15px;
+    padding: 8px 16px; border-radius: 18px;
     align-self: flex-start;
-    border-top: 1px solid rgba(255,255,255,0.3); /* Specular highlight */
+    border-top: 1px solid rgba(255,255,255,0.3); 
     border-left: 1px solid rgba(255,255,255,0.2);
   }
-  .tree-header h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-  .tree-header p { margin: 2px 0 0 0; font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .tree-header h1 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+  .tree-header p { margin: 1px 0 0 0; font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
 
   /* --- BOTTOM UI AREA --- */
   .bottom-area {
-    padding: 0 15px calc(90px + env(safe-area-inset-bottom)); /* Platz für Dock */
-    display: flex; flex-direction: column; gap: 12px;
+    padding: 0 12px calc(75px + env(safe-area-inset-bottom)); /* Reduzierter Platz */
+    display: flex; flex-direction: column; gap: 8px;
   }
 
-  /* Stats Panel */
+  /* Stats Panel - Komprimiert */
   .stats-panel {
-    border-radius: 24px; padding: 18px;
+    border-radius: 20px; padding: 12px 16px;
     border-top: 1px solid rgba(255,255,255,0.2);
-    display: flex; gap: 20px;
+    display: flex; flex-direction: column; gap: 10px;
   }
-  .stat-col { display: flex; flex-direction: column; justify-content: center; min-width: 80px;}
-  .flex-1 { flex: 1; }
   
-  .s-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-  .s-val { font-size: 15px; font-weight: 600; margin-top: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-  .mt { margin-top: 12px; }
+  .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .stat-group { display: flex; gap: 15px; }
+  .stat-item { display: flex; align-items: baseline; gap: 6px; }
   
-  /* Liquid Progress Bars */
-  .bar-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .s-label { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+  .s-val { font-size: 13px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+  
+  /* Side-by-Side Liquid Progress Bars */
+  .stat-row-bars { display: flex; gap: 15px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   .bar-header { display: flex; justify-content: space-between; align-items: flex-end; }
   .bar-bg { 
-    width: 100%; height: 6px; border-radius: 4px; overflow: hidden;
+    width: 100%; height: 5px; border-radius: 4px; overflow: hidden;
     background: rgba(0,0,0,0.4); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); 
   }
   .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border-radius: 4px; }
   .water-color { background: linear-gradient(90deg, #0ea5e9, #38bdf8); box-shadow: 0 0 10px var(--accent-glow); }
   .hp-color { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px var(--success-glow); }
 
-  /* Tools Container */
+  /* Tools Container - Komprimiert */
   .tools-panel {
-    border-radius: 24px; padding: 15px;
+    border-radius: 20px; padding: 12px 16px;
     border-top: 1px solid rgba(255,255,255,0.2);
   }
   .section-title { 
-    font-size: 11px; color: rgba(255,255,255,0.6); text-transform: uppercase; 
-    letter-spacing: 1.5px; margin: 0 0 12px 5px; font-weight: 700;
+    font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; 
+    letter-spacing: 1.5px; margin: 0 0 8px 4px; font-weight: 700;
   }
-  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  
+  /* 4 in einer Reihe! */
+  .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   
   /* Liquid Buttons */
   .btn {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
-    padding: 14px 10px; border-radius: 16px; font-weight: 600; cursor: pointer;
-    font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 4px; border-radius: 14px; font-weight: 600; cursor: pointer;
+    font-size: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
     transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   }
   .btn svg { width: 18px; height: 18px; opacity: 0.7; transition: all 0.3s; }
-  .btn:active { transform: scale(0.96); }
+  .btn:active { transform: scale(0.94); }
   
   .btn.active { 
     background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; 
-    box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.2), 0 0 15px rgba(56, 189, 248, 0.3); 
+    box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); 
     animation: pulseGlow 2s infinite alternate;
   }
   .btn.active svg { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
-  @keyframes pulseGlow { from{box-shadow: inset 0 0 20px rgba(56,189,248,0.2), 0 0 15px rgba(56,189,248,0.3);} to{box-shadow: inset 0 0 30px rgba(56,189,248,0.4), 0 0 25px rgba(56,189,248,0.5);} }
+  @keyframes pulseGlow { from{box-shadow: inset 0 0 15px rgba(56,189,248,0.2), 0 0 10px rgba(56,189,248,0.3);} to{box-shadow: inset 0 0 25px rgba(56,189,248,0.4), 0 0 20px rgba(56,189,248,0.5);} }
 
   /* --- FLOATING DOCK (BOTTOM NAV) --- */
   .bottom-dock {
-    position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 50%; transform: translateX(-50%);
-    width: calc(100% - 30px); max-width: 450px; border-radius: 30px;
+    position: absolute; bottom: env(safe-area-inset-bottom, 10px); left: 50%; transform: translateX(-50%);
+    width: calc(100% - 24px); max-width: 450px; border-radius: 25px;
     display: flex; justify-content: space-around; align-items: center;
-    padding: 10px; border-top: 1px solid rgba(255,255,255,0.3);
+    padding: 8px; border-top: 1px solid rgba(255,255,255,0.3);
   }
   .nav-item {
     background: transparent; border: none; color: rgba(255,255,255,0.5);
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    font-size: 10px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 9px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600;
   }
-  .nav-item svg { width: 22px; height: 22px; transition: all 0.3s; }
+  .nav-item svg { width: 20px; height: 20px; transition: all 0.3s; }
   .nav-item.open { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
   .nav-item.open svg { transform: translateY(-3px) scale(1.1); stroke: var(--accent); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
   
   .snap-btn { 
-    background: rgba(255,255,255,0.9); color: #000; border-radius: 20px; padding: 10px 18px; 
-    font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 6px; border:none;
+    background: rgba(255,255,255,0.9); color: #000; border-radius: 18px; padding: 8px 14px; 
+    font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 4px; border:none;
     box-shadow: 0 4px 15px rgba(255,255,255,0.3); transition: transform 0.2s;
   }
   .snap-btn:active { transform: scale(0.95); }
@@ -219,18 +223,18 @@
   <div class="bottom-area">
     
     <div class="stats-panel glass">
-      <div class="stat-col">
-        <span class="s-label">Alter</span>
-        <span class="s-val" id="uiDay">Tag 1</span>
-        <span class="s-label mt">Saison</span>
-        <span class="s-val" id="uiSeason" style="color:var(--accent); text-shadow:0 0 8px var(--accent-glow)">Sommer</span>
+      <div class="stat-row-top">
+        <div class="stat-group">
+          <div class="stat-item"><span class="s-label">Alter</span><span class="s-val" id="uiDay">Tag 1</span></div>
+          <div class="stat-item"><span class="s-label">Saison</span><span class="s-val" id="uiSeason" style="color:var(--accent); text-shadow:0 0 8px var(--accent-glow)">Sommer</span></div>
+        </div>
       </div>
-      <div class="stat-col flex-1">
+      <div class="stat-row-bars">
         <div class="bar-wrap">
           <div class="bar-header"><span class="s-label" style="color:#fff">Wasser</span><span class="s-label" id="uiWaterVal" style="color:#fff">100%</span></div>
           <div class="bar-bg"><div class="bar-fill water-color" id="barWater" style="width:100%"></div></div>
         </div>
-        <div class="bar-wrap mt">
+        <div class="bar-wrap">
           <div class="bar-header"><span class="s-label" style="color:#fff">Vitalität</span><span class="s-label" id="uiHpVal" style="color:#fff">100%</span></div>
           <div class="bar-bg"><div class="bar-fill hp-color" id="barHp" style="width:100%"></div></div>
         </div>
@@ -283,7 +287,7 @@
     <button class="close-btn" onclick="closeAllPanels()">✕</button>
   </div>
   <div id="collectionList"></div>
-  <button class="btn" style="width:100%; margin-top:15px; background:rgba(52, 211, 153, 0.15); color:var(--success); border-color:var(--success)" id="btnBuyTree">🌱 Neuer Setzling (100 💰)</button>
+  <button class="btn" style="width:100%; margin-top:15px; background:rgba(52, 211, 153, 0.15); color:var(--success); border-color:var(--success); font-size:13px; padding:12px;" id="btnBuyTree">🌱 Neuer Setzling (100 💰)</button>
 </div>
 
 <div class="overlay-sheet" id="panel_shop">
@@ -311,11 +315,11 @@
   </div>
   <div id="settingsGrid">
     <label class="s-label">Tempo (Sek/Tag)</label><input type="range" id="inpSecPerDay" min="1" max="120" value="60">
-    <label class="s-label mt" style="display:block">Wachstum Multiplikator</label><input type="range" id="inpGrowMult" min="0" max="20" step="0.5" value="1">
-    <label class="s-label mt" style="display:block">Blattdichte (Limit)</label><input type="range" id="inpLeafLimit" min="5" max="100" value="30">
-    <label class="s-label mt" style="display:block">Windstärke</label><input type="range" id="inpWind" min="0" max="3" step="0.1" value="1">
+    <label class="s-label" style="display:block; margin-top:10px;">Wachstum Multiplikator</label><input type="range" id="inpGrowMult" min="0" max="20" step="0.5" value="1">
+    <label class="s-label" style="display:block; margin-top:10px;">Blattdichte (Limit)</label><input type="range" id="inpLeafLimit" min="5" max="100" value="30">
+    <label class="s-label" style="display:block; margin-top:10px;">Windstärke</label><input type="range" id="inpWind" min="0" max="3" step="0.1" value="1">
   </div>
-  <br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239, 68, 68, 0.15); color:#ef4444; border-color:#ef4444; margin-top:15px;">Spielstand Löschen</button>
+  <br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239, 68, 68, 0.15); color:#ef4444; border-color:#ef4444; margin-top:15px; font-size:13px; padding:12px;">Spielstand Löschen</button>
 </div>
 
 <script>
@@ -490,7 +494,6 @@ function update(dt) {
 function draw() {
   const w=cv.width, h=cv.height, t=ENV.dayTime;
   
-  // Tieferer, saturierterer Himmel für besseren Glas-Kontrast
   const sky=[[5,10,25],[255,120,70],[80,160,230],[20,15,45]];
   let si = Math.floor(t * 4) % 4, ni = (si + 1) % 4, f = (t * 4) % 1;
   const mix=(a,b)=>Math.round(a+(b-a)*f);
@@ -518,15 +521,14 @@ function draw() {
   ctx.fillStyle="rgba(255,255,255,0.15)";
   ENV.clouds.forEach(c=>{ c.x+=c.v; if(c.x>w+200) c.x=-200; drawPuff(c.x,c.y,c.s); });
 
-  // Minimalistische Berge
   ctx.fillStyle="#04060b";
   ctx.beginPath(); ctx.moveTo(0,h);
   for(let x=0;x<=w;x+=20) ctx.lineTo(x, h*0.65 - Math.abs(Math.sin(x*0.002)*100 + Math.cos(x*0.008)*30));
   ctx.lineTo(w,h); ctx.fill();
 
   ctx.save();
-  // Kamera-Mitte auf 62% der Höhe gesetzt, damit der Baum über dem UI schwebt
-  const camBaseY = h * 0.62;
+  // Baum sitzt jetzt bei 55% der Bildschirmhöhe! Dadurch ist er höher und perfekt zentriert über dem UI.
+  const camBaseY = h * 0.55; 
   ctx.translate(w/2 + CAM.x, camBaseY + CAM.y);
   ctx.scale(CAM.zoom, CAM.zoom);
   drawWorld();
@@ -642,11 +644,11 @@ function setTool(t) {
   if(INPUT!=='none') { $('tool'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active'); }
 }
 
-// Angepasster Offset passend zum neuen Rendering (h * 0.62)
+// Mausberechnung angepasst an den neuen h*0.55 Offset
 function getMouseWorld(mx, my) { 
   return { 
       x: (mx - (cv.width/2 + CAM.x)) / CAM.zoom, 
-      y: (my - (cv.height*0.62 + CAM.y)) / CAM.zoom 
+      y: (my - (cv.height*0.55 + CAM.y)) / CAM.zoom 
   }; 
 }
 
@@ -766,8 +768,8 @@ window.updateListUI = function() {
      let item = ITEMS[k], owned = STATE.inventory.pots.includes(k), isActive = STATE.trees[STATE.activeIdx]?.pot === k;
      potsHtml += `<div class="list-item ${isActive?'selected':''}">
         <div class="list-info"><span class="list-title">${item.name}</span><span class="list-sub">Bonus: +${Math.round((item.bonus-1)*100)}%</span></div>
-        ${owned ? `<button class="btn" style="padding:8px 16px; font-size:12px" onclick="equipPot('${k}')">${isActive?'Aktiv':'Nutzen'}</button>` 
-                : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--gold); border-color:var(--gold)" onclick="buy('pot', '${k}', ${item.cost})">${item.cost} 💰</button>`}
+        ${owned ? `<button class="btn" style="padding:8px 16px; font-size:12px; flex-direction:row;" onclick="equipPot('${k}')">${isActive?'Aktiv':'Nutzen'}</button>` 
+                : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--gold); border-color:var(--gold); flex-direction:row;" onclick="buy('pot', '${k}', ${item.cost})">${item.cost} 💰</button>`}
      </div>`;
   });
   $('shopPotsList').innerHTML = potsHtml;
@@ -778,8 +780,8 @@ window.updateListUI = function() {
      let item = ITEMS[k], owned = STATE.inventory.soils.includes(k), isActive = STATE.trees[STATE.activeIdx]?.soil === k;
      soilsHtml += `<div class="list-item ${isActive?'selected':''}">
         <div class="list-info"><span class="list-title">${item.name}</span><span class="list-sub">Speed: +${Math.round((item.boost-1)*100)}%</span></div>
-        ${owned ? `<button class="btn" style="padding:8px 16px; font-size:12px" onclick="equipSoil('${k}')">${isActive?'Aktiv':'Nutzen'}</button>` 
-                : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--gold); border-color:var(--gold)" onclick="buy('soil', '${k}', ${item.cost})">${item.cost} 💰</button>`}
+        ${owned ? `<button class="btn" style="padding:8px 16px; font-size:12px; flex-direction:row;" onclick="equipSoil('${k}')">${isActive?'Aktiv':'Nutzen'}</button>` 
+                : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--gold); border-color:var(--gold); flex-direction:row;" onclick="buy('soil', '${k}', ${item.cost})">${item.cost} 💰</button>`}
      </div>`;
   });
   $('shopSoilsList').innerHTML = soilsHtml;
@@ -789,7 +791,7 @@ window.updateListUI = function() {
      qHtml += `<div class="list-item" style="opacity:${q.done?0.5:1}">
         <div class="list-info"><span class="list-title">${q.txt}</span></div>
         ${q.done ? `<span class="tag">Fertig</span>` 
-                 : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--success); border-color:var(--success)" onclick="claimQuest(${i})">${q.reward} 💰</button>`}
+                 : `<button class="btn" style="padding:8px 16px; font-size:12px; color:var(--success); border-color:var(--success); flex-direction:row;" onclick="claimQuest(${i})">${q.reward} 💰</button>`}
      </div>`;
   });
   $('questList').innerHTML = qHtml;
@@ -829,17 +831,17 @@ $('inpWind').oninput=e=>SETTINGS.windSpeed=parseFloat(e.target.value);
 $('btnBuyTree').onclick=()=>{ buy('tree', Object.keys(SPECIES)[Math.floor(Math.random()*Object.keys(SPECIES).length)], 100); }
 $('btnPhoto').onclick=()=>{ let a=document.createElement('a'); a.download="bonsai.png"; a.href=cv.toDataURL(); a.click(); };
 
-function saveGame() { localStorage.setItem("bonsai_v50", JSON.stringify({money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})) })); }
+function saveGame() { localStorage.setItem("bonsai_v51", JSON.stringify({money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})) })); }
 function loadGame() {
   try {
-    const d=JSON.parse(localStorage.getItem("bonsai_v50"));
+    const d=JSON.parse(localStorage.getItem("bonsai_v51"));
     if(d) {
        STATE.money=d.money ?? 500; STATE.inventory=d.inv || STATE.inventory; STATE.activeIdx=d.activeIdx || 0;
        STATE.trees=d.trees.map(td=>{ let t=new Tree(td.key, td.name); Object.assign(t, td); t.root = Branch.deserialize(td.root, null); return t; });
     }
   } catch(e) {}
 }
-window.hardReset = () => { localStorage.removeItem("bonsai_v50"); location.reload(); };
+window.hardReset = () => { localStorage.removeItem("bonsai_v51"); location.reload(); };
 setInterval(saveGame, 5000);
 
 init();
