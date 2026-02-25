@@ -7,76 +7,205 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v7.8 (Realtime Thumbnails)</title>
+<title>Bonsai Master v7.9 (Economy & Customization)</title>
 <style>
   :root {
-    --accent: #38bdf8; --accent-glow: rgba(56, 189, 248, 0.6);
-    --success: #34d399; --success-glow: rgba(52, 211, 153, 0.6);
-    --gold: #fbbf24; --gold-glow: rgba(251, 191, 36, 0.5);
-    --text: #ffffff; --text-muted: #94a3b8;
+    --accent: #38bdf8; 
+    --accent-glow: rgba(56, 189, 248, 0.6);
+    --success: #34d399; 
+    --success-glow: rgba(52, 211, 153, 0.6);
+    --gold: #fbbf24; 
+    --gold-glow: rgba(251, 191, 36, 0.5);
+    --text: #ffffff; 
+    --text-muted: #94a3b8;
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    --glass-bg: rgba(15, 20, 30, 0.45); --glass-border: rgba(255, 255, 255, 0.15);
+    
+    /* Liquid Glass Variables */
+    --glass-bg: rgba(15, 20, 30, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.15);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
+  
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin: 0; height: 100vh; height: 100dvh; background: #000; overflow: hidden; font-family: var(--font); color: var(--text); user-select: none; -webkit-user-select: none; }
-  .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: grab; overflow: hidden; touch-action: none; }
+  
+  body { 
+    margin: 0; 
+    height: 100vh; height: 100dvh; 
+    background: #000; 
+    overflow: hidden; 
+    font-family: var(--font); 
+    color: var(--text); 
+    user-select: none; 
+    -webkit-user-select: none;
+  }
+  
+  /* --- CANVAS FULLSCREEN --- */
+  .viewport { 
+    position: absolute; top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    z-index: 1; cursor: grab; overflow: hidden; touch-action: none; 
+  }
   .viewport:active { cursor: grabbing; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-  .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; }
-  .glass { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); pointer-events: auto; }
-  .bottom-area { padding: 0 15px calc(85px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
-  .stats-panel { border-radius: 20px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; flex-direction: column; gap: 12px; }
+
+  /* --- UI LAYER --- */
+  .ui-layer {
+    position: absolute; top: 0; left: 0; 
+    width: 100%; height: 100%;
+    z-index: 10; pointer-events: none; 
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    pointer-events: auto;
+  }
+
+  /* --- BOTTOM UI AREA --- */
+  .bottom-area {
+    padding: 0 15px calc(85px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  /* Stats Panel */
+  .stats-panel {
+    border-radius: 20px; padding: 15px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    display: flex; flex-direction: column; gap: 12px;
+  }
   .stat-row-top { display: flex; justify-content: space-between; align-items: flex-start; }
   .stat-group { display: flex; gap: 20px; }
   .stat-item { display: flex; align-items: baseline; gap: 8px; }
   .s-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
   .s-val { font-size: 14px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+  
   .stat-row-bars { display: flex; gap: 15px; }
   .bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 6px; }
   .bar-header { display: flex; justify-content: space-between; align-items: flex-end; }
-  .bar-bg { width: 100%; height: 6px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,0.4); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }
+  .bar-bg { 
+    width: 100%; height: 6px; border-radius: 4px; overflow: hidden;
+    background: rgba(0,0,0,0.4); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); 
+  }
   .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border-radius: 4px; }
   .water-color { background: linear-gradient(90deg, #0ea5e9, #38bdf8); box-shadow: 0 0 10px var(--accent-glow); }
   .hp-color { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px var(--success-glow); }
-  .tools-panel { border-radius: 20px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.2); }
+
+  /* Tools Container */
+  .tools-panel {
+    border-radius: 20px; padding: 15px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+  }
   .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text); padding: 12px 4px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); }
+  
+  .btn {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
+    padding: 12px 4px; border-radius: 14px; font-weight: 600; cursor: pointer;
+    font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+  }
   .btn svg { width: 20px; height: 20px; opacity: 0.7; transition: all 0.3s; }
   .btn:active { transform: scale(0.94); }
-  .btn.active { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); }
+  .btn.active { 
+    background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; 
+    box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); 
+  }
   .btn.active svg { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
-  .bottom-dock { position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 450px; border-radius: 25px; display: flex; justify-content: space-around; align-items: center; padding: 10px; border-top: 1px solid rgba(255,255,255,0.3); }
-  .nav-item { background: transparent; border: none; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600; }
+
+  /* --- FLOATING DOCK --- */
+  .bottom-dock {
+    position: absolute; bottom: env(safe-area-inset-bottom, 15px); left: 50%; transform: translateX(-50%);
+    width: calc(100% - 30px); max-width: 450px; border-radius: 25px;
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 10px; border-top: 1px solid rgba(255,255,255,0.3);
+  }
+  .nav-item {
+    background: transparent; border: none; color: rgba(255,255,255,0.5);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600;
+  }
   .nav-item svg { width: 22px; height: 22px; transition: all 0.3s; }
   .nav-item.open { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
   .nav-item.open svg { transform: translateY(-3px) scale(1.1); stroke: var(--accent); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
-  .overlay-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+
+  /* --- OVERLAYS --- */
+  .overlay-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s;
+  }
   .overlay-bg.open { opacity: 1; pointer-events: auto; }
-  .overlay-sheet { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh; height: 85vh; background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2); padding: 30px 20px calc(30px + env(safe-area-inset-bottom)); z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1); overflow-y: auto; pointer-events: auto; }
+
+  .overlay-sheet {
+    position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh; height: 85vh;
+    background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2);
+    padding: 30px 20px calc(30px + env(safe-area-inset-bottom));
+    z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow-y: auto; pointer-events: auto;
+  }
   .overlay-sheet.open { transform: translateY(0); }
+
   .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
   .sheet-header h2 { margin: 0; font-size: 20px; letter-spacing: 1px; font-weight: 700; }
-  .close-btn { background: rgba(255,255,255,0.1); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s; }
+  .close-btn { 
+    background: rgba(255,255,255,0.1); border: none; color: var(--text); 
+    width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;
+  }
   .close-btn:active { background: rgba(255,255,255,0.2); }
-  .list-item { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; transition: 0.2s; }
+
+  /* Listen Design */
+  .list-item { 
+    display: flex; align-items: center; gap: 15px; 
+    background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 20px; 
+    border: 1px solid rgba(255,255,255,0.05); position: relative; transition: 0.2s;
+  }
   .list-item.active-item { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
-  .tree-preview { width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); }
+  .tree-preview { 
+    width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); 
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.1); font-size: 24px; flex-shrink: 0;
+  }
   .tree-preview img { width: 100%; height: 100%; object-fit: contain; }
-  .list-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-  .list-title { font-size: 15px; font-weight: 700; }
+  
+  .list-content { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+  .list-title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .list-sub { font-size: 12px; color: var(--text-muted); }
-  .action-btn { padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; background: rgba(255,255,255,0.1); color: var(--text); transition: 0.2s; }
+  
+  .action-btn {
+    padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.1); color: var(--text); transition: 0.2s;
+  }
   .action-btn.buy { background: rgba(251, 191, 36, 0.2); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); }
+  .action-btn.sell { background: rgba(248, 113, 113, 0.15); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.4); }
   .action-btn:active { transform: scale(0.95); }
-  .quest-btn { padding: 10px 16px; border-radius: 14px; border: none; font-weight: 700; font-size: 12px; background: rgba(255,255,255,0.1); color: var(--text-muted); transition: 0.3s; }
-  .quest-btn.ready { background: var(--success); color: #000; box-shadow: 0 0 15px var(--success-glow); animation: pulse 1.5s infinite; cursor: pointer; }
+
+  .quest-btn { 
+    padding: 10px 16px; border-radius: 14px; border: none; font-weight: 700; font-size: 12px;
+    background: rgba(255,255,255,0.1); color: var(--text-muted); transition: 0.3s;
+  }
+  .quest-btn.ready { 
+    background: var(--success); color: #000; box-shadow: 0 0 15px var(--success-glow);
+    animation: pulse 1.5s infinite; cursor: pointer;
+  }
   @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
   .set-row { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
   .set-header { display: flex; justify-content: space-between; align-items: baseline; }
   input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
-  .toast { position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%); background: rgba(20, 25, 35, 0.9); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); padding: 14px 28px; border-radius: 20px; pointer-events: none; opacity: 0; transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); font-weight: 700; font-size: 14px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+  .toast { 
+    position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%);
+    background: rgba(20, 25, 35, 0.9); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5);
+    padding: 14px 28px; border-radius: 20px; pointer-events: none; opacity: 0; 
+    transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); 
+    font-weight: 700; font-size: 14px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
   .toast.show { opacity: 1; transform: translate(-50%, 15px); }
+
 </style>
 </head>
 <body>
@@ -87,6 +216,7 @@
 </div>
 
 <div class="ui-layer">
+  
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
@@ -95,7 +225,7 @@
           <div class="stat-item"><span class="s-label">Saison</span><span class="s-val" id="uiSeason" style="color:var(--accent); text-shadow:0 0 8px var(--accent-glow)">Sommer</span></div>
         </div>
         <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; margin-left: 10px;">
-          <span class="s-val" id="uiTreeName" style="font-size: 15px; font-weight: 700;">Baum</span>
+          <span class="s-val" id="uiTreeName" style="font-size: 15px; font-weight: 700; cursor: pointer;" onclick="renameActiveTree()" title="Klicken zum Umbenennen">Baum ✏️</span>
           <span class="s-label" id="uiSpeciesName" style="color: var(--accent); margin-top: 2px;">Spezies</span>
         </div>
       </div>
@@ -146,10 +276,49 @@
 </div>
 
 <div class="overlay-bg" id="overlayBg" onclick="closeAllPanels()"></div>
-<div class="overlay-sheet" id="panel_collection"><div class="sheet-header"><h2 style="color:var(--accent)">Baumschule</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div class="s-label" style="margin-bottom:10px;">Deine Bonsais</div><div id="collectionList"></div><div class="s-label" style="margin-top:25px; margin-bottom:10px;">Samen & Setzlinge kaufen</div><div id="speciesList"></div></div>
-<div class="overlay-sheet" id="panel_shop"><div class="sheet-header"><h2 style="color:var(--gold)">Bonsai Shop</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div id="shopMoneyDisplay" style="text-align:right; font-weight:700; color:var(--gold); margin-bottom:20px; font-size:16px;">Guthaben: 0 💰</div><div class="s-label" style="margin-bottom:10px;">Töpfe & Schalen</div><div id="shopPotsList"></div><div class="s-label" style="margin-top:25px; margin-bottom:10px;">Substrate</div><div id="shopSoilsList"></div></div>
-<div class="overlay-sheet" id="panel_quests"><div class="sheet-header"><h2 style="color:var(--success)">Deine Reise</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div class="s-label">Aktuelle Ziele</div><div id="questList" style="margin-top:10px"></div></div>
-<div class="overlay-sheet" id="panel_settings"><div class="sheet-header"><h2 style="color:var(--text-muted)">Einstellungen</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:25px; background:rgba(255,255,255,0.1); font-size:13px; padding:15px;">🔲 Vollbild umschalten</button><div id="settingsGrid"></div><br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239,68,68,0.15); color:#ef4444; border-color:#ef4444; margin-top:20px; font-size:13px; padding:15px;">Spielstand Löschen</button></div>
+
+<div class="overlay-sheet" id="panel_collection">
+  <div class="sheet-header">
+    <h2 style="color:var(--accent); text-shadow:0 0 10px var(--accent-glow)">Baumschule</h2>
+    <button class="close-btn" onclick="closeAllPanels()">✕</button>
+  </div>
+  <div class="s-label" style="margin-bottom: 10px;">Deine Bonsais</div>
+  <div id="collectionList"></div>
+  <div class="s-label" style="margin-top: 25px; margin-bottom: 10px;">Samen & Setzlinge kaufen</div>
+  <div id="speciesList"></div>
+</div>
+
+<div class="overlay-sheet" id="panel_shop">
+  <div class="sheet-header">
+    <h2 style="color:var(--gold); text-shadow:0 0 10px rgba(251, 191, 36, 0.5)">Bonsai Shop</h2>
+    <button class="close-btn" onclick="closeAllPanels()">✕</button>
+  </div>
+  <div id="shopMoneyDisplay" style="text-align:right; font-weight:700; color:var(--gold); margin-bottom:20px; font-size:16px;">Guthaben: 0 💰</div>
+  <div class="s-label" style="margin-bottom: 10px;">Töpfe & Schalen</div>
+  <div id="shopPotsList"></div>
+  <div class="s-label" style="margin-top:25px; margin-bottom: 10px;">Substrate</div>
+  <div id="shopSoilsList"></div>
+</div>
+
+<div class="overlay-sheet" id="panel_quests">
+  <div class="sheet-header">
+    <h2 style="color:var(--success); text-shadow:0 0 10px var(--success-glow)">Deine Reise</h2>
+    <button class="close-btn" onclick="closeAllPanels()">✕</button>
+  </div>
+  <div class="s-label">Aktuelle Ziele</div>
+  <div id="questList" style="margin-top:10px"></div>
+</div>
+
+<div class="overlay-sheet" id="panel_settings">
+  <div class="sheet-header">
+    <h2 style="color:var(--text-muted)">Einstellungen</h2>
+    <button class="close-btn" onclick="closeAllPanels()">✕</button>
+  </div>
+  <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:25px; background:rgba(255,255,255,0.1); font-size:13px; padding:15px; flex-direction:row;">🔲 Vollbild umschalten</button>
+  <div id="settingsGrid"></div>
+  <br>
+  <button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239,68,68,0.15); color:#ef4444; border-color:#ef4444; margin-top:20px; font-size:13px; padding:15px; flex-direction:row;">Spielstand Löschen</button>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -198,10 +367,10 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave78');
+  const saved = localStorage.getItem('bonsaiSave79');
   if(saved) { try { let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; STATE.stats=data.stats||{totalWaters:0,totalPrunes:0,totalDays:0,itemsBought:0}; STATE.quests=data.quests||[]; if(data.trees&&data.trees.length){ STATE.trees=data.trees.map(t=>Tree.deserialize(t)); } STATE.activeIdx=data.activeIdx||0; if(STATE.activeIdx>=STATE.trees.length) STATE.activeIdx=0; } catch(e){console.error(e);} }
 }
-function saveGame() { localStorage.setItem('bonsaiSave78', JSON.stringify({ money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) })); }
+function saveGame() { localStorage.setItem('bonsaiSave79', JSON.stringify({ money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) })); }
 
 function init() {
   cv.width=$('viewport').clientWidth||window.innerWidth; cv.height=$('viewport').clientHeight||window.innerHeight;
@@ -324,6 +493,7 @@ function drawWorld() {
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; const spec=SPECIES[t.key], potH=60;
   ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
   if(BEND_TARGET&&INPUT==='bend'){ ctx.beginPath(); ctx.moveTo(BEND_TARGET.x,BEND_TARGET.y); ctx.lineTo(MOUSE.worldX,MOUSE.worldY); ctx.strokeStyle="rgba(250,204,21,0.6)"; ctx.lineWidth=2; ctx.setLineDash([8,8]); ctx.stroke(); ctx.setLineDash([]); }
+
   ctx.lineCap="round";
   function render(b) {
     if(b.len<1)return; ctx.lineWidth=b.thick; ctx.strokeStyle=spec.bark[0];
@@ -341,12 +511,14 @@ function drawWorld() {
     b.children.forEach(render);
   }
   render(t.root);
+
   ENV.fallingParts.forEach(p => {
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
       if(p.type === 'branch') { ctx.strokeStyle = p.col; ctx.lineWidth = p.th; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-p.len/2, 0); ctx.lineTo(p.len/2, 0); ctx.stroke(); }
       else if (p.type === 'leaf') { if(p.leafType === 'needle') { ctx.strokeStyle = p.cols[0]; ctx.lineWidth = 1; for(let i=0; i<5; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * p.s * 3, -p.s * 2); ctx.stroke(); } } else { ctx.fillStyle = p.cols[0]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s, p.s * (p.leafType === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill(); ctx.fillStyle = p.cols[1]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s * 0.6, p.s * 0.15, 0, 0, 6.28); ctx.fill(); } }
       ctx.restore();
   });
+
   const pg=ctx.createLinearGradient(0,0,0,potH); pg.addColorStop(0,"#2a2a2e"); pg.addColorStop(1,"#09090b"); if(t.pot==='pot_clay'){pg.addColorStop(0,"#785346");pg.addColorStop(1,"#2d1d18");} else if(t.pot==='pot_zen'){pg.addColorStop(0,"#1e293b");pg.addColorStop(1,"#020617");}
   ctx.fillStyle=pg; ctx.beginPath(); ctx.moveTo(-85,0); ctx.quadraticCurveTo(-85,potH,-55,potH); ctx.lineTo(55,potH); ctx.quadraticCurveTo(85,potH,85,0); ctx.fill();
   ctx.fillStyle="rgba(56,189,248,0.8)"; ENV.particles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,4,0,6.28); ctx.fill(); });
@@ -355,7 +527,29 @@ function drawWorld() {
 function notify(m){ const t=$('toast'); t.innerText=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
 function openPanel(id){ $('overlayBg').classList.add('open'); $(id).classList.add('open'); updateListUI(); }
 window.closeAllPanels=()=>{ $('overlayBg').classList.remove('open'); document.querySelectorAll('.overlay-sheet').forEach(s=>s.classList.remove('open')); }
-function updateRealtimeUI(){ const t=STATE.trees[STATE.activeIdx]; if(!t)return; $('uiTreeName').innerText=t.name; $('uiSpeciesName').innerText=SPECIES[t.key].name; $('uiDay').innerText=`Tag ${Math.floor(t.days)}`; $('uiSeason').innerText=["Frühling","Sommer","Herbst","Winter"][Math.floor(t.days/30)%4]; $('uiWaterVal').innerText=Math.round(t.water)+'%'; $('barWater').style.width=t.water+'%'; $('uiHpVal').innerText=Math.round(t.hp)+'%'; $('barHp').style.width=t.hp+'%'; }
+
+// Baum umbenennen Funktion
+window.renameActiveTree = function() {
+  const tree = STATE.trees[STATE.activeIdx];
+  if(!tree) return;
+  const newName = prompt("Gib deinem Bonsai einen neuen Namen:", tree.name);
+  if(newName && newName.trim() !== "") {
+    tree.name = newName.trim();
+    updateRealtimeUI();
+    updateListUI();
+    notify("Baum erfolgreich umbenannt!");
+  }
+}
+
+function updateRealtimeUI(){ 
+  const t=STATE.trees[STATE.activeIdx]; if(!t)return; 
+  $('uiTreeName').innerText = t.name + " ✏️"; 
+  $('uiSpeciesName').innerText=SPECIES[t.key].name; 
+  $('uiDay').innerText=`Tag ${Math.floor(t.days)}`; 
+  $('uiSeason').innerText=["Frühling","Sommer","Herbst","Winter"][Math.floor(t.days/30)%4]; 
+  $('uiWaterVal').innerText=Math.round(t.water)+'%'; $('barWater').style.width=t.water+'%'; 
+  $('uiHpVal').innerText=Math.round(t.hp)+'%'; $('barHp').style.width=t.hp+'%'; 
+}
 
 function getPreview(key) {
   if(previewCache[key]) return previewCache[key];
@@ -396,8 +590,57 @@ function getRealtimeThumbnail(tree) {
     return thumbCanvas.toDataURL();
 }
 
+// Baum verkaufen Funktion
+window.sellTree = function(idx) {
+  if(STATE.trees.length <= 1) return notify("Du darfst deinen letzten Baum nicht verkaufen!");
+  const t = STATE.trees[idx];
+  if(t.days < 10) return notify("Dieser Baum ist noch zu jung (Wächst bis Tag 10).");
+  
+  const baseCost = SPECIES[t.key].cost || 100;
+  const price = Math.floor(baseCost * 0.8 + t.days * 5); // 80% Basiswert + Bonus für jeden gelebten Tag
+  
+  if(confirm(`Möchtest du '${t.name}' wirklich für ${price} 💰 verkaufen?`)) {
+    STATE.money += price;
+    STATE.trees.splice(idx, 1);
+    // Active Index korrigieren
+    if(STATE.activeIdx >= STATE.trees.length) STATE.activeIdx = STATE.trees.length - 1;
+    else if(STATE.activeIdx > idx) STATE.activeIdx--;
+    
+    notify(`Baum verkauft für ${price} 💰!`);
+    switchTree(STATE.activeIdx);
+  }
+}
+
 function updateListUI(){
-  let cH=''; STATE.trees.forEach((t,i)=>{ let a=(i===STATE.activeIdx)?'active-item':'', b=(i===STATE.activeIdx)?`<span style="font-size:12px;color:var(--accent)">Aktiv</span>`:`<button class="action-btn" onclick="switchTree(${i})">Auswählen</button>`; cH+=`<div class="list-item ${a}"><div class="tree-preview"><img src="${getRealtimeThumbnail(t)}"></div><div class="list-content"><div class="list-title">${t.name}</div><div class="list-sub">Tag ${Math.floor(t.days)} • ${Math.round(t.hp)}% HP</div></div>${b}</div>`; }); $('collectionList').innerHTML=cH;
+  let cH=''; 
+  STATE.trees.forEach((t,i)=>{ 
+    let a = (i===STATE.activeIdx) ? 'active-item' : ''; 
+    let b = (i===STATE.activeIdx) ? `<span style="font-size:12px;color:var(--accent)">Aktiv</span>` : `<button class="action-btn" onclick="switchTree(${i})">Auswählen</button>`; 
+    
+    // Verkaufs-Button Logik
+    let sellBtn = '';
+    if(t.days >= 10) {
+      let price = Math.floor((SPECIES[t.key].cost || 100) * 0.8 + t.days * 5);
+      sellBtn = `<button class="action-btn sell" style="padding:6px 10px; font-size:10px;" onclick="sellTree(${i})">Verkaufen (${price} 💰)</button>`;
+    } else {
+      sellBtn = `<span style="font-size:9px;color:var(--text-muted)">Wächst (Tag ${Math.floor(t.days)}/10)</span>`;
+    }
+
+    cH+=`
+      <div class="list-item ${a}" style="flex-wrap: wrap;">
+        <div class="tree-preview"><img src="${getRealtimeThumbnail(t)}"></div>
+        <div class="list-content">
+            <div class="list-title">${t.name}</div>
+            <div class="list-sub">Tag ${Math.floor(t.days)} • ${Math.round(t.hp)}% HP</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; align-items: flex-end;">
+            ${b}
+            ${sellBtn}
+        </div>
+      </div>`; 
+  }); 
+  $('collectionList').innerHTML=cH;
+  
   let sH=''; for(let k in SPECIES){ if(!STATE.inventory.species.includes(k)){ let s=SPECIES[k]; sH+=`<div class="list-item"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; } else { let s=SPECIES[k]; sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; }} $('speciesList').innerHTML=sH;
   $('shopMoneyDisplay').innerText=`Guthaben: ${STATE.money} 💰`; let pH='',sH2=''; const tr=STATE.trees[STATE.activeIdx]; for(let k in ITEMS){ let it=ITEMS[k], own=STATE.inventory[it.type+'s'].includes(k), eq=(tr&&tr[it.type]===k), bH=''; if(!own)bH=`<button class="action-btn buy" onclick="buyItem('${k}')">${it.cost} 💰</button>`; else if(!eq)bH=`<button class="action-btn" onclick="equipItem('${k}')">Nutzen</button>`; else bH=`<span style="font-size:12px;color:var(--success)">Aktiv</span>`; let c=`<div class="list-item ${eq?'active-item':''}"><div class="list-content"><div class="list-title">${it.name}</div><div class="list-sub">${it.bonus?'Wachstum +'+Math.round((it.bonus-1)*100)+'%':'Feuchtigkeit +'+Math.round((it.boost-1)*100)+'%'}</div></div>${bH}</div>`; if(it.type==='pot')pH+=c;else sH2+=c; } $('shopPotsList').innerHTML=pH; $('shopSoilsList').innerHTML=sH2;
   let qH=''; STATE.quests.forEach((q,i)=>{ let bc=(q.done&&!q.coll)?'quest-btn ready':'quest-btn', bt=q.coll?'Erledigt':(q.done?`Abholen`:`${Math.floor(q.cur)}/${q.goal}`); qH+=`<div class="list-item"><div class="list-content"><div class="list-title">${q.txt}</div><div class="list-sub">Belohnung: ${q.rew} 💰</div></div><button class="${bc}" onclick="claimQuest(${i})" ${q.coll||(!q.done)?'disabled':''}>${bt}</button></div>`; }); $('questList').innerHTML=qH;
@@ -421,7 +664,7 @@ function bindSettingsUI(){
   let h=''; binds.forEach(b=>{ h+=`<div class="set-row"><div class="set-header"><span class="s-label">${labels[b.key]||b.key}</span><span class="s-val" id="v_${b.id}">${SETTINGS[b.key]}</span></div><input type="range" id="${b.id}" min="${b.min}" max="${b.max}" step="${b.step}" value="${SETTINGS[b.key]}"></div>`; }); $('settingsGrid').innerHTML=h; binds.forEach(b=>{ let el=$(b.id); if(el)el.oninput=e=>{ let v=parseFloat(e.target.value); SETTINGS[b.key]=v; $(`v_${b.id}`).innerText=v; }; });
 }
 window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>{console.log(e);});}else{if(document.exitFullscreen){document.exitFullscreen();}} };
-window.hardReset=()=>{ if(confirm("ALLES löschen und neu starten?")){ localStorage.removeItem('bonsaiSave78'); location.reload(); }};
+window.hardReset=()=>{ if(confirm("ALLES löschen und neu starten?")){ localStorage.removeItem('bonsaiSave79'); location.reload(); }};
 init();
 </script>
 </body>
