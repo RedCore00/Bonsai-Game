@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v11.2 (Perfect Bending)</title>
+<title>Bonsai Master v11.5 (Pot Collision)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -346,7 +346,7 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave112');
+  const saved = localStorage.getItem('bonsaiSave115');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -358,7 +358,7 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave112', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave115', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
@@ -501,11 +501,8 @@ function setupInteractions() {
     }
     else if(MOUSE.down && INPUT==='bend' && BEND_TARGET) { 
       let oldAngle = BEND_TARGET.targetAngle;
-      
-      // FIX FÜR DEN SCHNECKEN-BUG
       let rawNewAngle = Math.atan2(MOUSE.worldY-BEND_TARGET.y, MOUSE.worldX-BEND_TARGET.x); 
       let angleDiff = rawNewAngle - oldAngle;
-      // Normalisiere den Winkelunterschied auf -PI bis PI (kürzester Weg)
       angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
 
       BEND_TARGET.targetAngle += angleDiff; 
@@ -610,11 +607,21 @@ function update(dt) {
       if(!p.onGround) {
           p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
           
-          const groundYAtX = 55 + Math.sin(p.x * 0.01) * 15 + Math.cos(p.x * 0.005) * 10;
+          let groundYAtX = 55 + Math.sin(p.x * 0.01) * 15 + Math.cos(p.x * 0.005) * 10;
+          
+          // NEU: Topf-Kollision! Wenn x im Topf-Bereich ist, lande auf der Blumenerde (ca. y=0)
+          if(p.x > -80 && p.x < 80) {
+             groundYAtX = -2 + (Math.random() * 4); // Boden des Topfes (Erde)
+          }
+
           if(p.y > groundYAtX) {
              p.y = groundYAtX; 
              p.onGround = true; 
              p.a = Math.random()*6.28;
+             // Verhindert weiteres seitliches Rutschen
+             p.vx = 0;
+             p.vy = 0;
+             p.vr = 0;
           }
       } else {
           p.decay -= dt;
@@ -632,7 +639,6 @@ function update(dt) {
         finalTargetAngle += windOscillation * windIntensity;
     }
     
-    // FIX FÜR DEN SCHNECKEN-BUG AUCH HIER (Interpolation)
     let diff = finalTargetAngle - b.angle;
     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
     b.angle += diff * (2.5 * dt);
@@ -758,6 +764,8 @@ function drawWorld() {
     ctx.shadowBlur = 0;
   }
 
+  // WICHTIG: Die Blätter werden HIER gezeichnet. Da dies NACH der Erde (oben) aber VOR der Schalen-Vorderseite passiert, 
+  // liegen sie perfekt "im" Topf auf der Erde, wenn sie dort landen!
   ENV.fallingParts.forEach(p => {
       ctx.save();
       if(p.onGround) ctx.globalAlpha = Math.min(1, p.decay / 2);
@@ -934,7 +942,7 @@ window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentE
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave112'); 
+    localStorage.removeItem('bonsaiSave115'); 
     location.reload(); 
   }
 };
