@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v11.7 (Beautiful Background)</title>
+<title>Bonsai Master v11.8 (Static Pebbles)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -317,7 +317,7 @@ const ITEMS = {
 
 let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[] };
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[], pebbles: [] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
@@ -346,7 +346,7 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave117');
+  const saved = localStorage.getItem('bonsaiSave118');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -358,10 +358,24 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave117', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave118', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
+}
+
+function generatePebbles() {
+    ENV.pebbles = [];
+    for(let i=-400; i<400; i+=12) {
+        if(Math.abs(i) < 85) continue; // Nicht unter dem Topf
+        ENV.pebbles.push({
+            x: i + (Math.random()-0.5)*10,
+            y: 58 + (Math.random()-0.5)*5,
+            rx: 3 + Math.random()*3,
+            ry: 2 + Math.random()*2,
+            rot: Math.random()*3.14
+        });
+    }
 }
 
 function init() {
@@ -369,6 +383,7 @@ function init() {
   loadGame(); bindSettingsUI(); setupInteractions();
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   if(!STATE.quests||STATE.quests.length===0) generateQuests();
+  generatePebbles(); // Kieselsteine einmalig generieren
   new ResizeObserver(e=>{for(let E of e){if(E.contentRect.width>0){cv.width=E.contentRect.width;cv.height=E.contentRect.height;}}}).observe($('viewport'));
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
@@ -607,9 +622,7 @@ function update(dt) {
       if(!p.onGround) {
           p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
           
-          // Boden ist jetzt gerade bei Y=55
           let groundYAtX = 55;
-          
           if(p.x > -80 && p.x < 80) {
              groundYAtX = -2 + (Math.random() * 4);
           }
@@ -673,12 +686,11 @@ function update(dt) {
 function draw() {
   const w=cv.width, h=cv.height, t=ENV.dayTime; if(isNaN(t)||w===0||h===0)return;
   
-  // Neuer, schönerer Himmel mit mehr Farben
   const skyCols = [
-      ["#0F172A", "#1E293B", "#334155"], // Nacht
-      ["#FF7E5F", "#FEB47B", "#FFD194"], // Sonnenaufgang
-      ["#4FA1F0", "#89CFF0", "#CBEFFF"], // Tag
-      ["#FA8BFF", "#2BD2FF", "#2BFF88"]  // Sonnenuntergang (Magic Hour)
+      ["#0F172A", "#1E293B", "#334155"], 
+      ["#FF7E5F", "#FEB47B", "#FFD194"], 
+      ["#4FA1F0", "#89CFF0", "#CBEFFF"], 
+      ["#FA8BFF", "#2BD2FF", "#2BFF88"]  
   ];
   
   let si=Math.floor(t*4)%4, ni=(si+1)%4, f=(t*4)%1; 
@@ -694,7 +706,6 @@ function draw() {
   grd.addColorStop(0, c1); grd.addColorStop(0.5, c2); grd.addColorStop(1, c3);
   ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
   
-  // Sterne funkeln lassen
   if(t<0.25||t>0.75){ 
       ctx.fillStyle="#fff"; 
       ENV.stars.forEach(s=>{ 
@@ -704,18 +715,15 @@ function draw() {
       ctx.globalAlpha=1; 
   }
   
-  // Sonne/Mond mit Glow
   const cx=w/2, cy=h*0.8+150, r=h*0.5+100, ang=(t-0.5)*Math.PI; 
   ctx.shadowBlur=100; ctx.shadowColor= t>0.25 && t<0.75 ? "#FDB813" : "#F0F8FF";
   ctx.fillStyle= t>0.25 && t<0.75 ? "#FDB813" : "#F0F8FF";
   ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r,cy+Math.cos(ang)*r, t>0.25 && t<0.75 ? 55 : 40,0,6.28); ctx.fill();
   ctx.shadowBlur=0;
   
-  // Schönere Wolken
   ctx.fillStyle="rgba(255,255,255,0.25)"; 
   ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+300)c.x=-300; drawCloud(c.x,c.y,c.s);});
   
-  // Hintergrund-Landschaft (Berge)
   const mountGrd = ctx.createLinearGradient(0, h*0.6, 0, h);
   mountGrd.addColorStop(0, "rgba(20, 30, 40, 0.5)");
   mountGrd.addColorStop(1, "rgba(10, 15, 20, 0.9)");
@@ -744,7 +752,6 @@ function drawCloud(x,y,s){
 function drawWorld() {
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; const spec=SPECIES[t.key], potH=60;
   
-  // Neuer, gerader und texturierter Boden
   const groundGrd = ctx.createLinearGradient(0, 55, 0, 5000);
   groundGrd.addColorStop(0, "#1c1917");
   groundGrd.addColorStop(0.02, "#292524");
@@ -757,14 +764,13 @@ function drawWorld() {
   ctx.lineTo(-5000, 5000);
   ctx.fill();
   
-  // Kleine Kieselsteine auf dem Boden
+  // Kleine Kieselsteine auf dem Boden (FIXED: Jetzt statisch)
   ctx.fillStyle = "rgba(60, 50, 40, 0.6)";
-  for(let i=-300; i<300; i+=15) {
-      if(Math.abs(i) < 90) continue; // Nicht unter dem Topf
+  ENV.pebbles.forEach(p => {
       ctx.beginPath();
-      ctx.ellipse(i + Math.sin(i)*10, 58 + Math.cos(i)*3, 4 + Math.random()*3, 2 + Math.random()*2, Math.random()*3.14, 0, 6.28);
+      ctx.ellipse(p.x, p.y, p.rx, p.ry, p.rot, 0, 6.28);
       ctx.fill();
-  }
+  });
 
   ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); 
   ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
@@ -991,7 +997,7 @@ window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentE
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave117'); 
+    localStorage.removeItem('bonsaiSave118'); 
     location.reload(); 
   }
 };
