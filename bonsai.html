@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
-<title>Bonsai Master v4.0 (Zen Edition)</title>
+<title>Bonsai Master v4.1 (Pro Aspect Ratio)</title>
 <style>
   :root {
     --bg-dark: #090a0f; 
@@ -377,12 +377,24 @@ let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0 };
 let INPUT="none", HOVER=null, BEND_TARGET=null, WATERING=false;
 
 function init() {
-  resize(); 
-  window.addEventListener('resize', resize);
   loadGame();
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   generateQuests();
-  CAM.x = cv.width/2; CAM.y = cv.height*0.8;
+  
+  // INITIALE GRÖSSE SETZEN
+  cv.width = $('viewport').clientWidth;
+  cv.height = $('viewport').clientHeight;
+  CAM.x = cv.width / 2;
+  CAM.y = cv.height * 0.8;
+  
+  // DER FIX: LIVE-ANPASSUNG BEI SAFARI-SCROLLEN
+  const ro = new ResizeObserver(entries => {
+    for(let e of entries) {
+      cv.width = e.contentRect.width;
+      cv.height = e.contentRect.height;
+    }
+  });
+  ro.observe($('viewport'));
   
   updateListUI();
   updateRealtimeUI();
@@ -807,7 +819,6 @@ function loadGame() {
 window.hardReset = () => { localStorage.removeItem("bonsai_v40"); location.reload(); };
 setInterval(saveGame, 5000);
 
-function resize() { cv.width=$('viewport').clientWidth; cv.height=$('viewport').clientHeight; }
 init();
 
 })();
