@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v12.5 (iOS UI Fix)</title>
+<title>Bonsai Master v13.1 (Precision Bending)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -22,7 +22,6 @@
     --text-muted: #94a3b8;
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
     
-    /* Liquid Glass Variables */
     --glass-bg: rgba(15, 20, 30, 0.75);
     --glass-border: rgba(255, 255, 255, 0.15);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
@@ -41,7 +40,6 @@
     -webkit-user-select: none;
   }
   
-  /* --- CANVAS FULLSCREEN --- */
   .viewport { 
     position: absolute; top: 0; left: 0; 
     width: 100%; height: 100%; 
@@ -50,7 +48,6 @@
   .viewport:active { cursor: grabbing; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
-  /* --- UI LAYER --- */
   .ui-layer {
     position: absolute; top: 0; left: 0; 
     width: 100%; height: 100%;
@@ -69,7 +66,6 @@
     pointer-events: auto;
   }
 
-  /* --- SMART BAR (FIXED FOR iOS OVERFLOW) --- */
   .smart-bar {
     border-radius: 22px;
     padding: 10px 15px;
@@ -77,12 +73,12 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    gap: 10px; /* Sicherer Abstand zwischen Text und Buttons */
+    gap: 10px; 
   }
   
   .smart-stats { 
     display: flex; flex-direction: column; gap: 6px; flex: 1; 
-    min-width: 0; /* Verhindert, dass langer Text das Div zu breit macht */
+    min-width: 0; 
   }
   
   .smart-Title-Row { 
@@ -113,14 +109,13 @@
   .smart-mini-bar { width: 40px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
   .smart-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
   
-  /* Werkzeuge geschützt vor Quetschen */
   .smart-tools { 
     display: flex; gap: 6px; 
-    flex-shrink: 0; /* Verhindert, dass die Buttons schrumpfen oder rausgedrückt werden */
+    flex-shrink: 0; 
   }
   
   .tool-btn-mini {
-    width: 34px; height: 34px; /* Minimal kleiner für perfekte iPhone Passform */
+    width: 34px; height: 34px; 
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
     border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer;
     transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -131,7 +126,6 @@
   .tool-btn-mini.active { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2); }
   .tool-btn-mini.active svg { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
 
-  /* --- FLOATING DOCK --- */
   .bottom-dock {
     width: 100%; max-width: 400px; margin: 0 auto;
     border-radius: 25px; display: flex; justify-content: space-around; align-items: center;
@@ -146,7 +140,6 @@
   .nav-item.open { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
   .nav-item.open svg { transform: translateY(-3px) scale(1.1); stroke: var(--accent); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
 
-  /* --- OVERLAYS --- */
   .overlay-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
   .overlay-bg.open { opacity: 1; pointer-events: auto; }
   .overlay-sheet {
@@ -273,8 +266,28 @@ class Branch {
     this.angle=a; this.targetAngle=a; this.len=0.1; this.maxLen=ml; this.thick=th; 
     this.children=[]; this.leaves=[]; this.cut=false; this.sprouted=false; this.grafted=false; this.windPhase=Math.random()*10; 
   }
-  serialize() { return { x:this.x, y:this.y, a:this.angle, ta:this.targetAngle, l:this.len, ml:this.maxLen, th:this.thick, d:this.depth, cut:this.cut, spr:this.sprouted, gr:this.grafted, leaves:this.leaves, c:this.children.map(c=>c.serialize()) }; }
-  static deserialize(d, p) { let b=new Branch(p,d.x,d.y,d.a,d.ml,d.th,d.d); b.len=d.l; b.targetAngle=d.ta; b.cut=d.cut; b.sprouted=d.spr; b.grafted=d.gr; b.leaves=d.leaves||[]; if(d.c) b.children=d.c.map(cd=>Branch.deserialize(cd,b)); return b; }
+  serialize() { 
+    const R = n => Math.round(n*100)/100;
+    return { 
+      a: R(this.angle), ta: R(this.targetAngle), l: R(this.len), ml: R(this.maxLen), th: R(this.thick), d: this.depth, 
+      cut: this.cut?1:0, spr: this.sprouted?1:0, gr: this.grafted?1:0, 
+      lv: this.leaves.map(l => [R(l.f), R(l.r), R(l.s), R(l.ms)]), 
+      c: this.children.map(c=>c.serialize()) 
+    }; 
+  }
+  static deserialize(d, p) { 
+    let b=new Branch(p,0,0,d.a!=null?d.a:d.angle,d.ml!=null?d.ml:d.maxLen,d.th!=null?d.th:d.thick,d.d!=null?d.d:d.depth); 
+    b.len=d.l!=null?d.l:d.len; 
+    b.targetAngle=d.ta!=null?d.ta:d.targetAngle; 
+    b.cut=!!(d.cut); b.sprouted=!!(d.spr||d.sprouted); b.grafted=!!(d.gr||d.grafted); 
+    b.leaves=(d.lv||d.leaves||[]).map(l => {
+      if(Array.isArray(l)) return {f:l[0], r:l[1], s:l[2], ms:l[3]};
+      return l;
+    }); 
+    let children = d.c || d.children;
+    if(children) b.children=children.map(cd=>Branch.deserialize(cd,b)); 
+    return b; 
+  }
 }
 
 class Tree {
@@ -288,10 +301,26 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave125');
-  if(saved) { 
+  let savedData = null;
+  let keysToRemove = [];
+  
+  for (let i = 0; i < localStorage.length; i++) {
+      let key = localStorage.key(i);
+      if (key && key.startsWith('bonsaiSave')) {
+          if (key === 'bonsaiSave131') {
+              savedData = localStorage.getItem(key);
+          } else {
+              if (!savedData) savedData = localStorage.getItem(key);
+              keysToRemove.push(key);
+          }
+      }
+  }
+  
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+
+  if(savedData) { 
     try { 
-      let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
+      let data=JSON.parse(savedData); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
       STATE.stats=data.stats||{totalWaters:0,totalPrunes:0,totalDays:0,itemsBought:0}; STATE.quests=data.quests||[]; 
       if(data.trees&&data.trees.length){ STATE.trees=data.trees.map(t=>Tree.deserialize(t)); } 
       STATE.activeIdx=data.activeIdx||0; if(STATE.activeIdx>=STATE.trees.length) STATE.activeIdx=0; 
@@ -300,10 +329,15 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave125', JSON.stringify({ 
-    money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
-    stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
-  })); 
+  try {
+    localStorage.setItem('bonsaiSave131', JSON.stringify({ 
+      money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
+      stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
+    })); 
+  } catch(e) {
+    console.error("Quota Exceeded:", e);
+    notify("Speicher voll! Bitte alte Bonsais verkaufen.");
+  }
 }
 
 function generatePebbles() {
@@ -359,6 +393,15 @@ function doSegmentsIntersect(p0, p1, p2, p3) {
     return (s >= 0 && s <= 1 && t >= 0 && t <= 1);
 }
 
+// NEU: Perfekte Mathematik für das Treffen von Ästen
+function distToSegmentSquared(p, v, w) {
+  let l2 = (v.x - w.x)**2 + (v.y - w.y)**2;
+  if (l2 === 0) return (p.x - v.x)**2 + (p.y - v.y)**2;
+  let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return (p.x - (v.x + t * (w.x - v.x)))**2 + (p.y - (v.y + t * (w.y - v.y)))**2;
+}
+
 function setupInteractions() {
   let lastWorldX = null, lastWorldY = null;
   let lastScreenX = null, lastScreenY = null;
@@ -373,12 +416,21 @@ function setupInteractions() {
     return {x,y}; 
   };
   
+  // FIX: Greifen jetzt auf der GESAMTEN Länge des Astes möglich!
   const findNearestBranch = (root, tx, ty, maxDist) => {
-    let nearest=null, minDist=maxDist;
+    let nearest=null, minDistSq = maxDist * maxDist;
+    let p = {x: tx, y: ty};
+    
+    // Y-Verschiebung des Topfes ausgleichen, da Äste relativ dazu gezeichnet werden
+    const potYOffset = 150 - 60; // groundY - potH
+    p.y -= potYOffset; 
+
     const search = b => {
-      let mx=b.x+(b.endX-b.x)/2, my=b.y+(b.endY-b.y)/2;
-      let dist=Math.min(Math.hypot(b.endX-tx, b.endY-ty), Math.hypot(mx-tx, my-ty));
-      if(dist<minDist){ minDist=dist; nearest=b; }
+      let v = {x: b.x, y: b.y};
+      let w = {x: b.endX, y: b.endY};
+      let distSq = distToSegmentSquared(p, v, w);
+      
+      if(distSq < minDistSq){ minDistSq = distSq; nearest = b; }
       b.children.forEach(search);
     };
     search(root); return nearest;
@@ -415,7 +467,13 @@ function setupInteractions() {
                 HOVER.children.push(new Branch(HOVER,0,0,HOVER.angle+dev,HOVER.maxLen*0.7,newThick,HOVER.depth+1)); 
                 notify("Neuer Trieb veredelt!"); 
             }
-          } else if(INPUT==='bend') { BEND_TARGET=HOVER; }
+          } else if(INPUT==='bend') { 
+              BEND_TARGET = HOVER; 
+              // FIX: Berechne den Offset-Winkel beim Greifen, damit es nicht schnappt!
+              const potYOffset = 150 - 60;
+              let initialMouseAngle = Math.atan2((MOUSE.worldY - potYOffset) - BEND_TARGET.y, MOUSE.worldX - BEND_TARGET.x);
+              BEND_TARGET.bendOffset = BEND_TARGET.targetAngle - initialMouseAngle;
+          }
         }
     }
   });
@@ -439,12 +497,14 @@ function setupInteractions() {
             let p0 = {x: lastWorldX, y: lastWorldY};
             let p1 = {x: MOUSE.worldX, y: MOUSE.worldY};
             let cutHappened = false;
+            const potYOffset = 150 - 60;
             
             function checkCut(b) {
                 if(b.cut) return;
                 if(b.parent) {
-                    let b0 = {x: b.x, y: b.y};
-                    let b1 = {x: b.endX, y: b.endY};
+                    // Koordinaten für den Schnitt anpassen
+                    let b0 = {x: b.x, y: b.y + potYOffset};
+                    let b1 = {x: b.endX, y: b.endY + potYOffset};
                     if(doSegmentsIntersect(p0, p1, b0, b1)) {
                         performCut(b, STATE.trees[STATE.activeIdx].key);
                         cutHappened = true;
@@ -458,14 +518,24 @@ function setupInteractions() {
     }
     else if(MOUSE.down && INPUT==='bend' && BEND_TARGET) { 
       let oldAngle = BEND_TARGET.targetAngle;
-      let rawNewAngle = Math.atan2(MOUSE.worldY-BEND_TARGET.y, MOUSE.worldX-BEND_TARGET.x); 
+      const potYOffset = 150 - 60;
+      
+      let currentMouseAngle = Math.atan2((MOUSE.worldY - potYOffset) - BEND_TARGET.y, MOUSE.worldX - BEND_TARGET.x); 
+      // Offset dazurechnen für weiches Biegen
+      let rawNewAngle = currentMouseAngle + (BEND_TARGET.bendOffset || 0);
+
       let angleDiff = rawNewAngle - oldAngle;
+      // Kürzester Weg
       angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
 
       BEND_TARGET.targetAngle += angleDiff; 
       
       function propagateBend(b, diff) {
-        b.children.forEach(c => { c.targetAngle += diff * 0.6; propagateBend(c, diff * 0.6); });
+        b.children.forEach(c => { 
+            // FIX: Faktor 1.0 sorgt dafür, dass sich Unter-Äste nicht "schneckenhaft" einrollen!
+            c.targetAngle += diff * 1.0; 
+            propagateBend(c, diff * 1.0); 
+        });
       }
       propagateBend(BEND_TARGET, angleDiff);
     } 
@@ -549,7 +619,8 @@ function update(dt) {
   }
   for(let i=ENV.particles.length-1;i>=0;i--) { 
       let p=ENV.particles[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; 
-      if(p.y>0&&p.y<70&&p.x>-90&&p.x<90){ tree.water=Math.min(100,tree.water+1.5); STATE.stats.totalWaters+=0.05; ENV.particles.splice(i,1); } 
+      if(p.y>85&&p.y<110&&p.x>-85&&p.x<85){ tree.water=Math.min(100,tree.water+1.5); STATE.stats.totalWaters+=0.05; ENV.particles.splice(i,1); } 
+      else if(p.y>=150) { ENV.particles.splice(i,1); }
       else if(p.life<=0) ENV.particles.splice(i,1); 
   }
 
@@ -566,9 +637,9 @@ function update(dt) {
           
           let groundYAtX = 150;
           if(p.x > -80 && p.x < 80) {
-             groundYAtX = -2 + (Math.random() * 4); // Im Topf
+             groundYAtX = 90 - 2 + (Math.random() * 4); 
           } else {
-             groundYAtX = 150 + (Math.random() * 5); // Auf dem neuen Boden
+             groundYAtX = 150 + (Math.random() * 5); 
           }
 
           if(p.y > groundYAtX) {
@@ -750,12 +821,10 @@ function drawWorld() {
     b.children.forEach(render);
   }
 
-  // ---------------- 3D POT RENDERING ----------------
   const potTopW = 85; const potBotW = 55; 
   const potTopY = groundY - potH;
   const rimPerspective = 15;
   
-  // Schatten unter dem Topf auf den neuen Boden
   ctx.fillStyle="rgba(0,0,0,0.5)"; 
   ctx.beginPath(); ctx.ellipse(0, groundY, 80, 18, 0, 0, 6.28); ctx.fill();
 
@@ -788,15 +857,12 @@ function drawWorld() {
   ctx.ellipse(0, potTopY, potTopW, rimPerspective, 0, 0, Math.PI*2);
   ctx.stroke();
 
-  // Baum im Topf rendern
   ctx.save();
   ctx.translate(0, potTopY); 
   render(t.root);
   
-  // Biege-Linie (angepasst an Topf-Verschiebung)
   if(BEND_TARGET&&INPUT==='bend'){ 
       ctx.beginPath(); ctx.moveTo(BEND_TARGET.x,BEND_TARGET.y); 
-      // MOUSE world coords are relative to ground, we need to offset by potTopY
       ctx.lineTo(MOUSE.worldX, MOUSE.worldY - potTopY); 
       ctx.strokeStyle="rgba(250,204,21,0.6)"; ctx.lineWidth=2; ctx.setLineDash([8,8]); ctx.stroke(); ctx.setLineDash([]); 
   }
@@ -856,7 +922,6 @@ window.cheatMoney = function() {
 function updateRealtimeUI(){ 
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; 
   
-  // FIX: Verhindert das "Herausschieben" durch saubere HTML Struktur mit overflow: hidden
   $('uiTreeName').innerHTML = `
       <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.name}</span>
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" style="flex-shrink:0; margin-left:4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -1023,7 +1088,12 @@ window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentE
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave125'); 
+    let keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        if (key && key.startsWith('bonsaiSave')) keysToRemove.push(key);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
     location.reload(); 
   }
 };
