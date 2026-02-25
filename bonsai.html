@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v11.5 (Pot Collision)</title>
+<title>Bonsai Master v11.7 (Beautiful Background)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -317,7 +317,7 @@ const ITEMS = {
 
 let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[] };
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
@@ -346,7 +346,7 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave115');
+  const saved = localStorage.getItem('bonsaiSave117');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -358,7 +358,7 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave115', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave117', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
@@ -585,7 +585,7 @@ function update(dt) {
   
   const growth=(tree.water>10?1:0.1)*spec.growth*soil.boost*pot.bonus*SETTINGS.growMult;
   
-  if(ENV.clouds.length<5&&Math.random()<0.01) ENV.clouds.push({x:-200,y:Math.random()*300,s:1+Math.random(),v:0.2+Math.random()*0.3});
+  if(ENV.clouds.length<8&&Math.random()<0.02) ENV.clouds.push({x:-300,y:50+Math.random()*200,s:0.8+Math.random()*1.2,v:0.1+Math.random()*0.2});
 
   if(INPUT==='water'&&MOUSE.down) {
       for(let i=0;i<3;i++) ENV.particles.push({x:MOUSE.worldX+(Math.random()-0.5)*30, y:Math.min(MOUSE.worldY,-50)+(Math.random()-0.5)*10, vx:(Math.random()-0.5)*15, vy:120+Math.random()*80, life:2.0});
@@ -607,21 +607,18 @@ function update(dt) {
       if(!p.onGround) {
           p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
           
-          let groundYAtX = 55 + Math.sin(p.x * 0.01) * 15 + Math.cos(p.x * 0.005) * 10;
+          // Boden ist jetzt gerade bei Y=55
+          let groundYAtX = 55;
           
-          // NEU: Topf-Kollision! Wenn x im Topf-Bereich ist, lande auf der Blumenerde (ca. y=0)
           if(p.x > -80 && p.x < 80) {
-             groundYAtX = -2 + (Math.random() * 4); // Boden des Topfes (Erde)
+             groundYAtX = -2 + (Math.random() * 4);
           }
 
           if(p.y > groundYAtX) {
              p.y = groundYAtX; 
              p.onGround = true; 
              p.a = Math.random()*6.28;
-             // Verhindert weiteres seitliches Rutschen
-             p.vx = 0;
-             p.vy = 0;
-             p.vr = 0;
+             p.vx = 0; p.vy = 0; p.vr = 0;
           }
       } else {
           p.decay -= dt;
@@ -676,23 +673,57 @@ function update(dt) {
 function draw() {
   const w=cv.width, h=cv.height, t=ENV.dayTime; if(isNaN(t)||w===0||h===0)return;
   
-  const sky=[[5,10,25],[255,120,70],[80,160,230],[20,15,45]]; 
-  let si=Math.floor(t*4)%4, ni=(si+1)%4, f=(t*4)%1; 
-  const mix=(a,b)=>Math.round(a+(b-a)*f); 
-  const col=`rgb(${mix(sky[si][0],sky[ni][0])},${mix(sky[si][1],sky[ni][1])},${mix(sky[si][2],sky[ni][2])})`;
+  // Neuer, schönerer Himmel mit mehr Farben
+  const skyCols = [
+      ["#0F172A", "#1E293B", "#334155"], // Nacht
+      ["#FF7E5F", "#FEB47B", "#FFD194"], // Sonnenaufgang
+      ["#4FA1F0", "#89CFF0", "#CBEFFF"], // Tag
+      ["#FA8BFF", "#2BD2FF", "#2BFF88"]  // Sonnenuntergang (Magic Hour)
+  ];
   
+  let si=Math.floor(t*4)%4, ni=(si+1)%4, f=(t*4)%1; 
+  const hexToRgb = hex => hex.match(/[a-f0-9]{2}/gi).map(v => parseInt(v, 16));
+  const mix = (c1, c2) => c1.map((v, i) => Math.round(v + (c2[i] - v) * f));
+  const rgbToStr = c => `rgb(${c.join(',')})`;
+  
+  const c1 = rgbToStr(mix(hexToRgb(skyCols[si][0]), hexToRgb(skyCols[ni][0])));
+  const c2 = rgbToStr(mix(hexToRgb(skyCols[si][1]), hexToRgb(skyCols[ni][1])));
+  const c3 = rgbToStr(mix(hexToRgb(skyCols[si][2]), hexToRgb(skyCols[ni][2])));
+
   const grd=ctx.createLinearGradient(0,0,0,h); 
-  grd.addColorStop(0,col); grd.addColorStop(1,si===0||si===3?"#020617":"#e2e8f0"); 
+  grd.addColorStop(0, c1); grd.addColorStop(0.5, c2); grd.addColorStop(1, c3);
   ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
   
-  if(t<0.25||t>0.75){ ctx.fillStyle="#fff"; ENV.stars.forEach(s=>{ ctx.globalAlpha=(t<0.25?1-t*4:(t-0.75)*4)*Math.random(); ctx.beginPath(); ctx.arc(s.x*w,s.y*h*0.6,s.s,0,6.28); ctx.fill(); }); ctx.globalAlpha=1; }
+  // Sterne funkeln lassen
+  if(t<0.25||t>0.75){ 
+      ctx.fillStyle="#fff"; 
+      ENV.stars.forEach(s=>{ 
+          ctx.globalAlpha=(t<0.25?1-t*4:(t-0.75)*4)*Math.random()*(0.5+Math.sin(Date.now()*0.005*s.s)*0.5); 
+          ctx.beginPath(); ctx.arc(s.x*w,s.y*h*0.7,s.s,0,6.28); ctx.fill(); 
+      }); 
+      ctx.globalAlpha=1; 
+  }
   
+  // Sonne/Mond mit Glow
   const cx=w/2, cy=h*0.8+150, r=h*0.5+100, ang=(t-0.5)*Math.PI; 
-  ctx.shadowBlur=50; ctx.shadowColor="gold"; ctx.fillStyle="#fbbf24"; ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r,cy+Math.cos(ang)*r,45,0,6.28); ctx.fill();
-  ctx.shadowBlur=30; ctx.shadowColor="#fff"; ctx.fillStyle="#f8fafc"; ctx.beginPath(); ctx.arc(cx+Math.sin(ang+Math.PI)*r,cy+Math.cos(ang+Math.PI)*r,35,0,6.28); ctx.fill(); ctx.shadowBlur=0;
+  ctx.shadowBlur=100; ctx.shadowColor= t>0.25 && t<0.75 ? "#FDB813" : "#F0F8FF";
+  ctx.fillStyle= t>0.25 && t<0.75 ? "#FDB813" : "#F0F8FF";
+  ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r,cy+Math.cos(ang)*r, t>0.25 && t<0.75 ? 55 : 40,0,6.28); ctx.fill();
+  ctx.shadowBlur=0;
   
-  ctx.fillStyle="rgba(255,255,255,0.15)"; ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+200)c.x=-200; drawPuff(c.x,c.y,c.s);});
+  // Schönere Wolken
+  ctx.fillStyle="rgba(255,255,255,0.25)"; 
+  ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+300)c.x=-300; drawCloud(c.x,c.y,c.s);});
   
+  // Hintergrund-Landschaft (Berge)
+  const mountGrd = ctx.createLinearGradient(0, h*0.6, 0, h);
+  mountGrd.addColorStop(0, "rgba(20, 30, 40, 0.5)");
+  mountGrd.addColorStop(1, "rgba(10, 15, 20, 0.9)");
+  ctx.fillStyle = mountGrd;
+  ctx.beginPath(); ctx.moveTo(0, h);
+  for(let i=0; i<=w; i+=50) ctx.lineTo(i, h*0.75 - Math.sin(i*0.01)*30 - Math.cos(i*0.025)*20);
+  ctx.lineTo(w, h); ctx.fill();
+
   ctx.save(); 
   const camBaseY = h * 0.55; 
   ctx.translate(w/2+CAM.x, camBaseY+CAM.y); ctx.scale(CAM.zoom,CAM.zoom); 
@@ -700,20 +731,40 @@ function draw() {
   ctx.restore();
 }
 
-function drawPuff(x,y,s){ ctx.beginPath(); ctx.arc(x,y,40*s,0,6.28); ctx.arc(x+35*s,y-15*s,45*s,0,6.28); ctx.arc(x+70*s,y+5*s,35*s,0,6.28); ctx.fill(); }
+function drawCloud(x,y,s){
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.bezierCurveTo(x-40*s, y+20*s, x-40*s, y+70*s, x+60*s, y+70*s);
+    ctx.bezierCurveTo(x+160*s, y+70*s, x+160*s, y+40*s, x+120*s, y+20*s);
+    ctx.bezierCurveTo(x+160*s, y-30*s, x+110*s, y-50*s, x+80*s, y-30*s);
+    ctx.bezierCurveTo(x+50*s, y-60*s, x, y-40*s, x, y);
+    ctx.fill();
+}
 
 function drawWorld() {
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; const spec=SPECIES[t.key], potH=60;
   
-  ctx.fillStyle = "#04060b";
+  // Neuer, gerader und texturierter Boden
+  const groundGrd = ctx.createLinearGradient(0, 55, 0, 5000);
+  groundGrd.addColorStop(0, "#1c1917");
+  groundGrd.addColorStop(0.02, "#292524");
+  groundGrd.addColorStop(1, "#0c0a09");
+  ctx.fillStyle = groundGrd;
   ctx.beginPath();
   ctx.moveTo(-5000, 55);
-  for(let px = -5000; px <= 5000; px += 100) {
-      ctx.lineTo(px, 55 + Math.sin(px * 0.01) * 15 + Math.cos(px * 0.005) * 10);
-  }
+  ctx.lineTo(5000, 55);
   ctx.lineTo(5000, 5000);
   ctx.lineTo(-5000, 5000);
   ctx.fill();
+  
+  // Kleine Kieselsteine auf dem Boden
+  ctx.fillStyle = "rgba(60, 50, 40, 0.6)";
+  for(let i=-300; i<300; i+=15) {
+      if(Math.abs(i) < 90) continue; // Nicht unter dem Topf
+      ctx.beginPath();
+      ctx.ellipse(i + Math.sin(i)*10, 58 + Math.cos(i)*3, 4 + Math.random()*3, 2 + Math.random()*2, Math.random()*3.14, 0, 6.28);
+      ctx.fill();
+  }
 
   ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); 
   ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
@@ -764,8 +815,6 @@ function drawWorld() {
     ctx.shadowBlur = 0;
   }
 
-  // WICHTIG: Die Blätter werden HIER gezeichnet. Da dies NACH der Erde (oben) aber VOR der Schalen-Vorderseite passiert, 
-  // liegen sie perfekt "im" Topf auf der Erde, wenn sie dort landen!
   ENV.fallingParts.forEach(p => {
       ctx.save();
       if(p.onGround) ctx.globalAlpha = Math.min(1, p.decay / 2);
@@ -942,7 +991,7 @@ window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentE
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave115'); 
+    localStorage.removeItem('bonsaiSave117'); 
     location.reload(); 
   }
 };
