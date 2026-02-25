@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
-<title>Bonsai Master v4.1 (Pro Aspect Ratio)</title>
+<title>Bonsai Master v4.2 (Camera Fix)</title>
 <style>
   :root {
     --bg-dark: #090a0f; 
@@ -371,6 +371,8 @@ class Tree {
 }
 
 let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[] };
+
+// CAM.x und CAM.y sind jetzt NUR noch der vom User gescrollte Offset!
 let CAM = { x:0, y:0, zoom:1.0 };
 
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0 };
@@ -381,13 +383,7 @@ function init() {
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   generateQuests();
   
-  // INITIALE GRÖSSE SETZEN
-  cv.width = $('viewport').clientWidth;
-  cv.height = $('viewport').clientHeight;
-  CAM.x = cv.width / 2;
-  CAM.y = cv.height * 0.8;
-  
-  // DER FIX: LIVE-ANPASSUNG BEI SAFARI-SCROLLEN
+  // LIVE-ANPASSUNG BEI SAFARI-SCROLLEN
   const ro = new ResizeObserver(entries => {
     for(let e of entries) {
       cv.width = e.contentRect.width;
@@ -514,7 +510,8 @@ function draw() {
   ctx.lineTo(w,h); ctx.fill();
 
   ctx.save();
-  ctx.translate(CAM.x, CAM.y);
+  // Die Kamera addiert jetzt den Offset dynamisch auf die WAHRE Mitte auf!
+  ctx.translate(w/2 + CAM.x, h*0.8 + CAM.y);
   ctx.scale(CAM.zoom, CAM.zoom);
   drawWorld();
   ctx.restore();
@@ -626,7 +623,14 @@ function setTool(t) {
   if(INPUT!=='none') { $('tool'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active'); }
 }
 
-function getMouseWorld(mx, my) { return { x: (mx-CAM.x)/CAM.zoom, y: (my-CAM.y)/CAM.zoom }; }
+// Auch die Mausberechnung orientiert sich nun an der echten Mitte
+function getMouseWorld(mx, my) { 
+  return { 
+      x: (mx - (cv.width/2 + CAM.x)) / CAM.zoom, 
+      y: (my - (cv.height*0.8 + CAM.y)) / CAM.zoom 
+  }; 
+}
+
 function findHover(wx, wy) {
   let best=null, dist=9999; const t = STATE.trees[STATE.activeIdx]; if(!t) return;
   function walk(b) {
