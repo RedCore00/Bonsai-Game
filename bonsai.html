@@ -301,7 +301,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Ziele
     </button>
     <button class="nav-item tab-btn" onclick="openPanel('panel_settings')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
     </button>
   </div>
 </div>
@@ -465,7 +465,6 @@ function loadGame() {
         STATE.trees = data.trees.map(t => Tree.deserialize(t));
       }
       STATE.activeIdx = data.activeIdx || 0;
-      // Sicherheitsabfrage, falls aktive ID nicht mehr existiert
       if(STATE.activeIdx >= STATE.trees.length) STATE.activeIdx = 0; 
     } catch(e) { console.error("Savegame error", e); }
   }
@@ -507,7 +506,7 @@ function init() {
   updateListUI();
   updateRealtimeUI();
   requestAnimationFrame(loop);
-  setInterval(saveGame, 5000); // Auto-save alle 5 Sek
+  setInterval(saveGame, 5000); 
 }
 
 // Interaktions Logik (Touch & Mouse)
@@ -517,7 +516,6 @@ function setupInteractions() {
     let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
     let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
     
-    // Transformiere zu World Space
     let camBaseY = cv.height * 0.55;
     MOUSE.worldX = (x - (cv.width/2 + CAM.x)) / CAM.zoom;
     MOUSE.worldY = (y - (camBaseY + CAM.y)) / CAM.zoom;
@@ -531,7 +529,6 @@ function setupInteractions() {
       let dx = b.endX - targetX;
       let dy = b.endY - targetY;
       let dist = Math.sqrt(dx*dx + dy*dy);
-      // Finde Ast-Mitte auch
       let mx = b.x + (b.endX - b.x)/2;
       let my = b.y + (b.endY - b.y)/2;
       let mDist = Math.sqrt((mx-targetX)**2 + (my-targetY)**2);
@@ -555,25 +552,31 @@ function setupInteractions() {
     if(!STATE.trees[STATE.activeIdx]) return;
     let root = STATE.trees[STATE.activeIdx].root;
 
-    if(INPUT === 'water') return; // Watering handled in update loop continuously
+    if(INPUT === 'water') return; 
     
     HOVER = findNearestBranch(root, MOUSE.worldX, MOUSE.worldY, 40);
     
     if(HOVER) {
       if(INPUT === 'prune' && !HOVER.cut && HOVER.parent) {
         HOVER.cut = true;
-        HOVER.children = []; // Äste abfallen lassen
+        HOVER.children = []; 
         HOVER.leaves = [];
         STATE.stats.totalPrunes++;
         notify("Ast geschnitten");
       } 
-      else if(INPUT === 'graft' && !HOVER.cut && HOVER.thick > 2) {
-        HOVER.grafted = true;
-        HOVER.sprouted = true;
-        // Zwinge neuen Ast
-        let dev = (Math.random() - 0.5) * 1.5;
-        HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, HOVER.thick * 0.7, HOVER.depth + 1));
-        notify("Ast veredelt");
+      else if(INPUT === 'graft') {
+        if(HOVER.cut) {
+           // Ast heilen, wenn er abgeschnitten war
+           HOVER.cut = false;
+           HOVER.sprouted = false;
+           notify("Ast geheilt!");
+        } else {
+           // Neuen Trieb erzeugen
+           let dev = (Math.random() - 0.5) * 1.5;
+           let newThick = Math.max(1, HOVER.thick * 0.7);
+           HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, newThick, HOVER.depth + 1));
+           notify("Neuer Trieb veredelt!");
+        }
       }
       else if(INPUT === 'bend') {
         BEND_TARGET = HOVER;
@@ -584,7 +587,6 @@ function setupInteractions() {
   cv.addEventListener('pointermove', e => {
     getPos(e);
     if(MOUSE.down && INPUT === 'bend' && BEND_TARGET) {
-      // Berechne neuen Winkel vom Startpunkt des Astes zur Maus
       let dx = MOUSE.worldX - BEND_TARGET.x;
       let dy = MOUSE.worldY - BEND_TARGET.y;
       BEND_TARGET.targetAngle = Math.atan2(dy, dx);
@@ -635,7 +637,6 @@ function update(dt) {
   const soil = ITEMS[tree.soil] || {boost: 1.0};
   const pot = ITEMS[tree.pot] || {bonus: 1.0};
   
-  // Zeit
   ENV.dayTime += (dt / SETTINGS.secPerDay) * (SETTINGS.timeWarp || 1.0);
   if(ENV.dayTime > 1) {
     ENV.dayTime -= 1;
@@ -643,23 +644,20 @@ function update(dt) {
     STATE.stats.totalDays++;
   }
   
-  // Wasser & HP Logic
   if(tree.water > 0) {
     tree.water -= (SETTINGS.waterDrain * soil.boost / SETTINGS.secPerDay) * dt;
   } else {
-    tree.hp -= 2 * dt; // Schaden bei Trockenheit
+    tree.hp -= 2 * dt; 
   }
   tree.water = Math.max(0, Math.min(100, tree.water));
   tree.hp = Math.max(0, Math.min(100, tree.hp));
 
   const growth = (tree.water > 10 ? 1 : 0.1) * spec.growth * soil.boost * pot.bonus * SETTINGS.growMult;
 
-  // Wolken
   if(ENV.clouds.length < 5 && Math.random() < 0.01) {
     ENV.clouds.push({x: -200, y: Math.random() * 300, s: 1 + Math.random(), v: 0.2 + Math.random() * 0.3});
   }
 
-  // Gießen (Partikel & Logik)
   if(INPUT === 'water' && MOUSE.down) {
     for(let i=0; i<3; i++) {
       ENV.particles.push({
@@ -673,7 +671,6 @@ function update(dt) {
   for(let i = ENV.particles.length - 1; i >= 0; i--) {
     let p = ENV.particles[i];
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-    // Topf Treffer (Boden)
     if(p.y > 0 && p.y < 70 && p.x > -90 && p.x < 90) {
       tree.water = Math.min(100, tree.water + 1.5);
       STATE.stats.totalWaters += 0.05;
@@ -683,7 +680,6 @@ function update(dt) {
     }
   }
 
-  // Baum Simulation (Rekursiv)
   function sim(b, rx, ry) {
     if(!b.parent) { b.x = rx; b.y = ry; } 
     else { b.x = b.parent.endX; b.y = b.parent.endY; }
@@ -717,7 +713,6 @@ function update(dt) {
       }
     }
     
-    // Tote Blätter wenn cut
     if(b.cut && b.leaves.length > 0) {
       b.leaves.forEach(l => { l.s = Math.max(0, l.s - 5*dt); });
       b.leaves = b.leaves.filter(l => l.s > 0);
@@ -830,13 +825,6 @@ function drawWorld() {
     ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.endX, b.endY); ctx.stroke();
     ctx.shadowBlur = 0;
     
-    if(b.cut) {
-      ctx.fillStyle = "#aaa"; ctx.beginPath(); ctx.arc(b.endX, b.endY, b.thick * 0.4, 0, 6.28); ctx.fill();
-    }
-    if(b.grafted) {
-      ctx.fillStyle = "#fffc"; ctx.beginPath(); ctx.arc(b.x, b.y, b.thick * 0.6, 0, 6.28); ctx.fill();
-    }
-
     if(!b.cut && b.leaves.length) {
        const sIdx = Math.floor(t.days / 30) % 4; 
        let cols = spec.color;
@@ -914,7 +902,6 @@ function updateRealtimeUI() {
 }
 
 function updateListUI() {
-  // --- Baumschule (Eigene Bäume) ---
   let collHtml = '';
   STATE.trees.forEach((t, i) => {
     let active = (i === STATE.activeIdx) ? 'active-item' : '';
@@ -928,7 +915,6 @@ function updateListUI() {
   });
   $('collectionList').innerHTML = collHtml;
 
-  // --- Baumschule (Spezies kaufen) ---
   let specHtml = '';
   for(let key in SPECIES) {
     if(!STATE.inventory.species.includes(key)) {
@@ -951,7 +937,6 @@ function updateListUI() {
   }
   $('speciesList').innerHTML = specHtml;
 
-  // --- Shop (Töpfe/Erde) ---
   $('shopMoneyDisplay').innerText = `Guthaben: ${STATE.money} 💰`;
   let potHtml = ''; let soilHtml = '';
   const tree = STATE.trees[STATE.activeIdx];
@@ -982,7 +967,6 @@ function updateListUI() {
   $('shopPotsList').innerHTML = potHtml;
   $('shopSoilsList').innerHTML = soilHtml;
 
-  // --- Quests ---
   let qHtml = '';
   STATE.quests.forEach((q, i) => {
     let btnClass = (q.done && !q.coll) ? 'quest-btn ready' : 'quest-btn';
@@ -996,7 +980,6 @@ function updateListUI() {
   $('questList').innerHTML = qHtml;
 }
 
-// Interaktionsfunktionen
 window.switchTree = function(idx) {
   STATE.activeIdx = idx;
   INPUT = "none"; document.querySelectorAll('.tools-panel .btn').forEach(b => b.classList.remove('active'));
