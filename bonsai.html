@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v7.2</title>
+<title>Bonsai Master v7.3 (Polished Visuals)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -806,24 +806,27 @@ function drawWorld() {
     ctx.strokeStyle = "rgba(250, 204, 21, 0.6)"; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.stroke(); ctx.setLineDash([]);
   }
 
-  if(HOVER && INPUT !== 'water' && INPUT !== 'none') {
-    ctx.beginPath(); ctx.arc(HOVER.endX, HOVER.endY, Math.max(HOVER.thick, 20) + 5, 0, Math.PI * 2);
-    ctx.fillStyle = (INPUT==='prune' ? 'rgba(248, 113, 113, 0.2)' : INPUT==='graft' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(250, 204, 21, 0.2)');
-    ctx.fill();
-  }
-
   ctx.lineCap = "round";
   function render(b) {
     if(b.len < 1) return;
-    ctx.lineWidth = b.thick; ctx.strokeStyle = spec.bark[0];
     
-    if(b === HOVER) { 
-      ctx.shadowBlur = 10; ctx.shadowColor = "#fff"; 
-      ctx.strokeStyle = (INPUT==='prune' ? '#f87171' : INPUT==='graft' ? '#60a5fa' : INPUT==='bend' ? '#facc15' : '#fff'); 
-    } else { ctx.shadowBlur = 0; }
+    ctx.lineWidth = b.thick; 
+    ctx.strokeStyle = spec.bark[0];
     
-    ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.endX, b.endY); ctx.stroke();
-    ctx.shadowBlur = 0;
+    // Das neue, sanfte Hover-Leuchten anstatt einer komplett weißen Textur
+    if(b === HOVER && INPUT !== 'water' && INPUT !== 'none') { 
+      ctx.shadowBlur = 15; 
+      ctx.shadowColor = (INPUT==='prune' ? '#f87171' : INPUT==='graft' ? '#60a5fa' : '#facc15'); 
+    } else { 
+      ctx.shadowBlur = 0; 
+    }
+    
+    ctx.beginPath(); 
+    ctx.moveTo(b.x, b.y); 
+    ctx.lineTo(b.endX, b.endY); 
+    ctx.stroke();
+    
+    ctx.shadowBlur = 0; // Shadow direkt wieder auf null für Blätter
     
     if(!b.cut && b.leaves.length) {
        const sIdx = Math.floor(t.days / 30) % 4; 
