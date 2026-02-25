@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v11.0 (World Anchor)</title>
+<title>Bonsai Master v9.5 (Ninja Pruning)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -215,6 +215,7 @@
 </div>
 
 <div class="ui-layer">
+  
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
@@ -304,7 +305,6 @@ const SPECIES = {
   blue:  { name: "Blue Mystique", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1, cost: 2000 },
   hemp:  { name: "Green Power", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5, cost: 4200 }
 };
-
 const ITEMS = {
   pot_basic: { type:'pot', name:"Plastiktopf", cost:0, bonus:1.0 },
   pot_clay:  { type:'pot', name:"Terrakotta", cost:300, bonus:1.1 },
@@ -338,7 +338,6 @@ class Tree {
   constructor(k, n) { 
     this.key=k; this.name=n; this.days=0; this.water=100; this.hp=100; 
     this.pot='pot_basic'; this.soil='soil_basic'; 
-    // ZURÜCK ZUR KLASSISCHEN ELEGANTEN DICKE 20!
     this.root=new Branch(null,0,0,-Math.PI/2,110,20,0); 
   }
   serialize() { return { key:this.key, name:this.name, days:this.days, water:this.water, hp:this.hp, pot:this.pot, soil:this.soil, root:this.root.serialize() }}
@@ -346,7 +345,7 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave110');
+  const saved = localStorage.getItem('bonsaiSave95');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -358,7 +357,7 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave110', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave95', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
@@ -373,16 +372,17 @@ function init() {
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
 
+// Schnitt-Helfer (für Einzelklick und Swipe)
 function performCut(branch, treeKey) {
-    if(branch.cut || !branch.parent) return; 
+    if(branch.cut || !branch.parent) return; // Stamm darf nicht abgeschnitten werden
     branch.cut = true;
     const spec = SPECIES[treeKey];
     function dropChildren(b) {
         const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
-        ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5, onGround:false, decay:5.0 });
+        ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5 });
         b.leaves.forEach(l => {
             const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
-            ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7, onGround:false, decay:5.0 });
+            ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7 });
         });
         b.children.forEach(dropChildren);
     }
@@ -392,11 +392,12 @@ function performCut(branch, treeKey) {
     STATE.stats.totalPrunes++;
 }
 
+// Linien-Schnittpunkt-Mathematik für den Swipe-Cut
 function doSegmentsIntersect(p0, p1, p2, p3) {
     let s1_x = p1.x - p0.x, s1_y = p1.y - p0.y;
     let s2_x = p3.x - p2.x, s2_y = p3.y - p2.y;
     let denom = -s2_x * s1_y + s1_x * s2_y;
-    if (denom === 0) return false;
+    if (denom === 0) return false; // Parallele Linien
     let s = (-s1_y * (p0.x - p2.x) + s1_x * (p0.y - p2.y)) / denom;
     let t = ( s2_x * (p0.y - p2.y) - s2_y * (p0.x - p2.x)) / denom;
     return (s >= 0 && s <= 1 && t >= 0 && t <= 1);
@@ -438,6 +439,7 @@ function setupInteractions() {
         MOUSE.drag = true;
     } else if(INPUT==='prune') {
         ENV.swipeTrail = [{x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0}];
+        // Einzelklick-Schnitt weiterhin möglich
         HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
         if(HOVER) {
             performCut(HOVER, STATE.trees[STATE.activeIdx].key);
@@ -473,6 +475,7 @@ function setupInteractions() {
         MOUSE.y = my;
     }
 
+    // SWIPE TO CUT LOGIC
     if(MOUSE.down && INPUT === 'prune') {
         ENV.swipeTrail.push({x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0});
         if(lastWorldX !== null && lastWorldY !== null && STATE.trees[STATE.activeIdx]) {
@@ -505,7 +508,7 @@ function setupInteractions() {
       }
       propagateBend(BEND_TARGET, angleDiff);
     } 
-    else if(!MOUSE.down && INPUT!=='water' && INPUT!=='none' && INPUT!=='prune' && STATE.trees[STATE.activeIdx]) { 
+    else if(!MOUSE.down && INPUT!=='water' && INPUT!=='none' && STATE.trees[STATE.activeIdx]) { 
         HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40); 
     }
 
@@ -590,26 +593,16 @@ function update(dt) {
       else if(p.life<=0) ENV.particles.splice(i,1); 
   }
 
+  // Swipe Trail Fade
   for(let i=ENV.swipeTrail.length-1; i>=0; i--) {
       ENV.swipeTrail[i].life -= dt * 4;
       if(ENV.swipeTrail[i].life <= 0) ENV.swipeTrail.splice(i, 1);
   }
 
   const gravity = 300;
-  const GROUND_Y = 55; // Welt-Koordinaten-Boden
   for(let i=ENV.fallingParts.length-1; i>=0; i--) {
-      let p = ENV.fallingParts[i];
-      if(!p.onGround) {
-          p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
-          if(p.y > GROUND_Y + Math.random()*15) {
-             p.y = GROUND_Y + Math.random()*15; 
-             p.onGround = true; 
-             p.a = Math.random()*6.28;
-          }
-      } else {
-          p.decay -= dt;
-          if(p.decay <= 0) ENV.fallingParts.splice(i, 1);
-      }
+      let p = ENV.fallingParts[i]; p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
+      if(p.y > 250) ENV.fallingParts.splice(i, 1);
   }
 
   function sim(b,rx,ry) {
@@ -672,6 +665,7 @@ function draw() {
   ctx.shadowBlur=30; ctx.shadowColor="#fff"; ctx.fillStyle="#f8fafc"; ctx.beginPath(); ctx.arc(cx+Math.sin(ang+Math.PI)*r,cy+Math.cos(ang+Math.PI)*r,35,0,6.28); ctx.fill(); ctx.shadowBlur=0;
   
   ctx.fillStyle="rgba(255,255,255,0.15)"; ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+200)c.x=-200; drawPuff(c.x,c.y,c.s);});
+  ctx.fillStyle="#04060b"; ctx.beginPath(); ctx.moveTo(0,h); for(let x=0;x<=w;x+=20)ctx.lineTo(x,h*0.65-Math.abs(Math.sin(x*0.002)*100+Math.cos(x*0.008)*30)); ctx.lineTo(w,h); ctx.fill();
   
   ctx.save(); 
   const camBaseY = h * 0.55; 
@@ -684,21 +678,7 @@ function drawPuff(x,y,s){ ctx.beginPath(); ctx.arc(x,y,40*s,0,6.28); ctx.arc(x+3
 
 function drawWorld() {
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; const spec=SPECIES[t.key], potH=60;
-  
-  // WICHTIGER FIX: Erdboden in Welt-Koordinaten! Bewegt sich perfekt mit dem Topf mit.
-  ctx.fillStyle = "#04060b";
-  ctx.beginPath();
-  ctx.moveTo(-5000, 55);
-  for(let px = -5000; px <= 5000; px += 100) {
-      ctx.lineTo(px, 55 + Math.sin(px * 0.01) * 15 + Math.cos(px * 0.005) * 10);
-  }
-  ctx.lineTo(5000, 5000);
-  ctx.lineTo(-5000, 5000);
-  ctx.fill();
-
-  ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); 
-  ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
-  
+  ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
   if(BEND_TARGET&&INPUT==='bend'){ ctx.beginPath(); ctx.moveTo(BEND_TARGET.x,BEND_TARGET.y); ctx.lineTo(MOUSE.worldX,MOUSE.worldY); ctx.strokeStyle="rgba(250,204,21,0.6)"; ctx.lineWidth=2; ctx.setLineDash([8,8]); ctx.stroke(); ctx.setLineDash([]); }
 
   ctx.lineCap="round"; ctx.lineJoin="round";
@@ -729,9 +709,10 @@ function drawWorld() {
   }
   render(t.root);
 
+  // Schwert-Spur (Swipe Trail) zeichnen
   if (ENV.swipeTrail.length > 1) {
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.shadowBlur = 15; ctx.shadowColor = "#f87171"; 
+    ctx.shadowBlur = 15; ctx.shadowColor = "#f87171"; // Rotes Leuchten
     for (let i = 1; i < ENV.swipeTrail.length; i++) {
         let p1 = ENV.swipeTrail[i-1];
         let p2 = ENV.swipeTrail[i];
@@ -746,9 +727,7 @@ function drawWorld() {
   }
 
   ENV.fallingParts.forEach(p => {
-      ctx.save();
-      if(p.onGround) ctx.globalAlpha = Math.min(1, p.decay / 2);
-      ctx.translate(p.x, p.y); ctx.rotate(p.a);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
       if(p.type === 'branch') { ctx.strokeStyle = p.col; ctx.lineWidth = p.th; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-p.len/2, 0); ctx.lineTo(p.len/2, 0); ctx.stroke(); }
       else if (p.type === 'leaf') { if(p.leafType === 'needle') { ctx.strokeStyle = p.cols[0]; ctx.lineWidth = 1; for(let i=0; i<5; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * p.s * 3, -p.s * 2); ctx.stroke(); } } else { ctx.fillStyle = p.cols[0]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s, p.s * (p.leafType === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill(); ctx.fillStyle = p.cols[1]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s * 0.6, p.s * 0.15, 0, 0, 6.28); ctx.fill(); } }
       ctx.restore();
@@ -880,22 +859,10 @@ function updateListUI(){
   }); 
   $('collectionList').innerHTML=cH;
   
-  let sH=''; 
-  for(let k in SPECIES){ 
-    if(!STATE.inventory.species.includes(k)){ 
-      let s=SPECIES[k]; 
-      sH+=`<div class="list-item"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; 
-    } else { 
-      let s=SPECIES[k]; 
-      sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; 
-    }
-  } 
-  $('speciesList').innerHTML=sH;
-  
+  let sH=''; for(let k in SPECIES){ if(!STATE.inventory.species.includes(k)){ let s=SPECIES[k]; sH+=`<div class="list-item"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Wachstum x${s.growth}</div></div><button class="action-btn buy" onclick="buySpecies('${k}')">${s.cost} 💰</button></div>`; } else { let s=SPECIES[k]; sH+=`<div class="list-item" style="opacity:0.6"><div class="tree-preview"><img src="${getPreview(k)}"></div><div class="list-content"><div class="list-title">${s.name}</div><div class="list-sub">Freigeschaltet</div></div><button class="action-btn" onclick="plantNew('${k}')">Pflanzen</button></div>`; }} $('speciesList').innerHTML=sH;
   $('shopMoneyDisplay').innerText=`Guthaben: ${STATE.money} 💰`; let pH='',sH2=''; const tr=STATE.trees[STATE.activeIdx]; for(let k in ITEMS){ let it=ITEMS[k], own=STATE.inventory[it.type+'s'].includes(k), eq=(tr&&tr[it.type]===k), bH=''; if(!own)bH=`<button class="action-btn buy" onclick="buyItem('${k}')">${it.cost} 💰</button>`; else if(!eq)bH=`<button class="action-btn" onclick="equipItem('${k}')">Nutzen</button>`; else bH=`<span style="font-size:12px;color:var(--success)">Aktiv</span>`; let c=`<div class="list-item ${eq?'active-item':''}"><div class="list-content"><div class="list-title">${it.name}</div><div class="list-sub">${it.bonus?'Wachstum +'+Math.round((it.bonus-1)*100)+'%':'Feuchtigkeit +'+Math.round((it.boost-1)*100)+'%'}</div></div>${bH}</div>`; if(it.type==='pot')pH+=c;else sH2+=c; } $('shopPotsList').innerHTML=pH; $('shopSoilsList').innerHTML=sH2;
   let qH=''; STATE.quests.forEach((q,i)=>{ let bc=(q.done&&!q.coll)?'quest-btn ready':'quest-btn', bt=q.coll?'Erledigt':(q.done?`Abholen`:`${Math.floor(q.cur)}/${q.goal}`); qH+=`<div class="list-item"><div class="list-content"><div class="list-title">${q.txt}</div><div class="list-sub">Belohnung: ${q.rew} 💰</div></div><button class="${bc}" onclick="claimQuest(${i})" ${q.coll||(!q.done)?'disabled':''}>${bt}</button></div>`; }); $('questList').innerHTML=qH;
 }
-
 window.switchTree=i=>{ STATE.activeIdx=i; INPUT="none"; document.querySelectorAll('.tools-panel .btn').forEach(b=>b.classList.remove('active')); closeAllPanels(); updateRealtimeUI(); };
 window.buySpecies=k=>{ if(STATE.money>=SPECIES[k].cost){ STATE.money-=SPECIES[k].cost; STATE.inventory.species.push(k); notify(`${SPECIES[k].name} gekauft!`); updateListUI(); }else notify("Zu wenig Guthaben!"); };
 window.plantNew=k=>{ let nr=STATE.trees.length+1; STATE.trees.push(new Tree(k, SPECIES[k].name+" #"+nr)); switchTree(STATE.trees.length-1); notify("Neuer Baum gepflanzt!"); };
@@ -909,7 +876,6 @@ function generateQuests(){
   STATE.quests = []; for(let i=0; i<3; i++) { let q = pool[Math.floor(Math.random()*pool.length)]; STATE.quests.push({id:q.id+Date.now()+i, txt:q.txt, goal:q.goal, cur:0, rew:q.rew, done:false, coll:false, metric:q.metric}); }
   checkQuests();
 }
-
 function checkQuests(){ let c=false; STATE.quests.forEach(q=>{ if(q.done)return; if(q.metric==='money')q.cur=STATE.money; else if(q.metric==='days')q.cur=STATE.trees[STATE.activeIdx]?.days||0; else q.cur=STATE.stats[q.metric]||0; if(q.cur>=q.goal){q.done=true;c=true;notify("Ziel erreicht!");}}); if(c)updateListUI(); }
 
 function bindSettingsUI(){
@@ -917,12 +883,11 @@ function bindSettingsUI(){
   const binds=[{id:'inpWind',key:'windSpeed',min:0,max:2,step:0.1}, {id:'inpSec',key:'secPerDay',min:5,max:120,step:1}, {id:'inpGrow',key:'growMult',min:0.1,max:5,step:0.1}, {id:'inpWarp',key:'timeWarp',min:0.1,max:10,step:0.1}, {id:'inpLeaves',key:'maxLeaves',min:10,max:200,step:5}];
   let h=''; binds.forEach(b=>{ h+=`<div class="set-row"><div class="set-header"><span class="s-label">${labels[b.key]||b.key}</span><span class="s-val" id="v_${b.id}">${SETTINGS[b.key]}</span></div><input type="range" id="${b.id}" min="${b.min}" max="${b.max}" step="${b.step}" value="${SETTINGS[b.key]}"></div>`; }); $('settingsGrid').innerHTML=h; binds.forEach(b=>{ let el=$(b.id); if(el)el.oninput=e=>{ let v=parseFloat(e.target.value); SETTINGS[b.key]=v; $(`v_${b.id}`).innerText=v; }; });
 }
-
 window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>{console.log(e);});}else{if(document.exitFullscreen){document.exitFullscreen();}} };
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave100'); 
+    localStorage.removeItem('bonsaiSave95'); 
     location.reload(); 
   }
 };
