@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v7.1</title>
+<title>Bonsai Master v7.2</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -71,9 +71,11 @@
     align-self: flex-start;
     border-top: 1px solid rgba(255,255,255,0.3); 
     border-left: 1px solid rgba(255,255,255,0.2);
+    display: flex; justify-content: space-between; align-items: center; min-width: 200px;
   }
-  .tree-header h1 { margin: 0; font-size: 18px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-  .tree-header p { margin: 2px 0 0 0; font-size: 11px; color: var(--accent); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+  .tree-info h1 { margin: 0; font-size: 18px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+  .tree-info p { margin: 2px 0 0 0; font-size: 11px; color: var(--accent); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+  .money-display { font-weight: 700; color: var(--gold); text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 14px; }
 
   /* --- BOTTOM UI AREA --- */
   .bottom-area {
@@ -150,8 +152,8 @@
   .overlay-bg.open { opacity: 1; pointer-events: auto; }
 
   .overlay-sheet {
-    position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh;
-    background: rgba(10, 15, 25, 0.9); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh; height: 85vh;
+    background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
     border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2);
     padding: 30px 20px calc(30px + env(safe-area-inset-bottom));
     z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
@@ -172,19 +174,26 @@
   .list-item { 
     display: flex; align-items: center; gap: 15px; 
     background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 20px; 
-    border: 1px solid rgba(255,255,255,0.05); position: relative;
+    border: 1px solid rgba(255,255,255,0.05); position: relative; transition: 0.2s;
   }
+  .list-item.active-item { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
   .tree-preview { 
-    width: 50px; height: 50px; border-radius: 12px; background: #000; 
+    width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.5); 
     overflow: hidden; display: flex; align-items: center; justify-content: center;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.1); font-size: 24px;
   }
-  .tree-preview canvas { width: 80% !important; height: 80% !important; }
   
   .list-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   .list-title { font-size: 15px; font-weight: 700; }
   .list-sub { font-size: 12px; color: var(--text-muted); }
   
+  .action-btn {
+    padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.1); color: var(--text); transition: 0.2s;
+  }
+  .action-btn.buy { background: rgba(251, 191, 36, 0.2); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); }
+  .action-btn:active { transform: scale(0.95); }
+
   /* Quests & Badges */
   .quest-btn { 
     padding: 10px 16px; border-radius: 14px; border: none; font-weight: 700; font-size: 12px;
@@ -236,8 +245,11 @@
 <div class="ui-layer">
   
   <div class="tree-header glass">
-    <h1 id="uiTreeName">Baum</h1>
-    <p id="uiSpeciesName">Spezies</p>
+    <div class="tree-info">
+      <h1 id="uiTreeName">Baum</h1>
+      <p id="uiSpeciesName">Spezies</p>
+    </div>
+    <div class="money-display" id="uiMoneyTop">0 💰</div>
   </div>
 
   <div class="bottom-area">
@@ -262,16 +274,16 @@
 
     <div class="tools-panel glass">
       <div class="btn-grid">
-        <button class="btn" id="toolWater">
+        <button class="btn" id="toolWater" onclick="setTool('water')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Gießen
         </button>
-        <button class="btn" id="toolPrune">
+        <button class="btn" id="toolPrune" onclick="setTool('prune')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Schnitt
         </button>
-        <button class="btn" id="toolGraft">
+        <button class="btn" id="toolGraft" onclick="setTool('graft')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg> Veredeln
         </button>
-        <button class="btn" id="toolBend">
+        <button class="btn" id="toolBend" onclick="setTool('bend')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg> Biegen
         </button>
       </div>
@@ -279,29 +291,32 @@
   </div>
 
   <div class="bottom-dock glass">
-    <button class="nav-item tab-btn" data-target="panel_collection">
+    <button class="nav-item tab-btn" onclick="openPanel('panel_collection')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg> Bäume
     </button>
-    <button class="nav-item tab-btn" data-target="panel_shop">
+    <button class="nav-item tab-btn" onclick="openPanel('panel_shop')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Shop
     </button>
-    <button class="nav-item tab-btn" data-target="panel_quests">
+    <button class="nav-item tab-btn" onclick="openPanel('panel_quests')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Ziele
     </button>
-    <button class="nav-item tab-btn" data-target="panel_settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
+    <button class="nav-item tab-btn" onclick="openPanel('panel_settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
     </button>
   </div>
 </div>
 
-<div class="overlay-bg" id="overlayBg"></div>
+<div class="overlay-bg" id="overlayBg" onclick="closeAllPanels()"></div>
 
 <div class="overlay-sheet" id="panel_collection">
   <div class="sheet-header">
     <h2 style="color:var(--accent); text-shadow:0 0 10px var(--accent-glow)">Baumschule</h2>
     <button class="close-btn" onclick="closeAllPanels()">✕</button>
   </div>
+  <div class="s-label" style="margin-bottom: 10px;">Deine Bonsais</div>
   <div id="collectionList"></div>
+  <div class="s-label" style="margin-top: 25px; margin-bottom: 10px;">Samen & Setzlinge kaufen</div>
+  <div id="speciesList"></div>
 </div>
 
 <div class="overlay-sheet" id="panel_shop">
@@ -323,8 +338,6 @@
   </div>
   <div class="s-label">Tägliche Aufgaben</div>
   <div id="questList" style="margin-top:10px"></div>
-  <div class="s-label" style="margin-top:30px">Medaillen & Meilensteine</div>
-  <div class="badge-grid" id="badgeGrid"></div>
 </div>
 
 <div class="overlay-sheet" id="panel_settings">
@@ -339,51 +352,41 @@
 </div>
 
 <script>
-(function(){
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 const ctx = cv.getContext('2d', {alpha: false});
 
 // Spieldaten & Konstanten
 const SPECIES = {
-  ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
-  pine:  { name: "Schwarzkiefer", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6, cost: 300 },
-  maple: { name: "Roter Ahorn", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8, cost: 500 },
-  sakura:{ name: "Sakura Kirsche", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9, cost: 800 },
-  willow:{ name: "Trauerweide", leaf: "long", color:["#365314","#bef264"], bark:["#424242","#212121"], growth: 1.3, weeping:true, cost: 1200 },
-  jade:  { name: "Geldbaum", leaf: "fat", color:["#14532d","#22c55e"], bark:["#795548","#5d4037"], growth: 0.7, cost: 1500 },
-  blue:  { name: "Blue Mystique", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1, cost: 2000 },
-  hemp:  { name: "Green Power", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5, cost: 4200 }
+  ficus: { name: "Ficus Retusa", icon: "🌳", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
+  pine:  { name: "Schwarzkiefer", icon: "🌲", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6, cost: 300 },
+  maple: { name: "Roter Ahorn", icon: "🍁", leaf: "maple", color:["#7f1d1d","#ef4444"], bark:["#5d4037","#3e2723"], growth: 0.8, cost: 500 },
+  sakura:{ name: "Sakura Kirsche", icon: "🌸", leaf: "oval", color:["#be185d","#f9a8d4"], bark:["#5d4037","#3e2723"], growth: 0.9, cost: 800 },
+  willow:{ name: "Trauerweide", icon: "🌿", leaf: "long", color:["#365314","#bef264"], bark:["#424242","#212121"], growth: 1.3, weeping:true, cost: 1200 },
+  jade:  { name: "Geldbaum", icon: "🪴", leaf: "fat", color:["#14532d","#22c55e"], bark:["#795548","#5d4037"], growth: 0.7, cost: 1500 },
+  blue:  { name: "Blue Mystique", icon: "💠", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1, cost: 2000 },
+  hemp:  { name: "Green Power", icon: "🌿", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5, cost: 4200 }
 };
 
 const ITEMS = {
+  pot_basic: { type:'pot', name:"Plastiktopf", cost:0, bonus:1.0 },
   pot_clay:  { type:'pot', name:"Terrakotta", cost:300, bonus:1.1 },
   pot_zen:   { type:'pot', name:"Zen Schale", cost:900, bonus:1.25 },
+  soil_basic:{ type:'soil', name:"Gartenerde", cost:0, boost:1.0 },
   soil_aka:  { type:'soil', name:"Akadama", cost:200, boost:1.3 },
   soil_bio:  { type:'soil', name:"Bio-Boost", cost:500, boost:2.0 }
 };
 
 let SETTINGS = { 
-  secPerDay: 60, 
-  growMult: 1.0, 
-  thickMult: 1.0, 
-  sproutChance: 0.03, 
-  maxLeaves: 30, 
-  leafRate: 0.1, 
-  leafSizeMult: 1.0, 
-  waterDrain: 5.0, 
-  windSpeed: 0.3, 
-  windSway: 0.05, 
-  timeWarp: 1.0 
+  secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, 
+  maxLeaves: 30, leafRate: 0.1, leafSizeMult: 1.0, waterDrain: 5.0, 
+  windSpeed: 0.3, windSway: 0.05, timeWarp: 1.0 
 };
 
 let STATE = { 
-  money: 500, 
-  trees: [], 
-  activeIdx: 0, 
+  money: 500, trees: [], activeIdx: 0, 
   inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, 
-  stats: { totalWaters:0, totalPrunes:0, totalDays:0 }, 
-  quests: [] 
+  stats: { totalWaters:0, totalPrunes:0, totalDays:0 }, quests: [] 
 };
 
 // Klassen
@@ -391,20 +394,11 @@ class Branch {
   constructor(parent, x, y, angle, maxLen, thick, depth) {
     this.parent = parent;
     this.depth = depth || 0;
-    this.x = x;
-    this.y = y;
-    this.endX = x;
-    this.endY = y;
-    this.angle = angle;
-    this.targetAngle = angle;
-    this.len = 0.1;
-    this.maxLen = maxLen;
-    this.thick = thick;
-    this.children = [];
-    this.leaves = [];
-    this.cut = false;
-    this.sprouted = false;
-    this.grafted = false;
+    this.x = x; this.y = y; this.endX = x; this.endY = y;
+    this.angle = angle; this.targetAngle = angle;
+    this.len = 0.1; this.maxLen = maxLen; this.thick = thick;
+    this.children = []; this.leaves = [];
+    this.cut = false; this.sprouted = false; this.grafted = false;
     this.windPhase = Math.random() * 10;
   }
 
@@ -413,58 +407,88 @@ class Branch {
       x: this.x, y: this.y, a: this.angle, ta: this.targetAngle,
       l: this.len, ml: this.maxLen, th: this.thick, d: this.depth,
       cut: this.cut, spr: this.sprouted, gr: this.grafted,
-      leaves: this.leaves,
-      c: this.children.map(c => c.serialize())
+      leaves: this.leaves, c: this.children.map(c => c.serialize())
     };
   }
 
   static deserialize(d, p) {
     let b = new Branch(p, d.x, d.y, d.a, d.ml, d.th, d.d);
-    b.len = d.l;
-    b.targetAngle = d.ta;
-    b.cut = d.cut;
-    b.sprouted = d.spr;
-    b.grafted = d.gr;
-    b.leaves = d.leaves || [];
-    if (d.c) {
-      b.children = d.c.map(cd => Branch.deserialize(cd, b));
-    }
+    b.len = d.l; b.targetAngle = d.ta; b.cut = d.cut; b.sprouted = d.spr; 
+    b.grafted = d.gr; b.leaves = d.leaves || [];
+    if (d.c) b.children = d.c.map(cd => Branch.deserialize(cd, b));
     return b;
   }
 }
 
 class Tree {
   constructor(key, name) {
-    this.key = key;
-    this.name = name;
-    this.days = 0;
-    this.water = 100;
-    this.hp = 100;
-    this.pot = 'pot_basic';
-    this.soil = 'soil_basic';
+    this.key = key; this.name = name; this.days = 0;
+    this.water = 100; this.hp = 100; this.pot = 'pot_basic'; this.soil = 'soil_basic';
     this.root = new Branch(null, 0, 0, -Math.PI/2, 110, 20, 0);
+  }
+  
+  serialize() {
+    return {
+      key: this.key, name: this.name, days: this.days,
+      water: this.water, hp: this.hp, pot: this.pot, soil: this.soil,
+      root: this.root.serialize()
+    }
+  }
+
+  static deserialize(d) {
+    let t = new Tree(d.key, d.name);
+    t.days = d.days; t.water = d.water; t.hp = d.hp || 100;
+    t.pot = d.pot || 'pot_basic'; t.soil = d.soil || 'soil_basic';
+    t.root = Branch.deserialize(d.root, null);
+    return t;
   }
 }
 
 // Environment & Input State
 let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
-let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0 };
-let INPUT = "none", HOVER = null, BEND_TARGET = null, WATERING = false;
+let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
+let INPUT = "none", HOVER = null, BEND_TARGET = null;
 let lastT = 0, lastUiT = 0;
 
-// Init
+// Init & Save System
+function loadGame() {
+  const saved = localStorage.getItem('bonsaiSave7');
+  if(saved) {
+    try {
+      let data = JSON.parse(saved);
+      STATE.money = data.money || 500;
+      STATE.activeIdx = data.activeIdx || 0;
+      STATE.inventory = data.inventory || { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] };
+      STATE.stats = data.stats || { totalWaters:0, totalPrunes:0, totalDays:0 };
+      STATE.quests = data.quests || [];
+      if(data.trees && data.trees.length) {
+        STATE.trees = data.trees.map(t => Tree.deserialize(t));
+      }
+    } catch(e) { console.error("Savegame error", e); }
+  }
+}
+
+function saveGame() {
+  const data = {
+    money: STATE.money, activeIdx: STATE.activeIdx,
+    inventory: STATE.inventory, stats: STATE.stats,
+    quests: STATE.quests, trees: STATE.trees.map(t => t.serialize())
+  };
+  localStorage.setItem('bonsaiSave7', JSON.stringify(data));
+}
+
 function init() {
   cv.width = $('viewport').clientWidth || window.innerWidth;
   cv.height = $('viewport').clientHeight || window.innerHeight;
 
   loadGame();
   bindSettingsUI();
+  setupInteractions();
   
   if(!STATE.trees.length) {
     STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   }
-  
   if(!STATE.quests || STATE.quests.length === 0) {
     generateQuests();
   }
@@ -472,8 +496,7 @@ function init() {
   const ro = new ResizeObserver(entries => {
     for(let e of entries) {
       if(e.contentRect.width > 0 && e.contentRect.height > 0) {
-        cv.width = e.contentRect.width;
-        cv.height = e.contentRect.height;
+        cv.width = e.contentRect.width; cv.height = e.contentRect.height;
       }
     }
   });
@@ -482,6 +505,108 @@ function init() {
   updateListUI();
   updateRealtimeUI();
   requestAnimationFrame(loop);
+  setInterval(saveGame, 5000); // Auto-save alle 5 Sek
+}
+
+// Interaktions Logik (Touch & Mouse)
+function setupInteractions() {
+  const getPos = (e) => {
+    let rect = cv.getBoundingClientRect();
+    let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    
+    // Transformiere zu World Space
+    let camBaseY = cv.height * 0.55;
+    MOUSE.worldX = (x - (cv.width/2 + CAM.x)) / CAM.zoom;
+    MOUSE.worldY = (y - (camBaseY + CAM.y)) / CAM.zoom;
+    return {x,y};
+  };
+
+  const findNearestBranch = (root, targetX, targetY, maxDist) => {
+    let nearest = null;
+    let minDist = maxDist;
+    const search = (b) => {
+      let dx = b.endX - targetX;
+      let dy = b.endY - targetY;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      // Finde Ast-Mitte auch
+      let mx = b.x + (b.endX - b.x)/2;
+      let my = b.y + (b.endY - b.y)/2;
+      let mDist = Math.sqrt((mx-targetX)**2 + (my-targetY)**2);
+      
+      let finalDist = Math.min(dist, mDist);
+
+      if(finalDist < minDist) {
+        minDist = finalDist;
+        nearest = b;
+      }
+      b.children.forEach(search);
+    };
+    search(root);
+    return nearest;
+  };
+
+  cv.addEventListener('pointerdown', e => {
+    MOUSE.down = true;
+    getPos(e);
+    
+    if(!STATE.trees[STATE.activeIdx]) return;
+    let root = STATE.trees[STATE.activeIdx].root;
+
+    if(INPUT === 'water') return; // Watering handled in update loop continuously
+    
+    HOVER = findNearestBranch(root, MOUSE.worldX, MOUSE.worldY, 40);
+    
+    if(HOVER) {
+      if(INPUT === 'prune' && !HOVER.cut && HOVER.parent) {
+        HOVER.cut = true;
+        HOVER.children = []; // Äste abfallen lassen
+        HOVER.leaves = [];
+        STATE.stats.totalPrunes++;
+        notify("Ast geschnitten");
+      } 
+      else if(INPUT === 'graft' && !HOVER.cut && HOVER.thick > 2) {
+        HOVER.grafted = true;
+        HOVER.sprouted = true;
+        // Zwinge neuen Ast
+        let dev = (Math.random() - 0.5) * 1.5;
+        HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, HOVER.thick * 0.7, HOVER.depth + 1));
+        notify("Ast veredelt");
+      }
+      else if(INPUT === 'bend') {
+        BEND_TARGET = HOVER;
+      }
+    }
+  });
+
+  cv.addEventListener('pointermove', e => {
+    getPos(e);
+    if(MOUSE.down && INPUT === 'bend' && BEND_TARGET) {
+      // Berechne neuen Winkel vom Startpunkt des Astes zur Maus
+      let dx = MOUSE.worldX - BEND_TARGET.x;
+      let dy = MOUSE.worldY - BEND_TARGET.y;
+      BEND_TARGET.targetAngle = Math.atan2(dy, dx);
+    } else if(!MOUSE.down && INPUT !== 'water') {
+      if(STATE.trees[STATE.activeIdx]) {
+        HOVER = findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
+      }
+    }
+  });
+
+  window.addEventListener('pointerup', () => {
+    MOUSE.down = false;
+    BEND_TARGET = null;
+  });
+}
+
+// Tools UI
+function setTool(toolName) {
+  INPUT = (INPUT === toolName) ? "none" : toolName;
+  document.querySelectorAll('.tools-panel .btn').forEach(b => b.classList.remove('active'));
+  if(INPUT !== "none") {
+    let btnMap = { 'water':'toolWater', 'prune':'toolPrune', 'graft':'toolGraft', 'bend':'toolBend'};
+    $(btnMap[INPUT]).classList.add('active');
+  }
 }
 
 // Game Loop
@@ -498,7 +623,6 @@ function loop(now) {
     updateRealtimeUI();
     lastUiT = now;
   }
-  
   requestAnimationFrame(loop);
 }
 
@@ -515,43 +639,42 @@ function update(dt) {
     ENV.dayTime -= 1;
     tree.days++;
     STATE.stats.totalDays++;
-    updateListUI();
   }
   
-  // Wasser & Wachstum
+  // Wasser & HP Logic
   if(tree.water > 0) {
     tree.water -= (SETTINGS.waterDrain * soil.boost / SETTINGS.secPerDay) * dt;
+  } else {
+    tree.hp -= 2 * dt; // Schaden bei Trockenheit
   }
-  const growth = (tree.water > 0 ? 1 : 0) * spec.growth * soil.boost * pot.bonus * SETTINGS.growMult;
+  tree.water = Math.max(0, Math.min(100, tree.water));
+  tree.hp = Math.max(0, Math.min(100, tree.hp));
+
+  const growth = (tree.water > 10 ? 1 : 0.1) * spec.growth * soil.boost * pot.bonus * SETTINGS.growMult;
 
   // Wolken
   if(ENV.clouds.length < 5 && Math.random() < 0.01) {
     ENV.clouds.push({x: -200, y: Math.random() * 300, s: 1 + Math.random(), v: 0.2 + Math.random() * 0.3});
   }
 
-  // Gießen (Partikel)
-  if(WATERING && INPUT === 'water') {
+  // Gießen (Partikel & Logik)
+  if(INPUT === 'water' && MOUSE.down) {
     for(let i=0; i<3; i++) {
       ENV.particles.push({
         x: MOUSE.worldX + (Math.random() - 0.5) * 30,
         y: Math.min(MOUSE.worldY, -50) + (Math.random() - 0.5) * 10,
-        vx: (Math.random() - 0.5) * 15,
-        vy: 120 + Math.random() * 80,
-        life: 2.0
+        vx: (Math.random() - 0.5) * 15, vy: 120 + Math.random() * 80, life: 2.0
       });
     }
   }
 
   for(let i = ENV.particles.length - 1; i >= 0; i--) {
     let p = ENV.particles[i];
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.life -= dt;
-    
-    // Topf Treffer
+    p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+    // Topf Treffer (Boden)
     if(p.y > 0 && p.y < 70 && p.x > -90 && p.x < 90) {
-      tree.water = Math.min(100, tree.water + 0.5);
-      STATE.stats.totalWaters += 0.05; // Stats für Quests
+      tree.water = Math.min(100, tree.water + 1.5);
+      STATE.stats.totalWaters += 0.05;
       ENV.particles.splice(i, 1);
     } else if(p.life <= 0) {
       ENV.particles.splice(i, 1);
@@ -560,31 +683,21 @@ function update(dt) {
 
   // Baum Simulation (Rekursiv)
   function sim(b, rx, ry) {
-    if(!b.parent) {
-      b.x = rx;
-      b.y = ry;
-    } else {
-      b.x = b.parent.endX;
-      b.y = b.parent.endY;
-    }
+    if(!b.parent) { b.x = rx; b.y = ry; } 
+    else { b.x = b.parent.endX; b.y = b.parent.endY; }
     
     b.angle += (b.targetAngle - b.angle) * 3 * dt;
     
-    if(!b.cut && b.len < b.maxLen) {
+    if(!b.cut && b.len < b.maxLen && tree.hp > 0) {
       b.len += 8 * dt * growth;
-      
-      if(b.len > 15) {
-        b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
-      }
+      if(b.len > 15) b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
       
       const thresh = b.maxLen * 0.85;
       if(b.depth > 0 && b.len > thresh) {
          if(b.leaves.length < SETTINGS.maxLeaves && Math.random() < SETTINGS.leafRate) {
             b.leaves.push({
-              f: 0.85 + Math.random() * 0.15,
-              r: Math.random() * 6.28,
-              s: 0.1,
-              ms: (8 + Math.random() * 6) * SETTINGS.leafSizeMult
+              f: 0.85 + Math.random() * 0.15, r: Math.random() * 6.28,
+              s: 0.1, ms: (8 + Math.random() * 6) * SETTINGS.leafSizeMult
             });
          }
       }
@@ -602,8 +715,12 @@ function update(dt) {
       }
     }
     
-    for(let l of b.leaves) {
-      if(l.s < l.ms) l.s += 10 * dt;
+    // Tote Blätter wenn cut
+    if(b.cut && b.leaves.length > 0) {
+      b.leaves.forEach(l => { l.s = Math.max(0, l.s - 5*dt); });
+      b.leaves = b.leaves.filter(l => l.s > 0);
+    } else {
+      for(let l of b.leaves) { if(l.s < l.ms) l.s += 10 * dt; }
     }
     
     const sway = Math.sin(Date.now() * 0.002 * SETTINGS.windSpeed + b.windPhase) * (SETTINGS.windSway * b.len) / (Math.max(1, b.thick));
@@ -620,7 +737,6 @@ function update(dt) {
 // ---------------- RENDER ----------------
 function draw() {
   const w = cv.width, h = cv.height, t = ENV.dayTime;
-  
   if(isNaN(t) || w === 0 || h === 0) return;
 
   const sky = [[5,10,25], [255,120,70], [80,160,230], [20,15,45]];
@@ -631,8 +747,7 @@ function draw() {
   const grd = ctx.createLinearGradient(0, 0, 0, h);
   grd.addColorStop(0, col);
   grd.addColorStop(1, si === 0 || si === 3 ? "#020617" : "#e2e8f0");
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
 
   if(t < 0.25 || t > 0.75) {
      ctx.fillStyle = "#fff";
@@ -689,48 +804,46 @@ function drawWorld() {
   ctx.fillStyle = "#18181b"; ctx.beginPath(); ctx.ellipse(0, 0, 85, 22, 0, 0, 6.28); ctx.fill();
   ctx.fillStyle = "#271c19"; ctx.beginPath(); ctx.ellipse(0, 0, 78, 18, 0, 0, 6.28); ctx.fill();
 
+  if(BEND_TARGET && INPUT === 'bend') {
+    ctx.beginPath(); ctx.moveTo(BEND_TARGET.x, BEND_TARGET.y); ctx.lineTo(MOUSE.worldX, MOUSE.worldY);
+    ctx.strokeStyle = "rgba(250, 204, 21, 0.6)"; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  if(HOVER && INPUT !== 'water' && INPUT !== 'none') {
+    ctx.beginPath(); ctx.arc(HOVER.endX, HOVER.endY, Math.max(HOVER.thick, 20) + 5, 0, Math.PI * 2);
+    ctx.fillStyle = (INPUT==='prune' ? 'rgba(248, 113, 113, 0.2)' : INPUT==='graft' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(250, 204, 21, 0.2)');
+    ctx.fill();
+  }
+
   ctx.lineCap = "round";
   function render(b) {
     if(b.len < 1) return;
-    
-    ctx.lineWidth = b.thick;
-    ctx.strokeStyle = spec.bark[0];
+    ctx.lineWidth = b.thick; ctx.strokeStyle = spec.bark[0];
     
     if(b === HOVER) { 
-      ctx.shadowBlur = 10; 
-      ctx.shadowColor = "#fff"; 
+      ctx.shadowBlur = 10; ctx.shadowColor = "#fff"; 
       ctx.strokeStyle = (INPUT==='prune' ? '#f87171' : INPUT==='graft' ? '#60a5fa' : INPUT==='bend' ? '#facc15' : '#fff'); 
-    } else {
-      ctx.shadowBlur = 0;
-    }
+    } else { ctx.shadowBlur = 0; }
     
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    ctx.lineTo(b.endX, b.endY);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.endX, b.endY); ctx.stroke();
     ctx.shadowBlur = 0;
     
     if(b.cut) {
-      ctx.fillStyle = "#aaa";
-      ctx.beginPath(); ctx.arc(b.endX, b.endY, b.thick * 0.4, 0, 6.28); ctx.fill();
+      ctx.fillStyle = "#aaa"; ctx.beginPath(); ctx.arc(b.endX, b.endY, b.thick * 0.4, 0, 6.28); ctx.fill();
     }
-    
     if(b.grafted) {
-      ctx.fillStyle = "#fffc";
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.thick * 0.6, 0, 6.28); ctx.fill();
+      ctx.fillStyle = "#fffc"; ctx.beginPath(); ctx.arc(b.x, b.y, b.thick * 0.6, 0, 6.28); ctx.fill();
     }
 
     if(!b.cut && b.leaves.length) {
        const sIdx = Math.floor(t.days / 30) % 4; 
        let cols = spec.color;
-       if(sIdx === 2 && spec.leaf !== 'needle') cols = ["#b45309", "#d97706"]; // Herbst
+       if(sIdx === 2 && spec.leaf !== 'needle') cols = ["#b45309", "#d97706"]; 
        
        for(let l of b.leaves) {
           ctx.save();
-          const px = b.x + (b.endX - b.x) * l.f;
-          const py = b.y + (b.endY - b.y) * l.f;
-          ctx.translate(px, py);
-          ctx.rotate(b.angle + l.r); 
+          const px = b.x + (b.endX - b.x) * l.f; const py = b.y + (b.endY - b.y) * l.f;
+          ctx.translate(px, py); ctx.rotate(b.angle + l.r); 
           
           if(spec.leaf === 'needle') {
              ctx.strokeStyle = cols[0]; ctx.lineWidth = 1;
@@ -750,19 +863,14 @@ function drawWorld() {
   }
   render(t.root);
 
-  // Topf rendern
   const pg = ctx.createLinearGradient(0, 0, 0, potH);
   pg.addColorStop(0, "#2a2a2e"); pg.addColorStop(1, "#09090b");
   if(t.pot === 'pot_clay') { pg.addColorStop(0, "#785346"); pg.addColorStop(1, "#2d1d18"); }
   else if(t.pot === 'pot_zen') { pg.addColorStop(0, "#1e293b"); pg.addColorStop(1, "#020617"); }
   
-  ctx.fillStyle = pg;
-  ctx.beginPath();
-  ctx.moveTo(-85, 0); 
-  ctx.quadraticCurveTo(-85, potH, -55, potH);
-  ctx.lineTo(55, potH); 
-  ctx.quadraticCurveTo(85, potH, 85, 0);
-  ctx.fill();
+  ctx.fillStyle = pg; ctx.beginPath(); ctx.moveTo(-85, 0); 
+  ctx.quadraticCurveTo(-85, potH, -55, potH); ctx.lineTo(55, potH); 
+  ctx.quadraticCurveTo(85, potH, 85, 0); ctx.fill();
 
   ctx.fillStyle = "rgba(56, 189, 248, 0.8)";
   ENV.particles.forEach(p => { 
@@ -771,52 +879,174 @@ function drawWorld() {
 }
 
 // ---------------- UI & SYSTEMS ----------------
+function notify(msg) {
+  const t = $('toast');
+  t.innerText = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
 
-function bindSettingsUI() {
-  const binds = [
-    { id: 'inpSecPerDay', key: 'secPerDay', valId: 'valSec', parser: parseFloat },
-    { id: 'inpGrowMult', key: 'growMult', valId: 'valGrow', parser: parseFloat },
-    { id: 'inpThickMult', key: 'thickMult', valId: 'valThick', parser: parseFloat },
-    { id: 'inpSproutChance', key: 'sproutChance', valId: 'valSprout', parser: parseFloat, display: v=>Math.round(v*100)+"%" },
-    { id: 'inpLeafLimit', key: 'maxLeaves', valId: 'valLeaves', parser: parseInt },
-    { id: 'inpLeafRate', key: 'leafRate', valId: 'valLeafRate', parser: parseFloat, display: v=>Math.round(v*100)+"%" },
-    { id: 'inpLeafSize', key: 'leafSizeMult', valId: 'valLeafSize', parser: parseFloat },
-    { id: 'inpWaterDrain', key: 'waterDrain', valId: 'valWater', parser: parseFloat },
-    { id: 'inpWindSpeed', key: 'windSpeed', valId: 'valWindSpd', parser: parseFloat },
-    { id: 'inpWindSway', key: 'windSway', valId: 'valWindSway', parser: parseFloat }
-  ];
+function openPanel(id) {
+  $('overlayBg').classList.add('open');
+  $(id).classList.add('open');
+  updateListUI();
+}
+window.closeAllPanels = function() {
+  $('overlayBg').classList.remove('open');
+  document.querySelectorAll('.overlay-sheet').forEach(s => s.classList.remove('open'));
+}
 
-  let html = '';
-  binds.forEach(b => {
-    html += `
-      <div class="set-row">
-        <div class="set-header">
-          <span class="s-label">${b.id.replace('inp','').replace(/([A-Z])/g, ' $1').trim()}</span>
-          <span class="s-val" id="${b.valId}">${b.display ? b.display(SETTINGS[b.key]) : SETTINGS[b.key]}</span>
-        </div>
-        <input type="range" id="${b.id}" min="${b.key==='windSpeed'?0:b.key==='sproutChance'?0:b.key==='secPerDay'?1:0.1}" max="${b.key==='secPerDay'?120:b.key==='maxLeaves'?100:b.key==='sproutChance'?0.2:b.key==='waterDrain'?20:5}" step="${b.key==='maxLeaves'||b.key==='secPerDay'?1:0.01}" value="${SETTINGS[b.key]}">
+function updateRealtimeUI() {
+  const tree = STATE.trees[STATE.activeIdx];
+  if(!tree) return;
+  $('uiTreeName').innerText = tree.name;
+  $('uiSpeciesName').innerText = SPECIES[tree.key].name;
+  $('uiDay').innerText = `Tag ${Math.floor(tree.days)}`;
+  const seasons = ["Frühling", "Sommer", "Herbst", "Winter"];
+  $('uiSeason').innerText = seasons[Math.floor(tree.days / 30) % 4];
+  
+  $('uiWaterVal').innerText = Math.round(tree.water) + '%';
+  $('barWater').style.width = tree.water + '%';
+  $('uiHpVal').innerText = Math.round(tree.hp) + '%';
+  $('barHp').style.width = tree.hp + '%';
+  $('uiMoneyTop').innerText = STATE.money + ' 💰';
+}
+
+function updateListUI() {
+  // --- Baumschule (Eigene Bäume) ---
+  let collHtml = '';
+  STATE.trees.forEach((t, i) => {
+    let active = (i === STATE.activeIdx) ? 'active-item' : '';
+    let btn = (i === STATE.activeIdx) ? `<span style="font-size:12px; color:var(--accent)">Aktiv</span>` : `<button class="action-btn" onclick="switchTree(${i})">Auswählen</button>`;
+    collHtml += `
+      <div class="list-item ${active}">
+        <div class="tree-preview">${SPECIES[t.key].icon}</div>
+        <div class="list-content"><div class="list-title">${t.name}</div><div class="list-sub">Tag ${Math.floor(t.days)} • ${Math.round(t.hp)}% HP</div></div>
+        ${btn}
       </div>`;
   });
-  $('settingsGrid').innerHTML = html;
+  $('collectionList').innerHTML = collHtml;
 
-  binds.forEach(b => {
-    let el = $(b.id);
-    if(el) {
-      el.oninput = e => {
-        let val = b.parser(e.target.value);
-        SETTINGS[b.key] = val;
-        if(b.valId) $(b.valId).innerText = b.display ? b.display(val) : val;
-      };
+  // --- Baumschule (Spezies kaufen) ---
+  let specHtml = '';
+  for(let key in SPECIES) {
+    if(!STATE.inventory.species.includes(key)) {
+      let spec = SPECIES[key];
+      specHtml += `
+        <div class="list-item">
+          <div class="tree-preview">${spec.icon}</div>
+          <div class="list-content"><div class="list-title">${spec.name}</div><div class="list-sub">Wachstum x${spec.growth}</div></div>
+          <button class="action-btn buy" onclick="buySpecies('${key}')">${spec.cost} 💰</button>
+        </div>`;
+    } else {
+       let spec = SPECIES[key];
+       specHtml += `
+        <div class="list-item" style="opacity:0.6">
+          <div class="tree-preview">${spec.icon}</div>
+          <div class="list-content"><div class="list-title">${spec.name}</div><div class="list-sub">Freigeschaltet</div></div>
+          <button class="action-btn" onclick="plantNew('${key}')">Pflanzen</button>
+        </div>`;
     }
+  }
+  $('speciesList').innerHTML = specHtml;
+
+  // --- Shop (Töpfe/Erde) ---
+  $('shopMoneyDisplay').innerText = `Guthaben: ${STATE.money} 💰`;
+  let potHtml = ''; let soilHtml = '';
+  const tree = STATE.trees[STATE.activeIdx];
+  for(let key in ITEMS) {
+    let itm = ITEMS[key];
+    let isOwned = STATE.inventory[itm.type + 's'].includes(key);
+    let isEquipped = (tree[itm.type] === key);
+    let btnHtml = '';
+    
+    if(!isOwned) {
+      btnHtml = `<button class="action-btn buy" onclick="buyItem('${key}')">${itm.cost} 💰</button>`;
+    } else if(!isEquipped) {
+      btnHtml = `<button class="action-btn" onclick="equipItem('${key}')">Nutzen</button>`;
+    } else {
+      btnHtml = `<span style="font-size:12px; color:var(--success)">Aktiv</span>`;
+    }
+
+    let card = `
+      <div class="list-item ${isEquipped ? 'active-item' : ''}">
+        <div class="list-content">
+          <div class="list-title">${itm.name}</div>
+          <div class="list-sub">${itm.bonus ? 'Wachstum +'+Math.round((itm.bonus-1)*100)+'%' : 'Feuchtigkeit +'+Math.round((itm.boost-1)*100)+'%'}</div>
+        </div>
+        ${btnHtml}
+      </div>`;
+    if(itm.type === 'pot') potHtml += card; else soilHtml += card;
+  }
+  $('shopPotsList').innerHTML = potHtml;
+  $('shopSoilsList').innerHTML = soilHtml;
+
+  // --- Quests ---
+  let qHtml = '';
+  STATE.quests.forEach((q, i) => {
+    let btnClass = (q.done && !q.coll) ? 'quest-btn ready' : 'quest-btn';
+    let btnTxt = q.coll ? 'Erledigt' : (q.done ? `Abholen` : `${Math.floor(q.cur)}/${q.goal}`);
+    qHtml += `
+      <div class="list-item">
+        <div class="list-content"><div class="list-title">${q.txt}</div><div class="list-sub">Belohnung: ${q.rew} 💰</div></div>
+        <button class="${btnClass}" onclick="claimQuest(${i})" ${q.coll||(!q.done)?'disabled':''}>${btnTxt}</button>
+      </div>`;
   });
+  $('questList').innerHTML = qHtml;
 }
+
+// Interaktionsfunktionen
+window.switchTree = function(idx) {
+  STATE.activeIdx = idx;
+  INPUT = "none"; document.querySelectorAll('.tools-panel .btn').forEach(b => b.classList.remove('active'));
+  closeAllPanels(); updateRealtimeUI();
+};
+
+window.buySpecies = function(key) {
+  if(STATE.money >= SPECIES[key].cost) {
+    STATE.money -= SPECIES[key].cost;
+    STATE.inventory.species.push(key);
+    notify(`${SPECIES[key].name} gekauft!`);
+    updateListUI();
+  } else { notify("Zu wenig Guthaben!"); }
+};
+
+window.plantNew = function(key) {
+  let nr = STATE.trees.length + 1;
+  STATE.trees.push(new Tree(key, SPECIES[key].name + " #" + nr));
+  switchTree(STATE.trees.length - 1);
+  notify("Neuer Baum gepflanzt!");
+};
+
+window.buyItem = function(key) {
+  let itm = ITEMS[key];
+  if(STATE.money >= itm.cost) {
+    STATE.money -= itm.cost;
+    STATE.inventory[itm.type + 's'].push(key);
+    notify(`${itm.name} gekauft!`);
+    updateListUI();
+  } else { notify("Zu wenig Guthaben!"); }
+};
+
+window.equipItem = function(key) {
+  let itm = ITEMS[key];
+  STATE.trees[STATE.activeIdx][itm.type] = key;
+  updateListUI();
+};
+
+window.claimQuest = function(idx) {
+  let q = STATE.quests[idx];
+  if(q.done && !q.coll) {
+    q.coll = true; STATE.money += q.rew;
+    notify(`+${q.rew} 💰 erhalten!`);
+    updateListUI(); updateRealtimeUI();
+  }
+};
 
 function generateQuests() {
   STATE.quests = [
     { id:'q1', txt:"Gieße deinen Baum (10x)", goal:10, cur:0, rew:100, done:false, coll:false },
     { id:'q2', txt:"Schneide Äste (5x)", goal:5, cur:0, rew:150, done:false, coll:false },
-    { id:'q3', txt:"Überlebe 5 Tage", goal:5, cur:0, rew:300, done:false, coll:false },
-    { id:'q4', txt:"Besitze 3 Arten", goal:3, cur:0, rew:500, done:false, coll:false }
+    { id:'q3', txt:"Überlebe 5 Tage", goal:5, cur:0, rew:300, done:false, coll:false }
   ];
 }
 
@@ -824,430 +1054,50 @@ function checkQuests() {
   let changed = false;
   STATE.quests.forEach(q => {
     if(q.done) return;
-    
     if(q.id === 'q1') q.cur = Math.floor(STATE.stats.totalWaters || 0);
     if(q.id === 'q2') q.cur = STATE.stats.totalPrunes || 0;
-    if(q.id === 'q3') q.cur = STATE.trees[STATE.activeIdx].days || 0;
-    if(q.id === 'q4') q.cur = STATE.inventory.species.length || 1;
+    if(q.id === 'q3') q.cur = STATE.trees[STATE.activeIdx]?.days || 0;
     
-    if(q.cur >= q.goal) {
-      q.done = true;
-      changed = true;
-      notify("Aufgabe abgeschlossen!");
-    }
+    if(q.cur >= q.goal) { q.done = true; changed = true; notify("Aufgabe abgeschlossen!"); }
   });
   if(changed) updateListUI();
 }
 
-window.claimQuest = function(idx) {
-  const q = STATE.quests[idx];
-  if(q.done && !q.coll) {
-    q.coll = true;
-    STATE.money += q.rew;
-    notify(`+${q.rew} 💰 erhalten!`);
-    
-    // Einfaches Nachrücken von Quests
-    if(q.id === 'q1') STATE.quests.push({ id:'q1', txt:"Gieße deinen Baum (50x)", goal:50, cur:STATE.stats.totalWaters, rew:400, done:false, coll:false });
-    if(q.id === 'q2') STATE.quests.push({ id:'q2', txt:"Schneide Äste (25x)", goal:25, cur:STATE.stats.totalPrunes, rew:500, done:false, coll:false });
-    if(q.id === 'q3') STATE.quests.push({ id:'q3', txt:"Überlebe 20 Tage", goal:20, cur:0, rew:1000, done:false, coll:false });
-    
-    updateListUI();
-  }
+function bindSettingsUI() {
+  const binds = [
+    { id: 'inpSecPerDay', key: 'secPerDay', valId: 'valSec', parser: parseFloat },
+    { id: 'inpGrowMult', key: 'growMult', valId: 'valGrow', parser: parseFloat },
+    { id: 'inpThickMult', key: 'thickMult', valId: 'valThick', parser: parseFloat },
+    { id: 'inpSproutChance', key: 'sproutChance', valId: 'valSprout', parser: parseFloat, display: v=>Math.round(v*100)+"%" },
+    { id: 'inpLeafLimit', key: 'maxLeaves', valId: 'valLeaves', parser: parseInt }
+  ];
+  let html = '';
+  binds.forEach(b => {
+    html += `<div class="set-row">
+        <div class="set-header"><span class="s-label">${b.id.replace('inp','')}</span><span class="s-val" id="${b.valId}">${b.display ? b.display(SETTINGS[b.key]) : SETTINGS[b.key]}</span></div>
+        <input type="range" id="${b.id}" min="${b.key==='secPerDay'?1:0.1}" max="${b.key==='secPerDay'?120:b.key==='maxLeaves'?100:5}" step="0.01" value="${SETTINGS[b.key]}">
+      </div>`;
+  });
+  $('settingsGrid').innerHTML = html;
+  binds.forEach(b => {
+    let el = $(b.id);
+    if(el) el.oninput = e => { let val = b.parser(e.target.value); SETTINGS[b.key] = val; if(b.valId) $(b.valId).innerText = b.display ? b.display(val) : val; };
+  });
 }
 
-window.unlockSpecies = function(key) {
-  const spec = SPECIES[key];
-  if(STATE.money >= spec.cost && !STATE.inventory.species.includes(key)) {
-    STATE.money -= spec.cost;
-    STATE.inventory.species.push(key);
-    notify(`${spec.name} freigeschaltet!`);
-    updateListUI();
-  } else if(STATE.money < spec.cost) {
-    notify("Zu wenig Guthaben!");
-  }
-}
-
-window.selectTreeSpecies = function(key) {
-  if(STATE.inventory.species.includes(key)) {
-    const t = new Tree(key, SPECIES[key].name);
-    STATE.trees.push(t);
-    STATE.activeIdx = STATE.trees.length - 1;
-    closeAllPanels();
-    updateListUI();
-  }
-}
-
-window.buy = function(id, type) {
-  const item = ITEMS[id];
-  if(!item) return;
-  
-  if(STATE.money >= item.cost) {
-    if((type === 'pot' && !STATE.inventory.pots.includes(id)) ||
-       (type === 'soil' && !STATE.inventory.soils.includes(id))) {
-      
-      STATE.money -= item.cost;
-      if(type === 'pot') STATE.inventory.pots.push(id);
-      if(type === 'soil') STATE.inventory.soils.push(id);
-      
-      notify(item.name + " erfolgreich gekauft!");
-      updateListUI();
-    } else {
-      notify("Befindet sich bereits in deinem Besitz!");
-    }
-  } else {
-     notify("Nicht genug Guthaben!");
-  }
+window.toggleFullScreen = function() {
+  if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(err); });
+  } else { if (document.exitFullscreen) { document.exitFullscreen(); } }
 };
-
-window.equip = function(id, type) {
-  const t = STATE.trees[STATE.activeIdx];
-  if(!t) return;
-  if(type === 'pot' && STATE.inventory.pots.includes(id)) { 
-    t.pot = id; 
-    notify(ITEMS[id].name + " ausgerüstet!"); 
-  }
-  if(type === 'soil' && STATE.inventory.soils.includes(id)) { 
-    t.soil = id; 
-    notify(ITEMS[id].name + " als Substrat angewendet!"); 
-  }
-  updateListUI();
-};
-
-// Speichern & Laden
-function saveGame() {
-  try {
-    const data = {
-      money: STATE.money,
-      activeIdx: STATE.activeIdx,
-      inventory: STATE.inventory,
-      stats: STATE.stats,
-      quests: STATE.quests,
-      trees: STATE.trees.map(t => ({
-        key: t.key, name: t.name, days: t.days, water: t.water, hp: t.hp,
-        pot: t.pot, soil: t.soil, root: t.root.serialize()
-      }))
-    };
-    localStorage.setItem('bonsai_master_v7_save', JSON.stringify(data));
-  } catch(e) { console.warn("Speichern fehlgeschlagen", e); }
-}
-
-function loadGame() {
-  try {
-    const d = localStorage.getItem('bonsai_master_v7_save');
-    if(d) {
-      const p = JSON.parse(d);
-      STATE.money = p.money || 500;
-      STATE.activeIdx = p.activeIdx || 0;
-      STATE.inventory = p.inventory || { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] };
-      STATE.stats = p.stats || { totalWaters:0, totalPrunes:0, totalDays:0 };
-      STATE.quests = p.quests || [];
-      if(p.trees && p.trees.length > 0) {
-        STATE.trees = p.trees.map(td => {
-          let t = new Tree(td.key, td.name);
-          t.days = td.days; t.water = td.water; t.hp = td.hp;
-          t.pot = td.pot || 'pot_basic'; t.soil = td.soil || 'soil_basic';
-          if(td.root) t.root = Branch.deserialize(td.root, null);
-          return t;
-        });
-      }
-    }
-  } catch(e) { console.warn("Laden fehlgeschlagen", e); }
-  
-  // Auto-Save alle 5 Sekunden
-  setInterval(saveGame, 5000); 
-}
 
 window.hardReset = function() {
-  if(confirm("Möchtest du wirklich deinen gesamten Fortschritt löschen? Dies kann NICHT rückgängig gemacht werden!")) {
-    localStorage.removeItem('bonsai_master_v7_save');
+  if(confirm("Bist du sicher? Dein gesamter Spielstand wird gelöscht!")) {
+    localStorage.removeItem('bonsaiSave7');
     location.reload();
   }
 };
 
-// UI Aktualisierung
-function updateRealtimeUI() {
-  const t = STATE.trees[STATE.activeIdx];
-  if(!t) return;
-  
-  $('uiTreeName').innerText = t.name;
-  $('uiSpeciesName').innerText = SPECIES[t.key].name;
-  $('uiDay').innerText = "Tag " + t.days;
-  
-  let s = "Frühling";
-  let sIdx = Math.floor(t.days / 30) % 4;
-  if(sIdx===1) s="Sommer"; else if(sIdx===2) s="Herbst"; else if(sIdx===3) s="Winter";
-  $('uiSeason').innerText = s;
-  
-  $('uiWaterVal').innerText = Math.round(t.water) + "%";
-  $('barWater').style.width = t.water + "%";
-  $('uiHpVal').innerText = Math.round(t.hp) + "%";
-  $('barHp').style.width = t.hp + "%";
-}
-
-function updateListUI() {
-  $('shopMoneyDisplay').innerText = "Guthaben: " + Math.floor(STATE.money) + " 💰";
-  
-  // Shop: Töpfe
-  let potsHtml = '';
-  for(let k in ITEMS) {
-    if(ITEMS[k].type !== 'pot') continue;
-    let item = ITEMS[k];
-    let has = STATE.inventory.pots.includes(k);
-    let eq = STATE.trees[STATE.activeIdx] && STATE.trees[STATE.activeIdx].pot === k;
-    potsHtml += `
-      <div class="list-item">
-        <div class="list-content">
-          <span class="list-title">${item.name}</span>
-          <span class="list-sub">Wachstumsbonus: x${item.bonus}</span>
-        </div>
-        ${has ? (eq ? `<button class="quest-btn ready" disabled>Aktiv</button>` : `<button class="quest-btn" onclick="equip('${k}','pot')">Ausrüsten</button>`) : `<button class="quest-btn" onclick="buy('${k}','pot')">${item.cost} 💰</button>`}
-      </div>`;
-  }
-  $('shopPotsList').innerHTML = potsHtml || '<i>Keine Items verfügbar.</i>';
-
-  // Shop: Substrate
-  let soilsHtml = '';
-  for(let k in ITEMS) {
-    if(ITEMS[k].type !== 'soil') continue;
-    let item = ITEMS[k];
-    let has = STATE.inventory.soils.includes(k);
-    let eq = STATE.trees[STATE.activeIdx] && STATE.trees[STATE.activeIdx].soil === k;
-    soilsHtml += `
-      <div class="list-item">
-        <div class="list-content">
-          <span class="list-title">${item.name}</span>
-          <span class="list-sub">Vitalitätsboost: x${item.boost}</span>
-        </div>
-        ${has ? (eq ? `<button class="quest-btn ready" disabled>Aktiv</button>` : `<button class="quest-btn" onclick="equip('${k}','soil')">Anwenden</button>`) : `<button class="quest-btn" onclick="buy('${k}','soil')">${item.cost} 💰</button>`}
-      </div>`;
-  }
-  $('shopSoilsList').innerHTML = soilsHtml || '<i>Keine Items verfügbar.</i>';
-
-  // Baumschule (Arten)
-  let treesHtml = '';
-  for(let k in SPECIES) {
-    let spec = SPECIES[k];
-    let has = STATE.inventory.species.includes(k);
-    treesHtml += `
-      <div class="list-item">
-        <div class="list-content">
-          <span class="list-title">${spec.name}</span>
-          <span class="list-sub">Wachstumsrate: ${spec.growth}</span>
-        </div>
-        ${has ? `<button class="quest-btn" onclick="selectTreeSpecies('${k}')">Neuen Pflanzen</button>` : `<button class="quest-btn" onclick="unlockSpecies('${k}')">${spec.cost} 💰</button>`}
-      </div>`;
-  }
-  $('collectionList').innerHTML = treesHtml;
-
-  // Quests
-  let questHtml = '';
-  STATE.quests.forEach((q, i) => {
-     if(q.coll) return;
-     let p = Math.min(100, Math.round((q.cur/q.goal)*100));
-     questHtml += `
-      <div class="list-item" style="flex-direction:column; align-items:flex-start">
-        <div style="display:flex; justify-content:space-between; width:100%">
-          <span class="list-title">${q.txt}</span>
-          <span class="list-sub">${Math.floor(q.cur)}/${q.goal}</span>
-        </div>
-        <div class="bar-bg" style="height:4px; margin:5px 0"><div class="bar-fill hp-color" style="width:${p}%"></div></div>
-        ${q.done ? `<button class="quest-btn ready" style="width:100%; margin-top:5px" onclick="claimQuest(${i})">Abschließen: ${q.rew} 💰</button>` : ``}
-      </div>`;
-  });
-  $('questList').innerHTML = questHtml || `<div style="text-align:center; color:#888; padding:20px; font-size:12px;">Keine aktiven Aufgaben mehr. Gut gemacht!</div>`;
-
-  // Badges (Erfolge)
-  let badgeHtml = '';
-  const bData = [
-    { icon:'🌱', name:'Anfänger', req: STATE.stats.totalDays >= 10 },
-    { icon:'✂️', name:'Schnippler', req: STATE.stats.totalPrunes >= 20 },
-    { icon:'💧', name:'Regenmacher', req: STATE.stats.totalWaters >= 50 },
-    { icon:'🌲', name:'Bonsai Meister', req: STATE.trees.some(t => t.days >= 100) },
-    { icon:'💸', name:'Sammler', req: STATE.inventory.pots.length >= 2 },
-    { icon:'🏆', name:'Legende', req: STATE.inventory.species.length >= 4 }
-  ];
-  bData.forEach(b => {
-     badgeHtml += `<div class="badge ${b.req ? 'unlocked' : ''}"><span class="badge-icon">${b.icon}</span><span class="badge-name">${b.name}</span></div>`;
-  });
-  $('badgeGrid').innerHTML = badgeHtml;
-}
-
-window.notify = function(msg) {
-  let t = $('toast');
-  t.innerText = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
-};
-
-// Panel & Tab Steuerung
-window.closeAllPanels = function() {
-  document.querySelectorAll('.overlay-sheet').forEach(el => el.classList.remove('open'));
-  $('overlayBg').classList.remove('open');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('open'));
-};
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-     let t = btn.getAttribute('data-target');
-     let panel = $(t);
-     if(panel.classList.contains('open')) {
-       closeAllPanels();
-     } else {
-       closeAllPanels();
-       panel.classList.add('open');
-       $('overlayBg').classList.add('open');
-       btn.classList.add('open');
-     }
-  });
-});
-
-$('overlayBg').addEventListener('click', closeAllPanels);
-
-// Werkzeuge auswählen
-const tools = ['toolWater', 'toolPrune', 'toolGraft', 'toolBend'];
-tools.forEach(id => {
-  $(id).addEventListener('click', () => {
-    let type = id.replace('tool','').toLowerCase();
-    if(INPUT === type) {
-       INPUT = 'none';
-       $(id).classList.remove('active');
-    } else {
-       tools.forEach(t => $(t).classList.remove('active'));
-       INPUT = type;
-       $(id).classList.add('active');
-    }
-  });
-});
-
-// Steuerung: Maus & Touch
-function getPos(e) {
-  let rect = cv.getBoundingClientRect();
-  let ex = e.touches ? e.touches[0].clientX : e.clientX;
-  let ey = e.touches ? e.touches[0].clientY : e.clientY;
-  MOUSE.x = ex - rect.left;
-  MOUSE.y = ey - rect.top;
-  MOUSE.worldX = (MOUSE.x - cv.width/2 - CAM.x) / CAM.zoom;
-  MOUSE.worldY = (MOUSE.y - cv.height * 0.55 - CAM.y) / CAM.zoom;
-}
-
-function getHover(b) {
-  if(!b || b.cut) return null;
-  let dx = b.endX - MOUSE.worldX;
-  let dy = b.endY - MOUSE.worldY;
-  let dist = Math.sqrt(dx*dx + dy*dy);
-  
-  // Hitbox vergrößern bei dünnen Ästen für leichtere mobile Bedienung
-  if(dist < Math.max(b.thick, 15)) return b; 
-  
-  for(let c of b.children) {
-     let res = getHover(c);
-     if(res) return res;
-  }
-  return null;
-}
-
-function handlePointerMove(e) {
-  if(MOUSE.drag && INPUT === 'none') {
-    if(e.type === 'touchmove') {
-       let lx = e.touches[0].clientX; 
-       let ly = e.touches[0].clientY;
-       if(MOUSE.lx) { CAM.x += lx - MOUSE.lx; CAM.y += ly - MOUSE.ly; }
-       MOUSE.lx = lx; MOUSE.ly = ly;
-    } else {
-       CAM.x += e.movementX;
-       CAM.y += e.movementY;
-    }
-  }
-  
-  getPos(e);
-  
-  if(INPUT !== 'none' && INPUT !== 'water' && !BEND_TARGET) {
-    const t = STATE.trees[STATE.activeIdx];
-    if(t) HOVER = getHover(t.root);
-  }
-  
-  if(BEND_TARGET && INPUT === 'bend') {
-    let dx = MOUSE.worldX - BEND_TARGET.x;
-    let dy = MOUSE.worldY - BEND_TARGET.y;
-    BEND_TARGET.targetAngle = Math.atan2(dy, dx);
-  }
-}
-
-cv.addEventListener('mousedown', e => { getPos(e); interactStart(); });
-cv.addEventListener('touchstart', e => { getPos(e); interactStart(); }, {passive: false});
-
-cv.addEventListener('mousemove', handlePointerMove);
-cv.addEventListener('touchmove', e => {
-  if(e.cancelable) e.preventDefault(); // Verhindert scrollen auf Canvas
-  handlePointerMove(e);
-}, {passive: false});
-
-function interactStart() {
-   MOUSE.drag = true;
-   
-   if(INPUT === 'water') {
-     WATERING = true;
-   } else if(HOVER) {
-     if(INPUT === 'prune' && HOVER.parent) {
-       HOVER.cut = true;
-       HOVER.children = [];
-       HOVER.leaves = [];
-       STATE.stats.totalPrunes++;
-       
-       let reward = Math.floor(10 * HOVER.thick);
-       STATE.money += reward;
-       notify(`Schnitt durchgeführt! +${reward} 💰`);
-       HOVER = null;
-       updateListUI();
-       
-     } else if(INPUT === 'graft' && !HOVER.cut && HOVER.thick > 2.0 && !HOVER.grafted) {
-       HOVER.grafted = true;
-       let spec = SPECIES[STATE.trees[STATE.activeIdx].key];
-       let dev = (Math.random() - 0.5) * 1.5;
-       if(spec.weeping) dev = Math.abs(dev) + 1.2;
-       HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, HOVER.thick * 0.8, HOVER.depth + 1));
-       notify("Erfolgreich veredelt!");
-       
-     } else if(INPUT === 'bend' && !HOVER.cut) {
-       BEND_TARGET = HOVER;
-     }
-   }
-}
-
-window.addEventListener('mouseup', endInteract);
-window.addEventListener('touchend', endInteract);
-
-function endInteract() {
-  MOUSE.drag = false;
-  WATERING = false;
-  BEND_TARGET = null;
-  MOUSE.lx = null; MOUSE.ly = null;
-}
-
-// Zoom-Steuerung via Mausrad
-cv.addEventListener('wheel', e => {
-  e.preventDefault();
-  CAM.zoom += e.deltaY * -0.001;
-  if(CAM.zoom < 0.3) CAM.zoom = 0.3;
-  if(CAM.zoom > 3.0) CAM.zoom = 3.0;
-}, {passive: false});
-
-// Vollbildfunktion
-window.toggleFullScreen = function() {
-  if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        notify("Vollbild nicht unterstützt");
-      });
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    }
-  }
-};
-
-// Spiel starten
 init();
-
 })();
 </script>
 </body>
