@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v13.1 (Precision Bending)</title>
+<title>Bonsai Master v13.5 (Radial UI)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -66,6 +66,30 @@
     pointer-events: auto;
   }
 
+  /* --- NEUER HEADER OBEN LINKS --- */
+  .top-header {
+    position: absolute;
+    top: env(safe-area-inset-top, 20px);
+    left: 20px;
+    padding: 10px 16px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 20;
+  }
+  .top-name { 
+    font-size: 16px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+    display: flex; align-items: center; 
+  }
+  .top-species { 
+    font-size: 11px; color: var(--accent); font-weight: 700; 
+    text-transform: uppercase; letter-spacing: 1px; 
+  }
+
+  /* --- NEUE SMART BAR UNTEN --- */
   .smart-bar {
     border-radius: 22px;
     padding: 10px 15px;
@@ -76,38 +100,28 @@
     gap: 10px; 
   }
   
-  .smart-stats { 
-    display: flex; flex-direction: column; gap: 6px; flex: 1; 
-    min-width: 0; 
+  .radial-stats { 
+    display: flex; align-items: center; gap: 12px; flex: 1; 
   }
   
-  .smart-Title-Row { 
-    display: flex; align-items: center; gap: 6px; 
-    min-width: 0; 
+  .radial-item { 
+    position: relative; width: 40px; height: 40px; 
+    display: flex; align-items: center; justify-content: center; 
   }
   
-  .smart-tree-name { 
-    font-size: 14px; font-weight: 700; white-space: nowrap; 
-    display: flex; align-items: center; overflow: hidden; 
+  .radial-item svg.radial-bg { 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; 
   }
   
-  .smart-tree-species { 
-    font-size: 11px; color: var(--accent); white-space: nowrap; 
-    flex-shrink: 0; 
+  .radial-icon { 
+    position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; 
   }
   
-  .smart-info-row { 
-    display: flex; align-items: center; gap: 12px; 
-    overflow: hidden; 
+  #circWater, #circHp { 
+    transition: stroke-dashoffset 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), stroke 0.3s; 
   }
   
-  .smart-info-item { 
-    font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; 
-    flex-shrink: 0; 
-  }
-  
-  .smart-mini-bar { width: 40px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
-  .smart-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+  .danger-stroke { stroke: var(--danger) !important; }
   
   .smart-tools { 
     display: flex; gap: 6px; 
@@ -176,27 +190,42 @@
 
   .toast { position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%); background: rgba(20, 25, 35, 0.9); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.5); padding: 14px 28px; border-radius: 20px; pointer-events: none; opacity: 0; transition: opacity 0.4s, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); font-weight: 700; font-size: 14px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
   .toast.show { opacity: 1; transform: translate(-50%, 15px); }
-  .water-color { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
-  .hp-color { background: linear-gradient(90deg, #10b981, #34d399); }
-  .text-danger { color: var(--danger) !important; }
-  .bg-danger { background: linear-gradient(90deg, #ef4444, #f87171) !important; }
 </style>
 </head>
 <body>
 <div class="viewport" id="viewport"><canvas id="cv"></canvas><div id="toast" class="toast">Nachricht</div></div>
 <div class="ui-layer">
+
+  <div class="top-header glass" onclick="renameActiveTree()" title="Klicken zum Umbenennen">
+    <div class="top-name" id="uiTreeName">Baum Name</div>
+    <div class="top-species" id="uiSpeciesName">Spezies</div>
+  </div>
+
   <div class="smart-bar glass">
-    <div class="smart-stats">
-      <div class="smart-Title-Row" onclick="renameActiveTree()" style="cursor: pointer;" title="Klicken zum Umbenennen">
-        <span class="smart-tree-name" id="uiTreeName">Baum Name</span>
-        <span class="smart-tree-species" id="uiSpeciesName">Spezies</span>
+    <div class="radial-stats">
+      <div class="radial-item" title="Wasser">
+        <svg class="radial-bg" width="40" height="40" viewBox="0 0 40 40">
+          <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"></circle>
+          <circle id="circWater" cx="20" cy="20" r="17" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 20 20)" stroke-linecap="round"></circle>
+        </svg>
+        <div class="radial-icon">
+          <svg id="iconWater" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        </div>
       </div>
-      <div class="smart-info-row">
-        <div class="smart-info-item"><span id="uiDaySeason">Tag 0 • Sommer</span></div>
-        <div class="smart-info-item"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg><div class="smart-mini-bar"><div class="smart-bar-fill water-color" id="barWaterMini" style="width:100%"></div></div><span id="uiWaterPct">100%</span></div>
-        <div class="smart-info-item"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div class="smart-mini-bar"><div class="smart-bar-fill hp-color" id="barHpMini" style="width:100%"></div></div><span id="uiHpPct">100%</span></div>
+      <div class="radial-item" title="Vitalität">
+        <svg class="radial-bg" width="40" height="40" viewBox="0 0 40 40">
+          <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"></circle>
+          <circle id="circHp" cx="20" cy="20" r="17" fill="none" stroke="#34d399" stroke-width="4" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 20 20)" stroke-linecap="round"></circle>
+        </svg>
+        <div class="radial-icon">
+          <svg id="iconHp" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#34d399" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+      </div>
+      <div class="stat-text-info">
+        <span id="uiDaySeason" style="font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.9); display:block; line-height:1.3;">Tag 0<br><span style="color:var(--accent); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Sommer</span></span>
       </div>
     </div>
+
     <div class="smart-tools">
       <button class="tool-btn-mini" id="toolWater" onclick="setTool('water')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></button>
       <button class="tool-btn-mini" id="toolPrune" onclick="setTool('prune')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></button>
@@ -204,6 +233,7 @@
       <button class="tool-btn-mini" id="toolBend" onclick="setTool('bend')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg></button>
     </div>
   </div>
+  
   <div class="bottom-dock glass">
     <button class="nav-item tab-btn" onclick="openPanel('panel_collection')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 22h20L12 2z"/></svg> Bäume</button>
     <button class="nav-item tab-btn" onclick="openPanel('panel_shop')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Shop</button>
@@ -219,7 +249,9 @@
   <div class="sheet-header"><h2 style="color:var(--text-muted)">Einstellungen</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div>
   <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:15px; background:rgba(255,255,255,0.1); font-size:13px; padding:15px; flex-direction:row;">🔲 Vollbild umschalten</button>
   <button class="btn" onclick="cheatMoney()" style="width:100%; margin-bottom:25px; background:rgba(251, 191, 36, 0.15); color:var(--gold); border-color:var(--gold); font-size:13px; padding:15px; flex-direction:row;">💰 +1000 Geld (Cheat)</button>
-  <div id="settingsGrid"></div><br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239,68,68,0.15); color:#ef4444; border-color:#ef4444; margin-top:20px; font-size:13px; padding:15px; flex-direction:row;">Spielstand Löschen (Hard Reset)</button>
+  <div id="settingsGrid"></div>
+  <br>
+  <button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239,68,68,0.15); color:#ef4444; border-color:#ef4444; margin-top:20px; font-size:13px; padding:15px; flex-direction:row;">Spielstand Löschen (Hard Reset)</button>
 </div>
 
 <script>
@@ -229,6 +261,8 @@ const ctx = cv.getContext('2d', {alpha: false});
 const thumbCanvas = document.createElement('canvas');
 thumbCanvas.width = 150; thumbCanvas.height = 150;
 const thumbCtx = thumbCanvas.getContext('2d');
+
+cv.addEventListener('contextmenu', e => e.preventDefault());
 
 const SPECIES = {
   ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
@@ -307,7 +341,7 @@ function loadGame() {
   for (let i = 0; i < localStorage.length; i++) {
       let key = localStorage.key(i);
       if (key && key.startsWith('bonsaiSave')) {
-          if (key === 'bonsaiSave131') {
+          if (key === 'bonsaiSave135') {
               savedData = localStorage.getItem(key);
           } else {
               if (!savedData) savedData = localStorage.getItem(key);
@@ -330,7 +364,7 @@ function loadGame() {
 
 function saveGame() { 
   try {
-    localStorage.setItem('bonsaiSave131', JSON.stringify({ 
+    localStorage.setItem('bonsaiSave135', JSON.stringify({ 
       money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
       stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
     })); 
@@ -393,7 +427,6 @@ function doSegmentsIntersect(p0, p1, p2, p3) {
     return (s >= 0 && s <= 1 && t >= 0 && t <= 1);
 }
 
-// NEU: Perfekte Mathematik für das Treffen von Ästen
 function distToSegmentSquared(p, v, w) {
   let l2 = (v.x - w.x)**2 + (v.y - w.y)**2;
   if (l2 === 0) return (p.x - v.x)**2 + (p.y - v.y)**2;
@@ -403,26 +436,24 @@ function distToSegmentSquared(p, v, w) {
 }
 
 function setupInteractions() {
-  let lastWorldX = null, lastWorldY = null;
-  let lastScreenX = null, lastScreenY = null;
-
-  const getPos = e => { 
-    let rect=cv.getBoundingClientRect(); 
-    let x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left; 
-    let y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top; 
-    let camBaseY = cv.height * 0.6;
-    MOUSE.worldX=(x-(cv.width/2+CAM.x))/CAM.zoom; 
-    MOUSE.worldY=(y-(camBaseY+CAM.y))/CAM.zoom; 
-    return {x,y}; 
-  };
+  let activePointers = new Map();
+  let initialPinchDist = null;
+  let initialCamZoom = null;
   
-  // FIX: Greifen jetzt auf der GESAMTEN Länge des Astes möglich!
+  let dragStartScreen = null;
+  let camStartPos = null;
+
+  let lastWorldX = null;
+  let lastWorldY = null;
+
+  function getPinchDist(pts) {
+      return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  }
+
   const findNearestBranch = (root, tx, ty, maxDist) => {
     let nearest=null, minDistSq = maxDist * maxDist;
     let p = {x: tx, y: ty};
-    
-    // Y-Verschiebung des Topfes ausgleichen, da Äste relativ dazu gezeichnet werden
-    const potYOffset = 150 - 60; // groundY - potH
+    const potYOffset = 150 - 60; 
     p.y -= potYOffset; 
 
     const search = b => {
@@ -437,151 +468,189 @@ function setupInteractions() {
   };
 
   cv.addEventListener('pointerdown', e => {
-    MOUSE.down=true; 
-    let p = getPos(e); 
-    lastWorldX = MOUSE.worldX;
-    lastWorldY = MOUSE.worldY;
-    lastScreenX = p.x;
-    lastScreenY = p.y;
+      if (e.pointerType === "mouse" && e.button !== 0) return; 
+      e.preventDefault();
+      
+      cv.setPointerCapture(e.pointerId);
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    if(!STATE.trees[STATE.activeIdx])return;
+      let rect = cv.getBoundingClientRect();
+      let px = e.clientX - rect.left;
+      let py = e.clientY - rect.top;
 
-    if(INPUT==='none') {
-        MOUSE.drag = true;
-    } else if(INPUT==='prune') {
-        ENV.swipeTrail = [{x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0}];
-        HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
-        if(HOVER) {
-            performCut(HOVER, STATE.trees[STATE.activeIdx].key);
-            notify("Schnitt!");
-        }
-    } else if(INPUT!=='water') {
-        HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
-        if(HOVER) {
-          if(INPUT==='graft') {
-            if(HOVER.cut) { 
-                HOVER.cut=false; HOVER.sprouted=false; notify("Ast geheilt!"); 
-            } else { 
-                let dev=(Math.random()-0.5)*1.5; 
-                let newThick = Math.max(1, HOVER.thick * 0.7); 
-                HOVER.children.push(new Branch(HOVER,0,0,HOVER.angle+dev,HOVER.maxLen*0.7,newThick,HOVER.depth+1)); 
-                notify("Neuer Trieb veredelt!"); 
-            }
-          } else if(INPUT==='bend') { 
-              BEND_TARGET = HOVER; 
-              // FIX: Berechne den Offset-Winkel beim Greifen, damit es nicht schnappt!
-              const potYOffset = 150 - 60;
-              let initialMouseAngle = Math.atan2((MOUSE.worldY - potYOffset) - BEND_TARGET.y, MOUSE.worldX - BEND_TARGET.x);
-              BEND_TARGET.bendOffset = BEND_TARGET.targetAngle - initialMouseAngle;
+      if (activePointers.size === 1) {
+          MOUSE.down = true;
+          MOUSE.x = px;
+          MOUSE.y = py;
+
+          let camBaseY = cv.height * 0.6;
+          MOUSE.worldX = (MOUSE.x - (cv.width / 2 + CAM.x)) / CAM.zoom;
+          MOUSE.worldY = (MOUSE.y - (camBaseY + CAM.y)) / CAM.zoom;
+          
+          lastWorldX = MOUSE.worldX;
+          lastWorldY = MOUSE.worldY;
+
+          if (INPUT === 'none') {
+              MOUSE.drag = true;
+              dragStartScreen = { x: px, y: py };
+              camStartPos = { x: CAM.x, y: CAM.y };
+          } 
+          else if (INPUT === 'prune') {
+              ENV.swipeTrail = [{ x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0 }];
+              HOVER = findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
+              if (HOVER) {
+                  performCut(HOVER, STATE.trees[STATE.activeIdx].key);
+                  notify("Schnitt!");
+              }
+          } 
+          else if (INPUT !== 'water') {
+              HOVER = findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
+              if (HOVER) {
+                  if (INPUT === 'graft') {
+                      if (HOVER.cut) {
+                          HOVER.cut = false; HOVER.sprouted = false; notify("Ast geheilt!");
+                      } else {
+                          let dev = (Math.random() - 0.5) * 1.5;
+                          let newThick = Math.max(1, HOVER.thick * 0.7);
+                          HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, newThick, HOVER.depth + 1));
+                          notify("Neuer Trieb veredelt!");
+                      }
+                  } else if (INPUT === 'bend') {
+                      BEND_TARGET = HOVER;
+                      const potYOffset = 150 - 60;
+                      let initialMouseAngle = Math.atan2((MOUSE.worldY - potYOffset) - BEND_TARGET.y, MOUSE.worldX - BEND_TARGET.x);
+                      BEND_TARGET.bendOffset = BEND_TARGET.targetAngle - initialMouseAngle;
+                  }
+              }
           }
-        }
-    }
+      } else if (activePointers.size === 2) {
+          MOUSE.drag = false;
+          let pts = Array.from(activePointers.values());
+          initialPinchDist = getPinchDist(pts);
+          initialCamZoom = CAM.zoom;
+      }
   });
 
   cv.addEventListener('pointermove', e => {
-    let p = getPos(e);
-    
-    if(MOUSE.drag && MOUSE.down) {
-        let dx = p.x - lastScreenX;
-        let dy = p.y - lastScreenY;
-        CAM.x += dx;
-        CAM.y += dy;
-        let camBaseY = cv.height * 0.6;
-        MOUSE.worldX=(p.x-(cv.width/2+CAM.x))/CAM.zoom; 
-        MOUSE.worldY=(p.y-(camBaseY+CAM.y))/CAM.zoom;
-    }
+      e.preventDefault();
 
-    if(MOUSE.down && INPUT === 'prune') {
-        ENV.swipeTrail.push({x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0});
-        if(lastWorldX !== null && lastWorldY !== null && STATE.trees[STATE.activeIdx]) {
-            let p0 = {x: lastWorldX, y: lastWorldY};
-            let p1 = {x: MOUSE.worldX, y: MOUSE.worldY};
-            let cutHappened = false;
-            const potYOffset = 150 - 60;
-            
-            function checkCut(b) {
-                if(b.cut) return;
-                if(b.parent) {
-                    // Koordinaten für den Schnitt anpassen
-                    let b0 = {x: b.x, y: b.y + potYOffset};
-                    let b1 = {x: b.endX, y: b.endY + potYOffset};
-                    if(doSegmentsIntersect(p0, p1, b0, b1)) {
-                        performCut(b, STATE.trees[STATE.activeIdx].key);
-                        cutHappened = true;
-                    }
-                }
-                b.children.forEach(checkCut);
-            }
-            checkCut(STATE.trees[STATE.activeIdx].root);
-            if(cutHappened) notify("Slice!"); 
-        }
-    }
-    else if(MOUSE.down && INPUT==='bend' && BEND_TARGET) { 
-      let oldAngle = BEND_TARGET.targetAngle;
-      const potYOffset = 150 - 60;
-      
-      let currentMouseAngle = Math.atan2((MOUSE.worldY - potYOffset) - BEND_TARGET.y, MOUSE.worldX - BEND_TARGET.x); 
-      // Offset dazurechnen für weiches Biegen
-      let rawNewAngle = currentMouseAngle + (BEND_TARGET.bendOffset || 0);
-
-      let angleDiff = rawNewAngle - oldAngle;
-      // Kürzester Weg
-      angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
-
-      BEND_TARGET.targetAngle += angleDiff; 
-      
-      function propagateBend(b, diff) {
-        b.children.forEach(c => { 
-            // FIX: Faktor 1.0 sorgt dafür, dass sich Unter-Äste nicht "schneckenhaft" einrollen!
-            c.targetAngle += diff * 1.0; 
-            propagateBend(c, diff * 1.0); 
-        });
+      if (!MOUSE.down && !activePointers.has(e.pointerId)) {
+          let rect = cv.getBoundingClientRect();
+          MOUSE.x = e.clientX - rect.left;
+          MOUSE.y = e.clientY - rect.top;
+          let camBaseY = cv.height * 0.6;
+          MOUSE.worldX = (MOUSE.x - (cv.width / 2 + CAM.x)) / CAM.zoom;
+          MOUSE.worldY = (MOUSE.y - (camBaseY + CAM.y)) / CAM.zoom;
+          if (STATE.trees[STATE.activeIdx] && INPUT !== 'none' && INPUT !== 'water') {
+              HOVER = findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
+          }
+          return;
       }
-      propagateBend(BEND_TARGET, angleDiff);
-    } 
-    else if(!MOUSE.down && INPUT!=='water' && INPUT!=='none' && INPUT!=='prune' && STATE.trees[STATE.activeIdx]) { 
-        HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40); 
-    }
 
-    lastWorldX = MOUSE.worldX;
-    lastWorldY = MOUSE.worldY;
-    lastScreenX = p.x;
-    lastScreenY = p.y;
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      let rect = cv.getBoundingClientRect();
+      let px = e.clientX - rect.left;
+      let py = e.clientY - rect.top;
+
+      if (activePointers.size === 1 && MOUSE.down) {
+          if (MOUSE.drag && dragStartScreen && camStartPos) {
+              CAM.x = camStartPos.x + (px - dragStartScreen.x);
+              CAM.y = camStartPos.y + (py - dragStartScreen.y);
+              
+              MOUSE.x = px;
+              MOUSE.y = py;
+          } else {
+              MOUSE.x = px;
+              MOUSE.y = py;
+              let camBaseY = cv.height * 0.6;
+              MOUSE.worldX = (px - (cv.width / 2 + CAM.x)) / CAM.zoom;
+              MOUSE.worldY = (py - (camBaseY + CAM.y)) / CAM.zoom;
+
+              if (INPUT === 'prune') {
+                  ENV.swipeTrail.push({ x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0 });
+                  if (STATE.trees[STATE.activeIdx] && lastWorldX != null && lastWorldY != null) {
+                      let p0 = { x: lastWorldX, y: lastWorldY };
+                      let p1 = { x: MOUSE.worldX, y: MOUSE.worldY };
+                      let cutHappened = false;
+                      const potYOffset = 150 - 60;
+
+                      function checkCut(b) {
+                          if (b.cut) return;
+                          if (b.parent) {
+                              let b0 = { x: b.x, y: b.y + potYOffset };
+                              let b1 = { x: b.endX, y: b.endY + potYOffset };
+                              if (doSegmentsIntersect(p0, p1, b0, b1)) {
+                                  performCut(b, STATE.trees[STATE.activeIdx].key);
+                                  cutHappened = true;
+                              }
+                          }
+                          b.children.forEach(checkCut);
+                      }
+                      checkCut(STATE.trees[STATE.activeIdx].root);
+                      if (cutHappened) notify("Slice!");
+                  }
+              } else if (INPUT === 'bend' && BEND_TARGET) {
+                  let oldAngle = BEND_TARGET.targetAngle;
+                  const potYOffset = 150 - 60;
+                  let currentMouseAngle = Math.atan2((MOUSE.worldY - potYOffset) - BEND_TARGET.y, MOUSE.worldX - BEND_TARGET.x);
+                  let rawNewAngle = currentMouseAngle + (BEND_TARGET.bendOffset || 0);
+
+                  let angleDiff = rawNewAngle - oldAngle;
+                  angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+
+                  BEND_TARGET.targetAngle += angleDiff;
+
+                  function propagateBend(b, diff) {
+                      b.children.forEach(c => {
+                          c.targetAngle += diff * 1.0;
+                          propagateBend(c, diff * 1.0);
+                      });
+                  }
+                  propagateBend(BEND_TARGET, angleDiff);
+              } else if (INPUT !== 'water' && INPUT !== 'none' && INPUT !== 'prune' && STATE.trees[STATE.activeIdx]) {
+                  HOVER = findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
+              }
+          }
+          lastWorldX = MOUSE.worldX;
+          lastWorldY = MOUSE.worldY;
+          
+      } else if (activePointers.size === 2) {
+          let pts = Array.from(activePointers.values());
+          let currentDist = getPinchDist(pts);
+          if (initialPinchDist && initialPinchDist > 0) {
+              let ratio = currentDist / initialPinchDist;
+              CAM.zoom = Math.min(Math.max(0.3, initialCamZoom * ratio), 4);
+          }
+      }
   });
 
-  function handlePointerUp() {
-      MOUSE.down=false; 
-      MOUSE.drag=false;
-      BEND_TARGET=null; 
-      lastWorldX = null;
-      lastWorldY = null;
-      lastScreenX = null;
-      lastScreenY = null;
+  function handlePointerUp(e) {
+      activePointers.delete(e.pointerId);
+      if (activePointers.size < 2) {
+          initialPinchDist = null;
+      }
+      if (activePointers.size === 0) {
+          MOUSE.down = false;
+          MOUSE.drag = false;
+          BEND_TARGET = null;
+          dragStartScreen = null;
+          camStartPos = null;
+          lastWorldX = null;
+          lastWorldY = null;
+      }
   }
 
-  window.addEventListener('mouseup', handlePointerUp);
-  window.addEventListener('touchend', handlePointerUp);
+  cv.addEventListener('pointerup', handlePointerUp);
+  cv.addEventListener('pointercancel', handlePointerUp);
+  cv.addEventListener('pointerout', handlePointerUp);
+  cv.addEventListener('pointerleave', handlePointerUp);
 
   cv.addEventListener('wheel', e => {
       e.preventDefault();
       CAM.zoom = Math.min(Math.max(0.3, CAM.zoom - e.deltaY * 0.001), 4);
-  });
-
-  cv.addEventListener('touchstart', e => {
-      if(e.touches.length === 2) {
-          lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-          MOUSE.drag = false;
-      }
-  }, {passive: false});
-
-  cv.addEventListener('touchmove', e => {
-      if(e.touches.length === 2) {
-          let dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-          CAM.zoom = Math.min(Math.max(0.3, CAM.zoom + (dist - lastTouchDist) * 0.01), 4);
-          lastTouchDist = dist;
-      }
-      if(INPUT !== 'none') e.preventDefault();
-  }, {passive: false});
+  }, { passive: false });
 }
 
 function setTool(t) { 
@@ -924,20 +993,36 @@ function updateRealtimeUI(){
   
   $('uiTreeName').innerHTML = `
       <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.name}</span>
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" style="flex-shrink:0; margin-left:4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" style="flex-shrink:0; margin-left:6px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
   `;
   
   $('uiSpeciesName').innerText=SPECIES[t.key].name; 
-  $('uiDaySeason').innerText = `Tag ${Math.floor(t.days)} • ${["Frühling","Sommer","Herbst","Winter"][Math.floor(t.days/30)%4]}`; 
-  $('uiWaterPct').innerText=Math.round(t.water)+'%'; $('barWaterMini').style.width=t.water+'%'; 
-  $('uiHpPct').innerText=Math.round(t.hp)+'%'; $('barHpMini').style.width=t.hp+'%'; 
   
-  if(t.water < 20 || t.hp < 20) {
-      $('uiWaterPct').classList.add('text-danger');
-      $('barWaterMini').classList.add('bg-danger');
+  const seasons = ["Frühling","Sommer","Herbst","Winter"];
+  $('uiDaySeason').innerHTML = `Tag ${Math.floor(t.days)}<br><span style="color:var(--accent); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">${seasons[Math.floor(t.days/30)%4]}</span>`; 
+  
+  let wPct = Math.max(0, Math.min(100, t.water));
+  let hPct = Math.max(0, Math.min(100, t.hp));
+  
+  let circ = 106.8;
+  
+  $('circWater').style.strokeDashoffset = circ - (wPct / 100) * circ;
+  $('circHp').style.strokeDashoffset = circ - (hPct / 100) * circ;
+  
+  if(t.water < 20) {
+      $('circWater').classList.add('danger-stroke');
+      $('iconWater').style.stroke = "var(--danger)";
   } else {
-      $('uiWaterPct').classList.remove('text-danger');
-      $('barWaterMini').classList.remove('bg-danger');
+      $('circWater').classList.remove('danger-stroke');
+      $('iconWater').style.stroke = "#38bdf8"; 
+  }
+
+  if(t.hp < 20) {
+      $('circHp').classList.add('danger-stroke');
+      $('iconHp').style.stroke = "var(--danger)";
+  } else {
+      $('circHp').classList.remove('danger-stroke');
+      $('iconHp').style.stroke = "#34d399"; 
   }
 }
 
