@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v9.5 (Ninja Pruning)</title>
+<title>Bonsai Master v10.0 (Foundation Update)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -215,7 +215,6 @@
 </div>
 
 <div class="ui-layer">
-  
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
@@ -345,7 +344,7 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave95');
+  const saved = localStorage.getItem('bonsaiSave100');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -357,7 +356,7 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave95', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave100', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
@@ -372,17 +371,17 @@ function init() {
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
 
-// Schnitt-Helfer (für Einzelklick und Swipe)
 function performCut(branch, treeKey) {
-    if(branch.cut || !branch.parent) return; // Stamm darf nicht abgeschnitten werden
+    if(branch.cut || !branch.parent) return; 
     branch.cut = true;
     const spec = SPECIES[treeKey];
     function dropChildren(b) {
         const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
-        ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5 });
+        // HINZUGEFÜGT: decay (Zerfall) und onGround Status
+        ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5, onGround:false, decay:5.0 });
         b.leaves.forEach(l => {
             const px=b.x+(b.endX-b.x)*l.f, py=b.y+(b.endY-b.y)*l.f;
-            ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7 });
+            ENV.fallingParts.push({ type:'leaf', x:px, y:py, a:b.angle+l.r, s:l.s, cols:spec.color, leafType:spec.leaf, vx:(Math.random()-0.5)*60, vy:Math.random()*60, vr:(Math.random()-0.5)*7, onGround:false, decay:5.0 });
         });
         b.children.forEach(dropChildren);
     }
@@ -392,12 +391,11 @@ function performCut(branch, treeKey) {
     STATE.stats.totalPrunes++;
 }
 
-// Linien-Schnittpunkt-Mathematik für den Swipe-Cut
 function doSegmentsIntersect(p0, p1, p2, p3) {
     let s1_x = p1.x - p0.x, s1_y = p1.y - p0.y;
     let s2_x = p3.x - p2.x, s2_y = p3.y - p2.y;
     let denom = -s2_x * s1_y + s1_x * s2_y;
-    if (denom === 0) return false; // Parallele Linien
+    if (denom === 0) return false;
     let s = (-s1_y * (p0.x - p2.x) + s1_x * (p0.y - p2.y)) / denom;
     let t = ( s2_x * (p0.y - p2.y) - s2_y * (p0.x - p2.x)) / denom;
     return (s >= 0 && s <= 1 && t >= 0 && t <= 1);
@@ -439,7 +437,6 @@ function setupInteractions() {
         MOUSE.drag = true;
     } else if(INPUT==='prune') {
         ENV.swipeTrail = [{x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0}];
-        // Einzelklick-Schnitt weiterhin möglich
         HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
         if(HOVER) {
             performCut(HOVER, STATE.trees[STATE.activeIdx].key);
@@ -475,7 +472,6 @@ function setupInteractions() {
         MOUSE.y = my;
     }
 
-    // SWIPE TO CUT LOGIC
     if(MOUSE.down && INPUT === 'prune') {
         ENV.swipeTrail.push({x: MOUSE.worldX, y: MOUSE.worldY, life: 1.0});
         if(lastWorldX !== null && lastWorldY !== null && STATE.trees[STATE.activeIdx]) {
@@ -508,7 +504,7 @@ function setupInteractions() {
       }
       propagateBend(BEND_TARGET, angleDiff);
     } 
-    else if(!MOUSE.down && INPUT!=='water' && INPUT!=='none' && STATE.trees[STATE.activeIdx]) { 
+    else if(!MOUSE.down && INPUT!=='water' && INPUT!=='none' && INPUT!=='prune' && STATE.trees[STATE.activeIdx]) { 
         HOVER=findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40); 
     }
 
@@ -593,16 +589,39 @@ function update(dt) {
       else if(p.life<=0) ENV.particles.splice(i,1); 
   }
 
-  // Swipe Trail Fade
   for(let i=ENV.swipeTrail.length-1; i>=0; i--) {
       ENV.swipeTrail[i].life -= dt * 4;
       if(ENV.swipeTrail[i].life <= 0) ENV.swipeTrail.splice(i, 1);
   }
 
   const gravity = 300;
+  const GROUND_Y = 5; // Höhe des Steinpodests
+  const LOWER_GROUND_Y = 180; // Höhe des echten Bodens darunter
+  const PEDESTAL_W = 220; // Breite des Podests
+
   for(let i=ENV.fallingParts.length-1; i>=0; i--) {
-      let p = ENV.fallingParts[i]; p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
-      if(p.y > 250) ENV.fallingParts.splice(i, 1);
+      let p = ENV.fallingParts[i];
+      // Wenn noch nicht am Boden, falle weiter
+      if(!p.onGround) {
+          p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
+          
+          // Kollision mit dem Steinpodest
+          if(p.y > GROUND_Y && p.y < GROUND_Y + 20 && Math.abs(p.x) < PEDESTAL_W/2) {
+             p.y = GROUND_Y + Math.random()*5; // Leichtes Verstreuen
+             p.onGround = true; 
+             p.a = Math.random()*6.28; // Liegt flach
+          }
+          // Kollision mit dem unteren Boden (wenn am Podest vorbei gefallen)
+          else if (p.y > LOWER_GROUND_Y) {
+             p.y = LOWER_GROUND_Y + Math.random()*5;
+             p.onGround = true;
+             p.a = Math.random()*6.28;
+          }
+      } else {
+          // Wenn am Boden, starte Zerfall (Despawn timer)
+          p.decay -= dt;
+          if(p.decay <= 0) ENV.fallingParts.splice(i, 1);
+      }
   }
 
   function sim(b,rx,ry) {
@@ -678,8 +697,15 @@ function drawPuff(x,y,s){ ctx.beginPath(); ctx.arc(x,y,40*s,0,6.28); ctx.arc(x+3
 
 function drawWorld() {
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; const spec=SPECIES[t.key], potH=60;
-  ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
-  if(BEND_TARGET&&INPUT==='bend'){ ctx.beginPath(); ctx.moveTo(BEND_TARGET.x,BEND_TARGET.y); ctx.lineTo(MOUSE.worldX,MOUSE.worldY); ctx.strokeStyle="rgba(250,204,21,0.6)"; ctx.lineWidth=2; ctx.setLineDash([8,8]); ctx.stroke(); ctx.setLineDash([]); }
+  
+  // NEU: DAS STEINPODEST (Zeichnen bevor Topf und Teile kommen)
+  ctx.fillStyle = "#3f3f46"; // Dunkles Steingrau
+  ctx.beginPath();
+  // Perspektivische Steinplatte
+  ctx.moveTo(-120, 5); ctx.lineTo(120, 5); ctx.lineTo(140, 45); ctx.lineTo(-140, 45);
+  ctx.fill();
+  // Helle Kante für 3D-Effekt
+  ctx.strokeStyle = "#52525b"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-120, 5); ctx.lineTo(120, 5); ctx.stroke();
 
   ctx.lineCap="round"; ctx.lineJoin="round";
   
@@ -709,10 +735,9 @@ function drawWorld() {
   }
   render(t.root);
 
-  // Schwert-Spur (Swipe Trail) zeichnen
   if (ENV.swipeTrail.length > 1) {
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.shadowBlur = 15; ctx.shadowColor = "#f87171"; // Rotes Leuchten
+    ctx.shadowBlur = 15; ctx.shadowColor = "#f87171"; 
     for (let i = 1; i < ENV.swipeTrail.length; i++) {
         let p1 = ENV.swipeTrail[i-1];
         let p2 = ENV.swipeTrail[i];
@@ -726,8 +751,12 @@ function drawWorld() {
     ctx.shadowBlur = 0;
   }
 
+  // Fallende Teile zeichnen (mit Ausblenden am Boden)
   ENV.fallingParts.forEach(p => {
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+      ctx.save();
+      // Wenn am Boden, langsam ausblenden
+      if(p.onGround) ctx.globalAlpha = Math.min(1, p.decay / 2);
+      ctx.translate(p.x, p.y); ctx.rotate(p.a);
       if(p.type === 'branch') { ctx.strokeStyle = p.col; ctx.lineWidth = p.th; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-p.len/2, 0); ctx.lineTo(p.len/2, 0); ctx.stroke(); }
       else if (p.type === 'leaf') { if(p.leafType === 'needle') { ctx.strokeStyle = p.cols[0]; ctx.lineWidth = 1; for(let i=0; i<5; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((Math.random() - 0.5) * p.s * 3, -p.s * 2); ctx.stroke(); } } else { ctx.fillStyle = p.cols[0]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s, p.s * (p.leafType === 'fat' ? 0.5 : 0.4), 0, 0, 6.28); ctx.fill(); ctx.fillStyle = p.cols[1]; ctx.beginPath(); ctx.ellipse(p.s, 0, p.s * 0.6, p.s * 0.15, 0, 0, 6.28); ctx.fill(); } }
       ctx.restore();
@@ -887,7 +916,7 @@ window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentE
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave95'); 
+    localStorage.removeItem('bonsaiSave100'); 
     location.reload(); 
   }
 };
