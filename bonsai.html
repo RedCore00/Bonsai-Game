@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v7.3 (Polished Visuals)</title>
+<title>Bonsai Master v7.4 (Clean UI)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -53,7 +53,7 @@
     position: absolute; top: 0; left: 0; 
     width: 100%; height: 100%;
     z-index: 10; pointer-events: none; 
-    display: flex; flex-direction: column; justify-content: space-between;
+    display: flex; flex-direction: column; justify-content: flex-end;
   }
 
   .glass {
@@ -63,19 +63,6 @@
     box-shadow: var(--glass-shadow);
     pointer-events: auto;
   }
-
-  /* --- TOP HEADER --- */
-  .tree-header {
-    margin: env(safe-area-inset-top, 20px) 20px 0 20px;
-    padding: 10px 18px; border-radius: 18px;
-    align-self: flex-start;
-    border-top: 1px solid rgba(255,255,255,0.3); 
-    border-left: 1px solid rgba(255,255,255,0.2);
-    display: flex; justify-content: space-between; align-items: center; min-width: 200px;
-  }
-  .tree-info h1 { margin: 0; font-size: 18px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-  .tree-info p { margin: 2px 0 0 0; font-size: 11px; color: var(--accent); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
-  .money-display { font-weight: 700; color: var(--gold); text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 14px; }
 
   /* --- BOTTOM UI AREA --- */
   .bottom-area {
@@ -89,7 +76,7 @@
     border-top: 1px solid rgba(255,255,255,0.2);
     display: flex; flex-direction: column; gap: 12px;
   }
-  .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .stat-row-top { display: flex; justify-content: space-between; align-items: flex-start; }
   .stat-group { display: flex; gap: 20px; }
   .stat-item { display: flex; align-items: baseline; gap: 8px; }
   .s-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
@@ -244,20 +231,16 @@
 
 <div class="ui-layer">
   
-  <div class="tree-header glass">
-    <div class="tree-info">
-      <h1 id="uiTreeName">Baum</h1>
-      <p id="uiSpeciesName">Spezies</p>
-    </div>
-    <div class="money-display" id="uiMoneyTop">0 💰</div>
-  </div>
-
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
         <div class="stat-group">
           <div class="stat-item"><span class="s-label">Alter</span><span class="s-val" id="uiDay">Tag 0</span></div>
           <div class="stat-item"><span class="s-label">Saison</span><span class="s-val" id="uiSeason" style="color:var(--accent); text-shadow:0 0 8px var(--accent-glow)">Sommer</span></div>
+        </div>
+        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; margin-left: 10px;">
+          <span class="s-val" id="uiTreeName" style="font-size: 15px; font-weight: 700;">Baum</span>
+          <span class="s-label" id="uiSpeciesName" style="color: var(--accent); margin-top: 2px;">Spezies</span>
         </div>
       </div>
       <div class="stat-row-bars">
@@ -566,12 +549,10 @@ function setupInteractions() {
       } 
       else if(INPUT === 'graft') {
         if(HOVER.cut) {
-           // Ast heilen, wenn er abgeschnitten war
            HOVER.cut = false;
            HOVER.sprouted = false;
            notify("Ast geheilt!");
         } else {
-           // Neuen Trieb erzeugen
            let dev = (Math.random() - 0.5) * 1.5;
            let newThick = Math.max(1, HOVER.thick * 0.7);
            HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, newThick, HOVER.depth + 1));
@@ -813,7 +794,6 @@ function drawWorld() {
     ctx.lineWidth = b.thick; 
     ctx.strokeStyle = spec.bark[0];
     
-    // Das neue, sanfte Hover-Leuchten anstatt einer komplett weißen Textur
     if(b === HOVER && INPUT !== 'water' && INPUT !== 'none') { 
       ctx.shadowBlur = 15; 
       ctx.shadowColor = (INPUT==='prune' ? '#f87171' : INPUT==='graft' ? '#60a5fa' : '#facc15'); 
@@ -826,7 +806,7 @@ function drawWorld() {
     ctx.lineTo(b.endX, b.endY); 
     ctx.stroke();
     
-    ctx.shadowBlur = 0; // Shadow direkt wieder auf null für Blätter
+    ctx.shadowBlur = 0; 
     
     if(!b.cut && b.leaves.length) {
        const sIdx = Math.floor(t.days / 30) % 4; 
@@ -901,7 +881,6 @@ function updateRealtimeUI() {
   $('barWater').style.width = tree.water + '%';
   $('uiHpVal').innerText = Math.round(tree.hp) + '%';
   $('barHp').style.width = tree.hp + '%';
-  $('uiMoneyTop').innerText = STATE.money + ' 💰';
 }
 
 function updateListUI() {
