@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v9.0 (Classic Elegance)</title>
+<title>Bonsai Master v9.1 (Dev Mode)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -215,7 +215,6 @@
 </div>
 
 <div class="ui-layer">
-  
   <div class="bottom-area">
     <div class="stats-panel glass">
       <div class="stat-row-top">
@@ -275,45 +274,15 @@
 </div>
 
 <div class="overlay-bg" id="overlayBg" onclick="closeAllPanels()"></div>
-
-<div class="overlay-sheet" id="panel_collection">
-  <div class="sheet-header">
-    <h2 style="color:var(--accent); text-shadow:0 0 10px var(--accent-glow)">Baumschule</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div class="s-label" style="margin-bottom: 10px;">Deine Bonsais</div>
-  <div id="collectionList"></div>
-  <div class="s-label" style="margin-top: 25px; margin-bottom: 10px;">Samen & Setzlinge kaufen</div>
-  <div id="speciesList"></div>
-</div>
-
-<div class="overlay-sheet" id="panel_shop">
-  <div class="sheet-header">
-    <h2 style="color:var(--gold); text-shadow:0 0 10px rgba(251, 191, 36, 0.5)">Bonsai Shop</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div id="shopMoneyDisplay" style="text-align:right; font-weight:700; color:var(--gold); margin-bottom:20px; font-size:16px;">Guthaben: 0 💰</div>
-  <div class="s-label" style="margin-bottom: 10px;">Töpfe & Schalen</div>
-  <div id="shopPotsList"></div>
-  <div class="s-label" style="margin-top:25px; margin-bottom: 10px;">Substrate</div>
-  <div id="shopSoilsList"></div>
-</div>
-
-<div class="overlay-sheet" id="panel_quests">
-  <div class="sheet-header">
-    <h2 style="color:var(--success); text-shadow:0 0 10px var(--success-glow)">Deine Reise</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <div class="s-label">Aktuelle Ziele</div>
-  <div id="questList" style="margin-top:10px"></div>
-</div>
-
+<div class="overlay-sheet" id="panel_collection"><div class="sheet-header"><h2 style="color:var(--accent)">Baumschule</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div class="s-label" style="margin-bottom:10px;">Deine Bonsais</div><div id="collectionList"></div><div class="s-label" style="margin-top:25px; margin-bottom:10px;">Samen & Setzlinge kaufen</div><div id="speciesList"></div></div>
+<div class="overlay-sheet" id="panel_shop"><div class="sheet-header"><h2 style="color:var(--gold)">Bonsai Shop</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div id="shopMoneyDisplay" style="text-align:right; font-weight:700; color:var(--gold); margin-bottom:20px; font-size:16px;">Guthaben: 0 💰</div><div class="s-label" style="margin-bottom:10px;">Töpfe & Schalen</div><div id="shopPotsList"></div><div class="s-label" style="margin-top:25px; margin-bottom:10px;">Substrate</div><div id="shopSoilsList"></div></div>
+<div class="overlay-sheet" id="panel_quests"><div class="sheet-header"><h2 style="color:var(--success)">Deine Reise</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div><div class="s-label">Aktuelle Ziele</div><div id="questList" style="margin-top:10px"></div></div>
 <div class="overlay-sheet" id="panel_settings">
-  <div class="sheet-header">
-    <h2 style="color:var(--text-muted)">Einstellungen</h2>
-    <button class="close-btn" onclick="closeAllPanels()">✕</button>
-  </div>
-  <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:25px; background:rgba(255,255,255,0.1); font-size:13px; padding:15px; flex-direction:row;">🔲 Vollbild umschalten</button>
+  <div class="sheet-header"><h2 style="color:var(--text-muted)">Einstellungen</h2><button class="close-btn" onclick="closeAllPanels()">✕</button></div>
+  <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:15px; background:rgba(255,255,255,0.1); font-size:13px; padding:15px; flex-direction:row;">🔲 Vollbild umschalten</button>
+  
+  <button class="btn" onclick="cheatMoney()" style="width:100%; margin-bottom:25px; background:rgba(251, 191, 36, 0.15); color:var(--gold); border-color:var(--gold); font-size:13px; padding:15px; flex-direction:row;">💰 +1000 Geld (Cheat)</button>
+  
   <div id="settingsGrid"></div>
   <br>
   <button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239,68,68,0.15); color:#ef4444; border-color:#ef4444; margin-top:20px; font-size:13px; padding:15px; flex-direction:row;">Spielstand Löschen (Hard Reset)</button>
@@ -337,7 +306,6 @@ const SPECIES = {
   blue:  { name: "Blue Mystique", leaf: "maple", color:["#1e3a8a","#60a5fa"], bark:["#263238","#102027"], growth: 1.1, cost: 2000 },
   hemp:  { name: "Green Power", leaf: "hemp", color:["#1a2e05","#84cc16"], bark:["#33691E","#1B5E20"], growth: 1.5, cost: 4200 }
 };
-
 const ITEMS = {
   pot_basic: { type:'pot', name:"Plastiktopf", cost:0, bonus:1.0 },
   pot_clay:  { type:'pot', name:"Terrakotta", cost:300, bonus:1.1 },
@@ -347,7 +315,7 @@ const ITEMS = {
   soil_bio:  { type:'soil', name:"Bio-Boost", cost:500, boost:2.0 }
 };
 
-let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 30, leafRate: 0.1, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
+let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
 let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
@@ -371,7 +339,6 @@ class Tree {
   constructor(k, n) { 
     this.key=k; this.name=n; this.days=0; this.water=100; this.hp=100; 
     this.pot='pot_basic'; this.soil='soil_basic'; 
-    // ZURÜCK ZUR KLASSISCHEN, ELEGANTEN DICKE 20!
     this.root=new Branch(null,0,0,-Math.PI/2,110,20,0); 
   }
   serialize() { return { key:this.key, name:this.name, days:this.days, water:this.water, hp:this.hp, pot:this.pot, soil:this.soil, root:this.root.serialize() }}
@@ -379,7 +346,7 @@ class Tree {
 }
 
 function loadGame() {
-  const saved = localStorage.getItem('bonsaiSave90');
+  const saved = localStorage.getItem('bonsaiSave91');
   if(saved) { 
     try { 
       let data=JSON.parse(saved); STATE.money=data.money||500; STATE.inventory=data.inventory||{pots:['pot_basic'],soils:['soil_basic'],species:['ficus']}; 
@@ -391,7 +358,7 @@ function loadGame() {
 }
 
 function saveGame() { 
-  localStorage.setItem('bonsaiSave90', JSON.stringify({ 
+  localStorage.setItem('bonsaiSave91', JSON.stringify({ 
     money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
     stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
   })); 
@@ -454,8 +421,7 @@ function setupInteractions() {
                 HOVER.cut=false; HOVER.sprouted=false; notify("Ast geheilt!"); 
             } else { 
                 let dev=(Math.random()-0.5)*1.5; 
-                // Zurück zum klassischen Dicke-Verhältnis von 0.7!
-                let newThick = Math.max(1, HOVER.thick * 0.7); 
+                let newThick = Math.max(1, HOVER.thick * 0.7);
                 HOVER.children.push(new Branch(HOVER,0,0,HOVER.angle+dev,HOVER.maxLen*0.7,newThick,HOVER.depth+1)); 
                 notify("Neuer Trieb veredelt!"); 
             }
@@ -499,7 +465,6 @@ function setupInteractions() {
       BEND_TARGET=null; 
   }
 
-  // Event Listeners (Maus & Touch)
   cv.addEventListener('mousedown', e => handlePointerDown(e.clientX, e.clientY));
   cv.addEventListener('mousemove', e => handlePointerMove(e.clientX, e.clientY));
   window.addEventListener('mouseup', handlePointerUp);
@@ -593,7 +558,6 @@ function update(dt) {
     if(!b.cut&&b.len<b.maxLen&&tree.hp>0){
       b.len+=8*dt*growth; 
       
-      // KLASSISCHES WACHSTUM
       if(b.len>15) b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
       
       const thresh = b.maxLen * 0.7; 
@@ -610,7 +574,6 @@ function update(dt) {
           b.sprouted=true; let cnt=Math.random()>0.4?2:1; 
           for(let i=0;i<cnt;i++){ 
               let dev=(Math.random()-0.5)*1.5; if(spec.weeping)dev=Math.abs(dev)+1.2; 
-              // Ein neuer Ast startet mit 70% der Dicke
               b.children.push(new Branch(b,0,0,b.angle+dev,b.maxLen*(0.6+Math.random()*0.3), b.thick*0.7, b.depth+1)); 
           }
       }
@@ -663,7 +626,6 @@ function drawWorld() {
   ctx.fillStyle="#18181b"; ctx.beginPath(); ctx.ellipse(0,0,85,22,0,0,6.28); ctx.fill(); ctx.fillStyle="#271c19"; ctx.beginPath(); ctx.ellipse(0,0,78,18,0,0,6.28); ctx.fill();
   if(BEND_TARGET&&INPUT==='bend'){ ctx.beginPath(); ctx.moveTo(BEND_TARGET.x,BEND_TARGET.y); ctx.lineTo(MOUSE.worldX,MOUSE.worldY); ctx.strokeStyle="rgba(250,204,21,0.6)"; ctx.lineWidth=2; ctx.setLineDash([8,8]); ctx.stroke(); ctx.setLineDash([]); }
 
-  // ZURÜCK ZU ROUND FÜR PERFEKTE ÜBERGÄNGE! KEINE ROHRE MEHR!
   ctx.lineCap="round"; ctx.lineJoin="round";
   
   function render(b) {
@@ -672,7 +634,6 @@ function drawWorld() {
     ctx.lineWidth = b.thick; 
     ctx.strokeStyle = spec.bark[0];
     
-    // Zartes Hintergrund-Leuchten anstatt komplett farbigem Ast
     if(b===HOVER&&INPUT!=='water'&&INPUT!=='none'){ 
         ctx.shadowBlur=15; ctx.shadowColor=(INPUT==='prune'?'#f87171':INPUT==='graft'?'#60a5fa':'#facc15'); 
     } else { ctx.shadowBlur=0; }
@@ -720,6 +681,14 @@ window.renameActiveTree = function() {
     notify("Baum erfolgreich umbenannt!");
   }
 }
+
+// NEUE FUNKTION: GELD CHEAT (Dev Tool)
+window.cheatMoney = function() {
+  STATE.money += 1000;
+  notify("+1000 💰 (Cheat aktiviert)");
+  updateListUI();
+  updateRealtimeUI();
+};
 
 function updateRealtimeUI(){ 
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; 
@@ -861,7 +830,7 @@ window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentE
 
 window.hardReset=()=>{ 
   if(confirm("ACHTUNG: Willst du WIRKLICH deinen gesamten Spielstand löschen?")){ 
-    localStorage.removeItem('bonsaiSave90'); 
+    localStorage.removeItem('bonsaiSave91'); 
     location.reload(); 
   }
 };
