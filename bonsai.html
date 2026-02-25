@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v5.2 (App Mode)</title>
+<title>Bonsai Master v6.0 (Nature Control)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -22,7 +22,6 @@
     /* Liquid Glass Variables */
     --glass-bg: rgba(15, 20, 30, 0.45);
     --glass-border: rgba(255, 255, 255, 0.15);
-    --glass-highlight: rgba(255, 255, 255, 0.05);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
   
@@ -33,6 +32,8 @@
     overflow: hidden; font-family: var(--font); color: var(--text); 
     user-select: none; -webkit-user-select: none;
   }
+  
+  .app-layout { display: flex; flex-direction: column; height: 100%; width: 100%; }
   
   /* --- CANVAS FULLSCREEN --- */
   .viewport { 
@@ -49,7 +50,6 @@
     display: flex; flex-direction: column; justify-content: space-between;
   }
 
-  /* Glassmorphism Base Class */
   .glass {
     background: var(--glass-bg);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -71,25 +71,22 @@
 
   /* --- BOTTOM UI AREA --- */
   .bottom-area {
-    padding: 0 12px calc(75px + env(safe-area-inset-bottom)); /* Reduzierter Platz */
+    padding: 0 12px calc(75px + env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 8px;
   }
 
-  /* Stats Panel - Komprimiert */
+  /* Stats Panel */
   .stats-panel {
     border-radius: 20px; padding: 12px 16px;
     border-top: 1px solid rgba(255,255,255,0.2);
     display: flex; flex-direction: column; gap: 10px;
   }
-  
   .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; }
   .stat-group { display: flex; gap: 15px; }
   .stat-item { display: flex; align-items: baseline; gap: 6px; }
-  
   .s-label { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
   .s-val { font-size: 13px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
   
-  /* Side-by-Side Liquid Progress Bars */
   .stat-row-bars { display: flex; gap: 15px; }
   .bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   .bar-header { display: flex; justify-content: space-between; align-items: flex-end; }
@@ -101,30 +98,19 @@
   .water-color { background: linear-gradient(90deg, #0ea5e9, #38bdf8); box-shadow: 0 0 10px var(--accent-glow); }
   .hp-color { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px var(--success-glow); }
 
-  /* Tools Container - Komprimiert */
-  .tools-panel {
-    border-radius: 20px; padding: 12px 16px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-  }
-  .section-title { 
-    font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; 
-    letter-spacing: 1.5px; margin: 0 0 8px 4px; font-weight: 700;
-  }
-  
-  /* 4 in einer Reihe! */
+  /* Tools Container */
+  .tools-panel { border-radius: 20px; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.2); }
+  .section-title { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 8px 4px; font-weight: 700; }
   .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   
-  /* Liquid Buttons */
   .btn {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
     padding: 10px 4px; border-radius: 14px; font-weight: 600; cursor: pointer;
     font-size: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: inherit; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   }
   .btn svg { width: 18px; height: 18px; opacity: 0.7; transition: all 0.3s; }
   .btn:active { transform: scale(0.94); }
-  
   .btn.active { 
     background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5); color: #fff; 
     box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2), 0 0 10px rgba(56, 189, 248, 0.3); 
@@ -133,16 +119,14 @@
   .btn.active svg { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
   @keyframes pulseGlow { from{box-shadow: inset 0 0 15px rgba(56,189,248,0.2), 0 0 10px rgba(56,189,248,0.3);} to{box-shadow: inset 0 0 25px rgba(56,189,248,0.4), 0 0 20px rgba(56,189,248,0.5);} }
 
-  /* --- FLOATING DOCK (BOTTOM NAV) --- */
+  /* --- FLOATING DOCK --- */
   .bottom-dock {
     position: absolute; bottom: env(safe-area-inset-bottom, 10px); left: 50%; transform: translateX(-50%);
-    width: calc(100% - 24px); max-width: 450px; border-radius: 25px;
-    display: flex; justify-content: space-around; align-items: center;
+    width: calc(100% - 24px); max-width: 450px; border-radius: 25px; display: flex; justify-content: space-around; align-items: center;
     padding: 8px; border-top: 1px solid rgba(255,255,255,0.3);
   }
   .nav-item {
-    background: transparent; border: none; color: rgba(255,255,255,0.5);
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: transparent; border: none; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; align-items: center; gap: 3px;
     font-size: 9px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: 600;
   }
   .nav-item svg { width: 20px; height: 20px; transition: all 0.3s; }
@@ -151,21 +135,19 @@
   
   .snap-btn { 
     background: rgba(255,255,255,0.9); color: #000; border-radius: 18px; padding: 8px 14px; 
-    font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 4px; border:none;
-    box-shadow: 0 4px 15px rgba(255,255,255,0.3); transition: transform 0.2s;
+    font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 4px; border:none; box-shadow: 0 4px 15px rgba(255,255,255,0.3); transition: transform 0.2s;
   }
   .snap-btn:active { transform: scale(0.95); }
 
-  /* --- BOTTOM SHEET OVERLAYS --- */
+  /* --- OVERLAYS --- */
   .overlay-bg {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.4); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.4s;
   }
   .overlay-bg.open { opacity: 1; pointer-events: auto; }
 
   .overlay-sheet {
     position: fixed; bottom: 0; left: 0; width: 100%; max-height: 85vh;
-    background: rgba(10, 15, 25, 0.75); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
     border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255,255,255,0.2);
     padding: 30px 20px calc(30px + env(safe-area-inset-bottom));
     z-index: 50; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
@@ -173,19 +155,21 @@
   }
   .overlay-sheet.open { transform: translateY(0); }
 
-  .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+  .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .sheet-header h2 { margin: 0; font-size: 18px; letter-spacing: 1px; font-weight: 700; }
   .close-btn { 
-    background: rgba(255,255,255,0.1); border: none; color: var(--text); 
-    width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;
+    background: rgba(255,255,255,0.1); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 16px; 
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;
   }
   .close-btn:active { background: rgba(255,255,255,0.2); }
 
-  /* Lists inside Sheets */
+  /* Settings Sliders */
+  .set-row { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
+  .set-header { display: flex; justify-content: space-between; align-items: baseline; }
+  input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+
   .list-item { 
-    display: flex; align-items: center; gap: 14px; 
-    background: rgba(255,255,255,0.03); padding: 14px; margin-bottom: 12px; border-radius: 20px; 
+    display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.03); padding: 14px; margin-bottom: 12px; border-radius: 20px; 
     border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s;
   }
   .list-item:active { transform: scale(0.98); }
@@ -197,8 +181,6 @@
   
   .tag { font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: var(--success); color: #000; box-shadow: 0 0 10px var(--success-glow);}
 
-  #settingsGrid input { width: 100%; margin: 12px 0; accent-color: var(--accent); }
-  
   .toast { 
     position: fixed; top: env(safe-area-inset-top, 40px); left: 50%; transform: translateX(-50%);
     background: rgba(20, 25, 35, 0.85); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.4);
@@ -225,7 +207,6 @@
   </div>
 
   <div class="bottom-area">
-    
     <div class="stats-panel glass">
       <div class="stat-row-top">
         <div class="stat-group">
@@ -314,19 +295,56 @@
 
 <div class="overlay-sheet" id="panel_settings">
   <div class="sheet-header">
-    <h2 style="color:var(--text-muted)">System Settings</h2>
+    <h2 style="color:var(--text-muted)">Natur Kontrolle (System)</h2>
     <button class="close-btn" onclick="closeAllPanels()">✕</button>
   </div>
   
-  <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:20px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); font-size:13px; padding:12px;">🔲 Browser Vollbild umschalten</button>
+  <button class="btn" onclick="toggleFullScreen()" style="width:100%; margin-bottom:20px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); font-size:13px; padding:12px; flex-direction:row;">🔲 Browser Vollbild umschalten</button>
   
   <div id="settingsGrid">
-    <label class="s-label">Tempo (Sek/Tag)</label><input type="range" id="inpSecPerDay" min="1" max="120" value="60">
-    <label class="s-label" style="display:block; margin-top:10px;">Wachstum Multiplikator</label><input type="range" id="inpGrowMult" min="0" max="20" step="0.5" value="1">
-    <label class="s-label" style="display:block; margin-top:10px;">Blattdichte (Limit)</label><input type="range" id="inpLeafLimit" min="5" max="100" value="30">
-    <label class="s-label" style="display:block; margin-top:10px;">Windstärke</label><input type="range" id="inpWind" min="0" max="3" step="0.1" value="1">
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Spieltempo (Sek/Tag)</span><span class="s-val" id="valSec">60</span></div>
+      <input type="range" id="inpSecPerDay" min="1" max="120" value="60">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Wachstum Multiplikator</span><span class="s-val" id="valGrow">1.0</span></div>
+      <input type="range" id="inpGrowMult" min="0" max="10" step="0.1" value="1">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Ast-Dicke Multiplikator</span><span class="s-val" id="valThick">1.0</span></div>
+      <input type="range" id="inpThickMult" min="0.1" max="5" step="0.1" value="1">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Verzweigungs-Chance</span><span class="s-val" id="valSprout">3%</span></div>
+      <input type="range" id="inpSproutChance" min="0" max="0.2" step="0.01" value="0.03">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Max. Blätter (pro Ast)</span><span class="s-val" id="valLeaves">30</span></div>
+      <input type="range" id="inpLeafLimit" min="0" max="100" value="30">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Blatt-Wachstumsrate</span><span class="s-val" id="valLeafRate">10%</span></div>
+      <input type="range" id="inpLeafRate" min="0" max="1" step="0.05" value="0.1">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Blatt-Größe Multiplikator</span><span class="s-val" id="valLeafSize">1.0</span></div>
+      <input type="range" id="inpLeafSize" min="0.1" max="3" step="0.1" value="1.0">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Wasserverbrauch</span><span class="s-val" id="valWater">5.0</span></div>
+      <input type="range" id="inpWaterDrain" min="0" max="20" step="0.5" value="5.0">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Windgeschwindigkeit</span><span class="s-val" id="valWindSpd">0.3</span></div>
+      <input type="range" id="inpWindSpeed" min="0" max="3" step="0.1" value="0.3">
+    </div>
+    <div class="set-row">
+      <div class="set-header"><span class="s-label">Wind-Biegung (Stärke)</span><span class="s-val" id="valWindSway">0.05</span></div>
+      <input type="range" id="inpWindSway" min="0" max="0.2" step="0.01" value="0.05">
+    </div>
   </div>
-  <br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239, 68, 68, 0.15); color:#ef4444; border-color:#ef4444; margin-top:15px; font-size:13px; padding:12px;">Spielstand Löschen</button>
+  
+  <br><button class="btn" onclick="hardReset()" style="width:100%; background:rgba(239, 68, 68, 0.15); color:#ef4444; border-color:#ef4444; margin-top:15px; font-size:13px; padding:12px; flex-direction:row;">Spielstand Löschen</button>
 </div>
 
 <script>
@@ -355,7 +373,19 @@ const ITEMS = {
   soil_bio:  { type:'soil', name:"Bio-Boost", cost:500, boost:2.0 }
 };
 
-const SETTINGS = { secPerDay: 60, growMult: 1.0, timeWarp: 1.0, windSpeed: 1.0, maxLeaves: 30 };
+// 10 NEUE GLOBALE EINSTELLUNGEN
+let SETTINGS = { 
+  secPerDay: 60, 
+  growMult: 1.0, 
+  thickMult: 1.0,
+  sproutChance: 0.03,
+  maxLeaves: 30, 
+  leafRate: 0.1,
+  leafSizeMult: 1.0,
+  waterDrain: 5.0,
+  windSpeed: 0.3, // Um 70% reduziert
+  windSway: 0.05
+};
 
 let STATE = {
   money: 500,
@@ -406,6 +436,8 @@ let INPUT="none", HOVER=null, BEND_TARGET=null, WATERING=false;
 
 function init() {
   loadGame();
+  bindSettingsUI();
+  
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   generateQuests();
   
@@ -434,7 +466,8 @@ function update(dt) {
   ENV.dayTime += (dt/SETTINGS.secPerDay)*SETTINGS.timeWarp;
   if(ENV.dayTime>1) { ENV.dayTime-=1; tree.days++; updateListUI(); }
   
-  if(tree.water>0) tree.water -= (5*soil.boost/SETTINGS.secPerDay)*dt;
+  // Wasserverbrauch über Settings steuerbar
+  if(tree.water>0) tree.water -= (SETTINGS.waterDrain * soil.boost / SETTINGS.secPerDay) * dt;
   const growth = (tree.water>0?1:0) * spec.growth * soil.boost * pot.bonus * SETTINGS.growMult;
 
   if(ENV.clouds.length<5 && Math.random()<0.01) ENV.clouds.push({x:-200, y:Math.random()*300, s:1+Math.random(), v:0.2+Math.random()*0.3});
@@ -466,17 +499,22 @@ function update(dt) {
     
     if(!b.cut && b.len<b.maxLen) {
       b.len += 8*dt*growth;
-      if(b.len>15) b.thick += 0.1*dt*growth;
+      
+      // Astdicke über Settings steuerbar
+      if(b.len>15) b.thick += 0.1 * dt * growth * SETTINGS.thickMult;
       
       const thresh = b.maxLen*0.85;
       if(b.depth>0 && b.len>thresh) {
-         if(b.leaves.length < SETTINGS.maxLeaves && Math.random()<0.1) {
-            b.leaves.push({ f:0.85+Math.random()*0.15, r:Math.random()*6.28, s:0.1, ms:8+Math.random()*6 });
+         // Blattmenge und Rate über Settings steuerbar
+         if(b.leaves.length < SETTINGS.maxLeaves && Math.random() < SETTINGS.leafRate) {
+            // Blattgröße über Settings steuerbar
+            b.leaves.push({ f:0.85+Math.random()*0.15, r:Math.random()*6.28, s:0.1, ms:(8+Math.random()*6)*SETTINGS.leafSizeMult });
          }
       }
       
       if(b.len>b.maxLen*0.6 && !b.sprouted && b.thick>3.0) {
-         if(Math.random()<0.03*growth) {
+         // Verzweigungs-Wahrscheinlichkeit über Settings steuerbar
+         if(Math.random() < SETTINGS.sproutChance * growth) {
             b.sprouted=true;
             let cnt=(Math.random()>0.4)?2:1;
             for(let i=0;i<cnt;i++) {
@@ -489,7 +527,8 @@ function update(dt) {
     }
     for(let l of b.leaves) if(l.s < l.ms) l.s += 10*dt; 
     
-    const sway = Math.sin(Date.now()*0.002+b.windPhase)*SETTINGS.windSpeed * (0.05*b.len)/(Math.max(1,b.thick));
+    // Wind Physik wurde in Tempo und Biegung getrennt
+    const sway = Math.sin(Date.now()*0.002*SETTINGS.windSpeed + b.windPhase) * (SETTINGS.windSway * b.len) / (Math.max(1,b.thick));
     b.endX = b.x + Math.cos(b.angle+sway)*b.len;
     b.endY = b.y + Math.sin(b.angle+sway)*b.len;
     b.children.forEach(c=>sim(c,0,0));
@@ -614,6 +653,38 @@ function loop(now) {
   update(dt); draw();
   if(now - lastUiT > 500) { updateRealtimeUI(); lastUiT = now; }
   requestAnimationFrame(loop);
+}
+
+// ---------------- SYSTEM ----------------
+
+// Bindet HTML Inputs an das SETTINGS Objekt inkl. Label-Update
+function bindSettingsUI() {
+  const binds = [
+    { id: 'inpSecPerDay', key: 'secPerDay', valId: 'valSec', parser: parseFloat },
+    { id: 'inpGrowMult', key: 'growMult', valId: 'valGrow', parser: parseFloat },
+    { id: 'inpThickMult', key: 'thickMult', valId: 'valThick', parser: parseFloat },
+    { id: 'inpSproutChance', key: 'sproutChance', valId: 'valSprout', parser: parseFloat, display: v=>Math.round(v*100)+"%" },
+    { id: 'inpLeafLimit', key: 'maxLeaves', valId: 'valLeaves', parser: parseInt },
+    { id: 'inpLeafRate', key: 'leafRate', valId: 'valLeafRate', parser: parseFloat, display: v=>Math.round(v*100)+"%" },
+    { id: 'inpLeafSize', key: 'leafSizeMult', valId: 'valLeafSize', parser: parseFloat },
+    { id: 'inpWaterDrain', key: 'waterDrain', valId: 'valWater', parser: parseFloat },
+    { id: 'inpWindSpeed', key: 'windSpeed', valId: 'valWindSpd', parser: parseFloat },
+    { id: 'inpWindSway', key: 'windSway', valId: 'valWindSway', parser: parseFloat }
+  ];
+
+  binds.forEach(b => {
+    let el = $(b.id);
+    if(el) {
+      el.value = SETTINGS[b.key]; // Initial set
+      if(b.valId) $(b.valId).innerText = b.display ? b.display(SETTINGS[b.key]) : SETTINGS[b.key];
+      
+      el.oninput = e => {
+        let val = b.parser(e.target.value);
+        SETTINGS[b.key] = val;
+        if(b.valId) $(b.valId).innerText = b.display ? b.display(val) : val;
+      };
+    }
+  });
 }
 
 function generateQuests() {
@@ -828,7 +899,6 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
 
 ['Water','Prune','Graft','Bend'].forEach(t=>$('tool'+t).onclick=()=>setTool(t.toLowerCase()));
 
-// Fullscreen API für Browser die es unterstützen
 window.toggleFullScreen = function() {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen().catch(err => {
@@ -839,25 +909,29 @@ window.toggleFullScreen = function() {
   }
 };
 
-$('inpSecPerDay').oninput=e=>SETTINGS.secPerDay=parseFloat(e.target.value);
-$('inpGrowMult').oninput=e=>SETTINGS.growMult=parseFloat(e.target.value);
-$('inpLeafLimit').oninput=e=>SETTINGS.maxLeaves=parseInt(e.target.value);
-$('inpWind').oninput=e=>SETTINGS.windSpeed=parseFloat(e.target.value);
-
 $('btnBuyTree').onclick=()=>{ buy('tree', Object.keys(SPECIES)[Math.floor(Math.random()*Object.keys(SPECIES).length)], 100); }
 $('btnPhoto').onclick=()=>{ let a=document.createElement('a'); a.download="bonsai.png"; a.href=cv.toDataURL(); a.click(); };
 
-function saveGame() { localStorage.setItem("bonsai_v52", JSON.stringify({money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})) })); }
+function saveGame() { 
+  localStorage.setItem("bonsai_v60", JSON.stringify({
+      money:STATE.money, activeIdx:STATE.activeIdx, inv:STATE.inventory, 
+      trees:STATE.trees.map(t=>({...t, root:t.root.serialize()})),
+      settings: SETTINGS
+  })); 
+}
+
 function loadGame() {
   try {
-    const d=JSON.parse(localStorage.getItem("bonsai_v52"));
+    const d=JSON.parse(localStorage.getItem("bonsai_v60"));
     if(d) {
        STATE.money=d.money ?? 500; STATE.inventory=d.inv || STATE.inventory; STATE.activeIdx=d.activeIdx || 0;
+       if(d.settings) SETTINGS = {...SETTINGS, ...d.settings};
        STATE.trees=d.trees.map(td=>{ let t=new Tree(td.key, td.name); Object.assign(t, td); t.root = Branch.deserialize(td.root, null); return t; });
     }
   } catch(e) {}
 }
-window.hardReset = () => { localStorage.removeItem("bonsai_v52"); location.reload(); };
+
+window.hardReset = () => { localStorage.removeItem("bonsai_v60"); location.reload(); };
 setInterval(saveGame, 5000);
 
 init();
