@@ -458,13 +458,15 @@ function loadGame() {
     try {
       let data = JSON.parse(saved);
       STATE.money = data.money || 500;
-      STATE.activeIdx = data.activeIdx || 0;
       STATE.inventory = data.inventory || { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] };
       STATE.stats = data.stats || { totalWaters:0, totalPrunes:0, totalDays:0 };
       STATE.quests = data.quests || [];
       if(data.trees && data.trees.length) {
         STATE.trees = data.trees.map(t => Tree.deserialize(t));
       }
+      STATE.activeIdx = data.activeIdx || 0;
+      // Sicherheitsabfrage, falls aktive ID nicht mehr existiert
+      if(STATE.activeIdx >= STATE.trees.length) STATE.activeIdx = 0; 
     } catch(e) { console.error("Savegame error", e); }
   }
 }
@@ -956,7 +958,7 @@ function updateListUI() {
   for(let key in ITEMS) {
     let itm = ITEMS[key];
     let isOwned = STATE.inventory[itm.type + 's'].includes(key);
-    let isEquipped = (tree[itm.type] === key);
+    let isEquipped = (tree && tree[itm.type] === key);
     let btnHtml = '';
     
     if(!isOwned) {
@@ -1029,8 +1031,10 @@ window.buyItem = function(key) {
 
 window.equipItem = function(key) {
   let itm = ITEMS[key];
-  STATE.trees[STATE.activeIdx][itm.type] = key;
-  updateListUI();
+  if(STATE.trees[STATE.activeIdx]) {
+    STATE.trees[STATE.activeIdx][itm.type] = key;
+    updateListUI();
+  }
 };
 
 window.claimQuest = function(idx) {
@@ -1098,7 +1102,6 @@ window.hardReset = function() {
 };
 
 init();
-})();
 </script>
 </body>
 </html>
