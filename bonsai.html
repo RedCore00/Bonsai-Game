@@ -288,7 +288,7 @@ const ITEMS = {
 
 let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[] };
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[], pebbles: [] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
@@ -372,11 +372,26 @@ function saveGame() {
   } catch(e) {}
 }
 
+function generatePebbles() {
+    ENV.pebbles = [];
+    for(let i=-400; i<400; i+=12) {
+        if(Math.abs(i) < 85) continue; 
+        ENV.pebbles.push({
+            x: i + (Math.random()-0.5)*10,
+            y: 150 + (Math.random())*15, 
+            rx: 3 + Math.random()*3,
+            ry: 2 + Math.random()*2,
+            rot: Math.random()*3.14
+        });
+    }
+}
+
 function init() {
   cv.width=$('viewport').clientWidth||window.innerWidth; cv.height=$('viewport').clientHeight||window.innerHeight;
   loadGame(); bindSettingsUI(); setupInteractions();
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   if(!STATE.quests||STATE.quests.length===0) generateQuests();
+  generatePebbles();
   new ResizeObserver(e=>{for(let E of e){if(E.contentRect.width>0){cv.width=E.contentRect.width;cv.height=E.contentRect.height;}}}).observe($('viewport'));
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
@@ -541,7 +556,9 @@ function setupInteractions() {
           if (MOUSE.drag && dragStartScreen && camStartPos) {
               CAM.x = camStartPos.x + (px - dragStartScreen.x);
               CAM.y = camStartPos.y + (py - dragStartScreen.y);
-              MOUSE.x = px; MOUSE.y = py;
+              
+              MOUSE.x = px;
+              MOUSE.y = py;
           } else {
               MOUSE.x = px;
               MOUSE.y = py;
@@ -662,6 +679,8 @@ function update(dt) {
   
   const growth=(tree.water>10?1:0.1)*spec.growth*soil.boost*pot.bonus*SETTINGS.growMult;
   
+  if(ENV.clouds.length<8&&Math.random()<0.02) ENV.clouds.push({x:-300,y:50+Math.random()*200,s:0.8+Math.random()*1.2,v:0.1+Math.random()*0.2});
+
   if(INPUT==='water'&&MOUSE.down) {
       for(let i=0;i<3;i++) ENV.particles.push({x:MOUSE.worldX+(Math.random()-0.5)*30, y:Math.min(MOUSE.worldY,-50)+(Math.random()-0.5)*10, vx:(Math.random()-0.5)*15, vy:120+Math.random()*80, life:2.0});
   }
@@ -777,20 +796,35 @@ function draw() {
   ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r,cy+Math.cos(ang)*r, t>0.25 && t<0.75 ? 55 : 40,0,6.28); ctx.fill();
   ctx.shadowBlur=0;
   
+  ctx.fillStyle="rgba(255,255,255,0.25)"; 
+  ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+300)c.x=-300; drawCloud(c.x,c.y,c.s);});
+
+  // HIER SIND DIE SCHWARZEN BERGE WIEDER DRIN!
+  ctx.fillStyle="#04060b"; 
+  ctx.beginPath(); 
+  ctx.moveTo(0,h); 
+  for(let x=0;x<=w;x+=20) {
+      ctx.lineTo(x,h*0.65-Math.abs(Math.sin(x*0.002)*100+Math.cos(x*0.008)*30)); 
+  }
+  ctx.lineTo(w,h); 
+  ctx.fill();
+  
   ctx.save(); 
   const camBaseY = h * 0.6; 
   ctx.translate(w/2+CAM.x, camBaseY+CAM.y); ctx.scale(CAM.zoom,CAM.zoom); 
   
-  ctx.fillStyle = "#04060b";
-  ctx.beginPath();
-  ctx.moveTo(-5000, 55);
-  ctx.lineTo(5000, 55);
-  ctx.lineTo(5000, 5000);
-  ctx.lineTo(-5000, 5000);
-  ctx.fill();
-
   drawWorld(); 
   ctx.restore();
+}
+
+function drawCloud(x,y,s){
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.bezierCurveTo(x-40*s, y+20*s, x-40*s, y+70*s, x+60*s, y+70*s);
+    ctx.bezierCurveTo(x+160*s, y+70*s, x+160*s, y+40*s, x+120*s, y+20*s);
+    ctx.bezierCurveTo(x+160*s, y-30*s, x+110*s, y-50*s, x+80*s, y-30*s);
+    ctx.bezierCurveTo(x+50*s, y-60*s, x, y-40*s, x, y);
+    ctx.fill();
 }
 
 function drawWorld() {
@@ -798,6 +832,7 @@ function drawWorld() {
   
   const groundY = 150;
 
+  // Der schöne, echte Erdboden in der 3D-Welt
   const groundGrd = ctx.createLinearGradient(0, groundY, 0, 5000);
   groundGrd.addColorStop(0, "#1c1917");
   groundGrd.addColorStop(0.02, "#292524");
@@ -809,6 +844,13 @@ function drawWorld() {
   ctx.lineTo(5000, 5000);
   ctx.lineTo(-5000, 5000);
   ctx.fill();
+  
+  ctx.fillStyle = "rgba(60, 50, 40, 0.6)";
+  ENV.pebbles.forEach(p => {
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, p.rx, p.ry, p.rot, 0, 6.28);
+      ctx.fill();
+  });
 
   ctx.lineCap="round"; ctx.lineJoin="round";
   
@@ -916,15 +958,21 @@ function notify(m){ const t=$('toast'); t.innerText=m; t.classList.add('show'); 
 function openPanel(id){ $('overlayBg').classList.add('open'); $(id).classList.add('open'); updateListUI(); }
 window.closeAllPanels=()=>{ $('overlayBg').classList.remove('open'); document.querySelectorAll('.overlay-sheet').forEach(s=>s.classList.remove('open')); }
 
+// Baum Umbenennen via Liste
 window.renameTree = function(idx) {
   const tree = STATE.trees[idx];
   if(!tree) return;
   const newName = prompt("Gib deinem Bonsai einen neuen Namen:", tree.name);
   if(newName && newName.trim() !== "") {
     tree.name = newName.trim();
+    updateRealtimeUI();
     updateListUI();
     notify("Baum erfolgreich umbenannt!");
   }
+}
+
+window.renameActiveTree = function() {
+  renameTree(STATE.activeIdx);
 }
 
 window.cheatMoney = function() {
@@ -936,9 +984,15 @@ window.cheatMoney = function() {
 function updateRealtimeUI(){ 
   const t=STATE.trees[STATE.activeIdx]; if(!t)return; 
   
-  const seasons = ["Frühling","Sommer","Herbst","Winter"];
-  $('uiDayText').innerText = `Tag ${Math.floor(t.days)}`;
-  $('uiSeasonText').innerText = seasons[Math.floor(t.days/30)%4];
+  const elDayText = $('uiDayText');
+  const elSeasonText = $('uiSeasonText');
+  const elWaterCirc = $('circWater');
+  const elHpCirc = $('circHp');
+  const iconWater = $('iconWater');
+  const iconHp = $('iconHp');
+
+  if(elDayText) elDayText.innerText = `Tag ${Math.floor(t.days)}`;
+  if(elSeasonText) elSeasonText.innerText = ["Frühling","Sommer","Herbst","Winter"][Math.floor(t.days/30)%4];
   
   let wPct = Math.max(0, Math.min(100, t.water));
   let hPct = Math.max(0, Math.min(100, t.hp));
@@ -947,28 +1001,23 @@ function updateRealtimeUI(){
   let wOff = circ - (wPct / 100) * circ;
   let hOff = circ - (hPct / 100) * circ;
   
-  const cW = $('circWater');
-  const cHp = $('circHp');
-  if(cW) cW.style.strokeDashoffset = wOff;
-  if(cHp) cHp.style.strokeDashoffset = hOff;
+  if(elWaterCirc) elWaterCirc.style.strokeDashoffset = wOff;
+  if(elHpCirc) elHpCirc.style.strokeDashoffset = hOff;
   
-  const iW = $('iconWater');
-  const iHp = $('iconHp');
-
   if(t.water < 20) {
-      if(cW) cW.classList.add('danger-stroke');
-      if(iW) iW.style.stroke = "var(--danger)";
+      if(elWaterCirc) elWaterCirc.classList.add('danger-stroke');
+      if(iconWater) iconWater.style.stroke = "var(--danger)";
   } else {
-      if(cW) cW.classList.remove('danger-stroke');
-      if(iW) iW.style.stroke = "#38bdf8"; 
+      if(elWaterCirc) elWaterCirc.classList.remove('danger-stroke');
+      if(iconWater) iconWater.style.stroke = "var(--accent)"; 
   }
 
   if(t.hp < 20) {
-      if(cHp) cHp.classList.add('danger-stroke');
-      if(iHp) iHp.style.stroke = "var(--danger)";
+      if(elHpCirc) elHpCirc.classList.add('danger-stroke');
+      if(iconHp) iconHp.style.stroke = "var(--danger)";
   } else {
-      if(cHp) cHp.classList.remove('danger-stroke');
-      if(iHp) iHp.style.stroke = "#34d399"; 
+      if(elHpCirc) elHpCirc.classList.remove('danger-stroke');
+      if(iconHp) iconHp.style.stroke = "var(--success)"; 
   }
 }
 
