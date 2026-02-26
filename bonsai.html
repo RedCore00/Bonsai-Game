@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v13.5 (Minimal UI)</title>
+<title>Bonsai Master v13.6 (Crash Fix & Radial UI)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -66,6 +66,26 @@
     pointer-events: auto;
   }
 
+  /* --- HEADER OBEN LINKS --- */
+  .top-header {
+    position: absolute;
+    top: env(safe-area-inset-top, 20px);
+    left: 20px;
+    padding: 10px 16px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 20;
+    transition: transform 0.2s;
+  }
+  .top-header:active { transform: scale(0.95); }
+  .top-name { font-size: 16px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; }
+  .top-species { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* --- UNTERE WERKZEUG LEISTE --- */
   .smart-bar {
     border-radius: 22px;
     padding: 10px 15px;
@@ -76,44 +96,21 @@
     gap: 10px; 
   }
   
-  /* --- RADIAL BARS CSS --- */
-  .radial-group { 
-    display: flex; gap: 8px; align-items: center; 
-  }
-  .radial-wrapper { 
-    position: relative; width: 34px; height: 34px; 
-  }
-  .circular-chart { 
-    display: block; width: 100%; height: 100%; 
-  }
-  .circle-bg { 
-    fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3; 
-  }
-  .circle { 
-    fill: none; stroke-width: 3; stroke-linecap: round; 
-    transition: stroke-dasharray 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
-  }
+  .radial-group { display: flex; gap: 8px; align-items: center; flex: 1; }
+  .radial-wrapper { position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; }
+  .circular-chart { display: block; width: 100%; height: 100%; }
+  .circle-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3.5; }
+  .circle { fill: none; stroke-width: 3.5; stroke-linecap: round; transition: stroke-dashoffset 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
   .circular-chart.water .circle { stroke: var(--accent); }
   .circular-chart.hp .circle { stroke: var(--success); }
-  .circular-chart.danger .circle { stroke: var(--danger) !important; }
-  
-  .inner-icon { 
-    position: absolute; top: 50%; left: 50%; 
-    transform: translate(-50%, -50%); 
-    width: 14px; height: 14px; opacity: 0.9; 
-  }
+  .danger-stroke { stroke: var(--danger) !important; }
+  .inner-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; opacity: 0.9; transition: stroke 0.3s; }
 
-  .day-season-group { 
-    display: flex; flex-direction: column; align-items: flex-start; justify-content: center; flex: 1; padding-left: 5px;
-  }
+  .day-season-group { display: flex; flex-direction: column; justify-content: center; padding-left: 5px; flex-shrink: 0;}
   #uiDayText { font-size: 13px; font-weight: 700; color: #fff; }
   #uiSeasonText { font-size: 10px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
-  .smart-tools { 
-    display: flex; gap: 6px; 
-    flex-shrink: 0; 
-  }
-  
+  .smart-tools { display: flex; gap: 6px; flex-shrink: 0; }
   .tool-btn-mini {
     width: 38px; height: 38px; 
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
@@ -187,43 +184,49 @@
 </div>
 
 <div class="ui-layer">
-  
-  <div class="smart-bar glass">
-    <div class="radial-group">
-      <div class="radial-wrapper" title="Wasser">
-        <svg viewBox="0 0 36 36" class="circular-chart water" id="svgWater">
-          <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-          <path class="circle" id="circWater" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-        </svg>
-        <svg class="inner-icon" id="iconWater" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-      </div>
-      <div class="radial-wrapper" title="Vitalität">
-        <svg viewBox="0 0 36 36" class="circular-chart hp" id="svgHp">
-          <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-          <path class="circle" id="circHp" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-        </svg>
-        <svg class="inner-icon" id="iconHp" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </div>
-    </div>
-    
-    <div class="day-season-group">
-      <span id="uiDayText">Tag 0</span>
-      <span id="uiSeasonText">FRÜHLING</span>
-    </div>
 
-    <div class="smart-tools">
-      <button class="tool-btn-mini" id="toolWater" onclick="setTool('water')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-      </button>
-      <button class="tool-btn-mini" id="toolPrune" onclick="setTool('prune')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-      </button>
-      <button class="tool-btn-mini" id="toolGraft" onclick="setTool('graft')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-      </button>
-      <button class="tool-btn-mini" id="toolBend" onclick="setTool('bend')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg>
-      </button>
+  <div class="top-header glass" onclick="renameActiveTree()" title="Klicken zum Umbenennen">
+    <div class="top-name" id="uiTreeName">Baum</div>
+    <div class="top-species" id="uiSpeciesName">Spezies</div>
+  </div>
+
+  <div class="bottom-area">
+    <div class="smart-bar glass">
+      <div class="radial-group">
+        <div class="radial-wrapper" title="Wasser">
+          <svg class="circular-chart water" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="16" class="circle-bg" />
+            <circle cx="20" cy="20" r="16" class="circle" id="circWater" stroke-dasharray="100.53" stroke-dashoffset="0" transform="rotate(-90 20 20)" />
+          </svg>
+          <svg class="inner-icon" id="iconWater" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        </div>
+        <div class="radial-wrapper" title="Vitalität">
+          <svg class="circular-chart hp" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="16" class="circle-bg" />
+            <circle cx="20" cy="20" r="16" class="circle" id="circHp" stroke-dasharray="100.53" stroke-dashoffset="0" transform="rotate(-90 20 20)" />
+          </svg>
+          <svg class="inner-icon" id="iconHp" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div class="day-season-group">
+          <span id="uiDayText">Tag 0</span>
+          <span id="uiSeasonText">FRÜHLING</span>
+        </div>
+      </div>
+      
+      <div class="smart-tools">
+        <button class="tool-btn-mini" id="toolWater" onclick="setTool('water')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        </button>
+        <button class="tool-btn-mini" id="toolPrune" onclick="setTool('prune')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+        </button>
+        <button class="tool-btn-mini" id="toolGraft" onclick="setTool('graft')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+        </button>
+        <button class="tool-btn-mini" id="toolBend" onclick="setTool('bend')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12c12 0 11 9 18 9"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -264,6 +267,8 @@ const thumbCanvas = document.createElement('canvas');
 thumbCanvas.width = 150; thumbCanvas.height = 150;
 const thumbCtx = thumbCanvas.getContext('2d');
 
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
 const SPECIES = {
   ficus: { name: "Ficus Retusa", leaf: "oval", color:["#166534","#4ade80"], bark:["#5D4037","#3E2723"], growth: 1.0, cost: 0 },
   pine:  { name: "Schwarzkiefer", leaf: "needle", color:["#064e3b","#10b981"], bark:["#424242","#212121"], growth: 0.6, cost: 300 },
@@ -286,12 +291,11 @@ const ITEMS = {
 
 let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[] };
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[], pebbles: [] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
 let lastT = 0, lastUiT = 0;
-let lastTouchDist = 0;
 const previewCache = {};
 
 class Branch {
@@ -341,7 +345,7 @@ function loadGame() {
   for (let i = 0; i < localStorage.length; i++) {
       let key = localStorage.key(i);
       if (key && key.startsWith('bonsaiSave')) {
-          if (key === 'bonsaiSave135') {
+          if (key === 'bonsaiSave136') {
               savedData = localStorage.getItem(key);
           } else {
               if (!savedData) savedData = localStorage.getItem(key);
@@ -349,7 +353,6 @@ function loadGame() {
           }
       }
   }
-  
   keysToRemove.forEach(k => localStorage.removeItem(k));
 
   if(savedData) { 
@@ -364,14 +367,25 @@ function loadGame() {
 
 function saveGame() { 
   try {
-    localStorage.setItem('bonsaiSave135', JSON.stringify({ 
+    localStorage.setItem('bonsaiSave136', JSON.stringify({ 
       money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
       stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
     })); 
-  } catch(e) {
-    console.error("Quota Exceeded:", e);
-    notify("Speicher voll! Bitte alte Bonsais verkaufen.");
-  }
+  } catch(e) {}
+}
+
+function generatePebbles() {
+    ENV.pebbles = [];
+    for(let i=-400; i<400; i+=12) {
+        if(Math.abs(i) < 85) continue; 
+        ENV.pebbles.push({
+            x: i + (Math.random()-0.5)*10,
+            y: 150 + (Math.random())*15, 
+            rx: 3 + Math.random()*3,
+            ry: 2 + Math.random()*2,
+            rot: Math.random()*3.14
+        });
+    }
 }
 
 function init() {
@@ -379,6 +393,7 @@ function init() {
   loadGame(); bindSettingsUI(); setupInteractions();
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   if(!STATE.quests||STATE.quests.length===0) generateQuests();
+  generatePebbles();
   new ResizeObserver(e=>{for(let E of e){if(E.contentRect.width>0){cv.width=E.contentRect.width;cv.height=E.contentRect.height;}}}).observe($('viewport'));
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
@@ -543,12 +558,9 @@ function setupInteractions() {
           if (MOUSE.drag && dragStartScreen && camStartPos) {
               CAM.x = camStartPos.x + (px - dragStartScreen.x);
               CAM.y = camStartPos.y + (py - dragStartScreen.y);
-              
-              MOUSE.x = px;
-              MOUSE.y = py;
+              MOUSE.x = px; MOUSE.y = py;
           } else {
-              MOUSE.x = px;
-              MOUSE.y = py;
+              MOUSE.x = px; MOUSE.y = py;
               let camBaseY = cv.height * 0.6;
               MOUSE.worldX = (px - (cv.width / 2 + CAM.x)) / CAM.zoom;
               MOUSE.worldY = (py - (camBaseY + CAM.y)) / CAM.zoom;
@@ -613,17 +625,10 @@ function setupInteractions() {
 
   function handlePointerUp(e) {
       activePointers.delete(e.pointerId);
-      if (activePointers.size < 2) {
-          initialPinchDist = null;
-      }
+      if (activePointers.size < 2) initialPinchDist = null;
       if (activePointers.size === 0) {
-          MOUSE.down = false;
-          MOUSE.drag = false;
-          BEND_TARGET = null;
-          dragStartScreen = null;
-          camStartPos = null;
-          lastWorldX = null;
-          lastWorldY = null;
+          MOUSE.down = false; MOUSE.drag = false; BEND_TARGET = null;
+          dragStartScreen = null; camStartPos = null; lastWorldX = null; lastWorldY = null;
       }
   }
 
@@ -851,6 +856,13 @@ function drawWorld() {
   ctx.lineTo(5000, 5000);
   ctx.lineTo(-5000, 5000);
   ctx.fill();
+  
+  ctx.fillStyle = "rgba(60, 50, 40, 0.6)";
+  ENV.pebbles.forEach(p => {
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, p.rx, p.ry, p.rot, 0, 6.28);
+      ctx.fill();
+  });
 
   ctx.lineCap="round"; ctx.lineJoin="round";
   
@@ -983,38 +995,56 @@ window.cheatMoney = function() {
   updateRealtimeUI();
 };
 
-function updateRealtimeUI(){ 
-  const t=STATE.trees[STATE.activeIdx]; if(!t)return; 
-  
-  $('uiTreeName').innerText = t.name;
-  $('uiSpeciesName').innerText = SPECIES[t.key].name;
-  
-  const seasons = ["Frühling","Sommer","Herbst","Winter"];
-  $('uiDayText').innerText = `Tag ${Math.floor(t.days)}`;
-  $('uiSeasonText').innerText = seasons[Math.floor(t.days/30)%4];
-  
-  let wPct = Math.max(0, Math.min(100, t.water));
-  let hPct = Math.max(0, Math.min(100, t.hp));
-  
-  // Kreisumfang für r=17 ist ~106.8
-  let circ = 106.8;
-  $('circWater').style.strokeDasharray = `${(wPct/100)*circ}, ${circ}`;
-  $('circHp').style.strokeDasharray = `${(hPct/100)*circ}, ${circ}`;
-  
+function updateRealtimeUI() {
+  const t = STATE.trees[STATE.activeIdx];
+  if(!t) return;
+
+  const elTreeName = $('uiTreeName');
+  if(elTreeName) {
+    elTreeName.innerHTML = `${t.name} <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5; margin-left:6px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  }
+
+  const elSpeciesName = $('uiSpeciesName');
+  if(elSpeciesName) elSpeciesName.innerText = SPECIES[t.key].name;
+
+  const elDayText = $('uiDayText');
+  if(elDayText) elDayText.innerText = `Tag ${Math.floor(t.days)}`;
+
+  const elSeasonText = $('uiSeasonText');
+  if(elSeasonText) {
+    const seasons = ["Frühling","Sommer","Herbst","Winter"];
+    elSeasonText.innerText = seasons[Math.floor(t.days/30)%4];
+  }
+
+  const wPct = Math.max(0, Math.min(100, t.water));
+  const hPct = Math.max(0, Math.min(100, t.hp));
+
+  const circ = 100.53;
+  const wOff = circ - (wPct / 100) * circ;
+  const hOff = circ - (hPct / 100) * circ;
+
+  const cW = $('circWater');
+  const cHp = $('circHp');
+  if(cW) cW.style.strokeDashoffset = wOff;
+  if(cHp) cHp.style.strokeDashoffset = hOff;
+
+  const iW = $('iconWater');
+  const iHp = $('iconHp');
+
   if(t.water < 20) {
-      $('circWater').classList.add('danger-stroke');
-      $('iconWater').style.stroke = "var(--danger)";
+      if(cW) cW.classList.add('danger-stroke');
+      if(iW) iW.style.stroke = "var(--danger)";
   } else {
-      $('circWater').classList.remove('danger-stroke');
-      $('iconWater').style.stroke = "var(--accent)"; 
+      if(cW) cW.classList.remove('danger-stroke');
+      if(iW) iW.style.stroke = "var(--accent)";
   }
 
   if(t.hp < 20) {
-      $('circHp').classList.add('danger-stroke');
-      $('iconHp').style.stroke = "var(--danger)";
+      if(cHp) cHp.classList.add('danger-stroke');
+      if(iHp) iHp.style.stroke = "var(--danger)";
   } else {
-      $('circHp').classList.remove('danger-stroke');
-      $('iconHp').style.stroke = "var(--success)"; 
+      if(cHp) cHp.classList.remove('danger-stroke');
+      if(iHp) iHp.style.stroke = "var(--success)";
   }
 }
 
@@ -1161,6 +1191,7 @@ function bindSettingsUI(){
   const binds=[{id:'inpWind',key:'windSpeed',min:0,max:2,step:0.1}, {id:'inpSec',key:'secPerDay',min:5,max:120,step:1}, {id:'inpGrow',key:'growMult',min:0.1,max:5,step:0.1}, {id:'inpWarp',key:'timeWarp',min:0.1,max:10,step:0.1}, {id:'inpLeaves',key:'maxLeaves',min:10,max:200,step:5}];
   let h=''; binds.forEach(b=>{ h+=`<div class="set-row"><div class="set-header"><span class="s-label">${labels[b.key]||b.key}</span><span class="s-val" id="v_${b.id}">${SETTINGS[b.key]}</span></div><input type="range" id="${b.id}" min="${b.min}" max="${b.max}" step="${b.step}" value="${SETTINGS[b.key]}"></div>`; }); $('settingsGrid').innerHTML=h; binds.forEach(b=>{ let el=$(b.id); if(el)el.oninput=e=>{ let v=parseFloat(e.target.value); SETTINGS[b.key]=v; $(`v_${b.id}`).innerText=v; }; });
 }
+
 window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>{console.log(e);});}else{if(document.exitFullscreen){document.exitFullscreen();}} };
 
 window.hardReset=()=>{ 
