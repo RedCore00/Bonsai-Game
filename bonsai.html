@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v13.9 (Mountains & Clouds Fix)</title>
+<title>Bonsai Master v13.11 (Perfect Pruning & Mountains)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -237,7 +237,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Ziele
     </button>
     <button class="nav-item tab-btn" onclick="openPanel('panel_settings')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
     </button>
   </div>
 </div>
@@ -352,7 +352,7 @@ function loadGame() {
   for (let i = 0; i < localStorage.length; i++) {
       let key = localStorage.key(i);
       if (key && key.startsWith('bonsaiSave')) {
-          if (key === 'bonsaiSave139') {
+          if (key === 'bonsaiSave1311') {
               savedData = localStorage.getItem(key);
           } else {
               if (!savedData) savedData = localStorage.getItem(key);
@@ -374,7 +374,7 @@ function loadGame() {
 
 function saveGame() { 
   try {
-    localStorage.setItem('bonsaiSave139', JSON.stringify({ 
+    localStorage.setItem('bonsaiSave1311', JSON.stringify({ 
       money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
       stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
     })); 
@@ -405,10 +405,14 @@ function init() {
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
 
+// ----------------------------------------------------
+// NEU: performCut entfernt den Ast komplett!
+// ----------------------------------------------------
 function performCut(branch, treeKey) {
-    if(branch.cut || !branch.parent) return; 
-    branch.cut = true;
+    if(!branch.parent) return; // Sicherheit: Stamm darf nicht geschnitten werden
+    
     const spec = SPECIES[treeKey];
+    
     function dropChildren(b) {
         const branchLen = Math.hypot(b.endX - b.x, b.endY - b.y);
         ENV.fallingParts.push({ type:'branch', x:b.x, y:b.y, len:branchLen, a:b.angle, th:b.thick, col:spec.bark[0], vx:(Math.random()-0.5)*50, vy:Math.random()*50, vr:(Math.random()-0.5)*5, onGround:false, decay:5.0 });
@@ -418,9 +422,16 @@ function performCut(branch, treeKey) {
         });
         b.children.forEach(dropChildren);
     }
+    
+    // Lass den Ast und alle seine Kinder grafisch herabfallen
     dropChildren(branch);
-    branch.children=[]; 
-    branch.leaves=[];
+    
+    // Lösche den Ast permanent vom Baum!
+    let idx = branch.parent.children.indexOf(branch);
+    if(idx !== -1) {
+        branch.parent.children.splice(idx, 1);
+    }
+    
     STATE.stats.totalPrunes++;
 }
 
@@ -464,6 +475,9 @@ function setupInteractions() {
       return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
   }
 
+  // ----------------------------------------------------
+  // NEU: Verbesserte Klick-Erkennung priorisiert Triebe!
+  // ----------------------------------------------------
   const findNearestBranch = (root, tx, ty, maxDist) => {
     let nearest=null, minDistSq = maxDist * maxDist;
     let p = {x: tx, y: ty};
@@ -471,11 +485,23 @@ function setupInteractions() {
     p.y -= potYOffset; 
 
     const search = b => {
-      let v = {x: b.x, y: b.y};
-      let w = {x: b.endX, y: b.endY};
-      let distSq = distToSegmentSquared(p, v, w);
-      
-      if(distSq < minDistSq){ minDistSq = distSq; nearest = b; }
+      // Wenn das Schneidewerkzeug aktiv ist, ignorieren wir den Hauptstamm (b.parent = null) komplett!
+      if (INPUT === 'prune' && !b.parent) {
+          // Nichts tun, aber Kinder prüfen
+      } else {
+          let v = {x: b.x, y: b.y};
+          let w = {x: b.endX, y: b.endY};
+          let distSq = distToSegmentSquared(p, v, w);
+          
+          // Wir geben weiter außen/oben liegenden Trieben eine künstliche Priorität.
+          // Dadurch verdecken dicke Stämme im Hintergrund nicht die Klicks auf kleine Triebe davor.
+          let priorityDist = distSq - (b.depth * 20);
+          
+          if(priorityDist <= minDistSq){ 
+              minDistSq = priorityDist; 
+              nearest = b; 
+          }
+      }
       b.children.forEach(search);
     };
     search(root); return nearest;
@@ -521,14 +547,10 @@ function setupInteractions() {
               HOVER = findNearestBranch(STATE.trees[STATE.activeIdx].root, MOUSE.worldX, MOUSE.worldY, 40);
               if (HOVER) {
                   if (INPUT === 'graft') {
-                      if (HOVER.cut) {
-                          HOVER.cut = false; HOVER.sprouted = false; notify("Ast geheilt!");
-                      } else {
-                          let dev = (Math.random() - 0.5) * 1.5;
-                          let newThick = Math.max(1, HOVER.thick * 0.7);
-                          HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, newThick, HOVER.depth + 1));
-                          notify("Neuer Trieb veredelt!");
-                      }
+                      let dev = (Math.random() - 0.5) * 1.5;
+                      let newThick = Math.max(1, HOVER.thick * 0.7);
+                      HOVER.children.push(new Branch(HOVER, 0, 0, HOVER.angle + dev, HOVER.maxLen * 0.7, newThick, HOVER.depth + 1));
+                      notify("Neuer Trieb veredelt!");
                   } else if (INPUT === 'bend') {
                       BEND_TARGET = HOVER;
                       const potYOffset = 150 - 60;
@@ -591,16 +613,19 @@ function setupInteractions() {
                       const potYOffset = 150 - 60;
 
                       function checkCut(b) {
-                          if (b.cut) return;
                           if (b.parent) {
                               let b0 = { x: b.x, y: b.y + potYOffset };
                               let b1 = { x: b.endX, y: b.endY + potYOffset };
                               if (doSegmentsIntersect(p0, p1, b0, b1)) {
                                   performCut(b, STATE.trees[STATE.activeIdx].key);
                                   cutHappened = true;
+                                  return; // Da der Ast weg ist, müssen wir seine Kinder nicht mehr prüfen
                               }
                           }
-                          b.children.forEach(checkCut);
+                          // Rückwärts-Iteration schützt davor, dass Splicing die Schleife stört
+                          for(let i = b.children.length - 1; i >= 0; i--) {
+                              checkCut(b.children[i]);
+                          }
                       }
                       checkCut(STATE.trees[STATE.activeIdx].root);
                       if (cutHappened) notify("Slice!");
@@ -761,8 +786,7 @@ function update(dt) {
       }
     }
     
-    if(b.cut&&b.leaves.length>0){ b.leaves.forEach(l=>l.s=Math.max(0,l.s-5*dt)); b.leaves=b.leaves.filter(l=>l.s>0); } 
-    else for(let l of b.leaves)if(l.s<l.ms)l.s+=10*dt;
+    for(let l of b.leaves) if(l.s<l.ms) l.s+=10*dt;
     
     b.endX = b.x + Math.cos(b.angle) * b.len;
     b.endY = b.y + Math.sin(b.angle) * b.len;
@@ -823,6 +847,9 @@ function draw() {
       drawCloud(c.x, c.y, c.s, c.type);
   });
 
+  // ----------------------------------------------------
+  // BERGE: Wie in test.html gewünscht (Mit Math.sin/cos)
+  // ----------------------------------------------------
   const mountGrd = ctx.createLinearGradient(0, h*0.4, 0, h);
   const mountTop = rgbToStr(mix(hexToRgb(skyCols[si][2]), [40,50,60])); 
   mountGrd.addColorStop(0, mountTop); 
@@ -908,7 +935,7 @@ function drawWorld() {
     ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.endX,b.endY); ctx.stroke(); 
     ctx.shadowBlur=0;
     
-    if(!b.cut&&b.leaves.length){
+    if(b.leaves.length){
        const sIdx=Math.floor(t.days/30)%4; let cols=spec.color; if(sIdx===2&&spec.leaf!=='needle')cols=["#b45309","#d97706"];
        for(let l of b.leaves){
           ctx.save(); ctx.translate(b.x+(b.endX-b.x)*l.f, b.y+(b.endY-b.y)*l.f); ctx.rotate(b.angle+l.r);
@@ -1086,7 +1113,7 @@ function getRealtimeThumbnail(tree) {
         thumbCtx.lineWidth=b.thick; 
         thumbCtx.strokeStyle=spec.bark[0];
         thumbCtx.beginPath(); thumbCtx.moveTo(b.x,b.y); thumbCtx.lineTo(b.endX,b.endY); thumbCtx.stroke();
-        if(!b.cut&&b.leaves.length){
+        if(b.leaves.length){
            const sIdx=Math.floor(tree.days/30)%4; let cols=spec.color; if(sIdx===2&&spec.leaf!=='needle')cols=["#b45309","#d97706"];
            for(let l of b.leaves){
               thumbCtx.save(); thumbCtx.translate(b.x+(b.endX-b.x)*l.f, b.y+(b.endY-b.y)*l.f); thumbCtx.rotate(b.angle+l.r);
