@@ -443,133 +443,42 @@ function distToSegmentSquared(p, v, w) {
 
 
 function drawMountains(w, h, t) {
-  const isNight = (t < 0.25 || t > 0.75);
-  const hazeA = isNight ? 0.22 : 0.14;
+  // Die Farbe der Silhouette (dunkles, flaches Blau-Grau wie im Screenshot)
+  const silhouetteColor = "#1a233a";
 
-  const fillPoly = (pts, fillStyle) => {
-    ctx.fillStyle = fillStyle;
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
-    ctx.fill();
-  };
+  // Die Basislinie des Gebirges (Horizont)
+  const groundY = h * 0.75;
 
-  // ---- FAR (bluish, soft) ----
-  {
-    const y0 = h * 0.68;
-    const far = [
-      { x: -40, y: h },
-      { x: -40, y: y0 + 40 },
-      { x: w * 0.10, y: y0 - 35 },
-      { x: w * 0.28, y: y0 - 10 },
-      { x: w * 0.48, y: y0 - 55 },
-      { x: w * 0.66, y: y0 - 20 },
-      { x: w * 0.85, y: y0 - 60 },
-      { x: w + 40, y: y0 - 25 },
-      { x: w + 40, y: h }
-    ];
+  ctx.fillStyle = silhouetteColor;
+  ctx.beginPath();
 
-    const g = ctx.createLinearGradient(0, y0 - 140, 0, h);
-    g.addColorStop(0, "#2a3550");
-    g.addColorStop(1, "#182033");
-    fillPoly(far, g);
+  // Startpunkt links unten am Horizont
+  ctx.moveTo(0, groundY);
 
-    const fog = ctx.createLinearGradient(0, y0 - 140, 0, y0 + 160);
-    fog.addColorStop(0, "rgba(255,255,255,0)");
-    fog.addColorStop(0.58, `rgba(255,255,255,${hazeA})`);
-    fog.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = fog;
-    ctx.fillRect(0, y0 - 170, w, 360);
-  }
+  // Definition der Bergspitzen und Täler (angepasst an die Form im Screenshot)
+  // Linker, niedrigerer Teil
+  ctx.lineTo(w * 0.15, groundY - h * 0.18);
+  ctx.lineTo(w * 0.30, groundY - h * 0.12);
+  
+  // Der hohe, spitze Hauptgipfel rechts der Mitte
+  ctx.lineTo(w * 0.55, groundY - h * 0.40);
+  
+  // Rechter Teil, abfallend
+  ctx.lineTo(w * 0.75, groundY - h * 0.22);
+  ctx.lineTo(w * 0.90, groundY - h * 0.10);
 
-  // ---- MID (main peaks, clean silhouette + subtle facets) ----
-  {
-    const y1 = h * 0.78;
-    const mid = [
-      { x: -40, y: h },
-      { x: -40, y: y1 + 60 },
+  // Endpunkt rechts unten am Horizont
+  ctx.lineTo(w, groundY);
 
-      { x: w * 0.08, y: y1 + 40 },
-      { x: w * 0.22, y: y1 - 95 },
-      { x: w * 0.34, y: y1 + 30 },
+  // Abschluss des Pfades (unterer Rand, um die Form zu schließen)
+  ctx.lineTo(w, h);
+  ctx.lineTo(0, h);
+  ctx.closePath();
 
-      { x: w * 0.48, y: y1 - 10 },
-
-      { x: w * 0.60, y: y1 + 45 },
-      { x: w * 0.74, y: y1 - 175 }, // hero peak
-      { x: w * 0.92, y: y1 + 35 },
-
-      { x: w + 40, y: y1 + 15 },
-      { x: w + 40, y: h }
-    ];
-
-    const g = ctx.createLinearGradient(0, y1 - 260, 0, h);
-    g.addColorStop(0, "#0b1426");
-    g.addColorStop(1, "#050812");
-    fillPoly(mid, g);
-
-    // Facets (give the "mountain face" look)
-    fillPoly(
-      [
-        { x: w * 0.74, y: y1 - 175 },
-        { x: w * 0.92, y: y1 + 35 },
-        { x: w * 1.02, y: y1 + 10 },
-        { x: w * 0.82, y: y1 - 125 }
-      ],
-      "rgba(70,110,160,0.16)"
-    );
-
-    fillPoly(
-      [
-        { x: w * 0.22, y: y1 - 95 },
-        { x: w * 0.34, y: y1 + 30 },
-        { x: w * 0.18, y: y1 - 45 }
-      ],
-      "rgba(70,110,160,0.10)"
-    );
-
-    // Ridge highlight (very subtle)
-    ctx.save();
-    ctx.globalAlpha = 0.10;
-    ctx.strokeStyle = "#cfe6ff";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(w * 0.62, y1 + 35);
-    ctx.lineTo(w * 0.74, y1 - 175);
-    ctx.lineTo(w * 0.87, y1 + 10);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // ---- FRONT (near-black rolling hills, smoother than noise) ----
-  {
-    const y2 = h * 0.86;
-    const front = [
-      { x: -40, y: h },
-      { x: -40, y: y2 + 90 },
-
-      { x: w * 0.12, y: y2 + 40 },
-      { x: w * 0.26, y: y2 - 12 },
-      { x: w * 0.38, y: y2 + 55 },
-      { x: w * 0.52, y: y2 + 20 },
-      { x: w * 0.66, y: y2 - 22 },
-      { x: w * 0.80, y: y2 + 70 },
-      { x: w * 0.94, y: y2 + 25 },
-
-      { x: w + 40, y: y2 + 55 },
-      { x: w + 40, y: h }
-    ];
-
-    fillPoly(front, "#02040a");
-
-    const topFade = ctx.createLinearGradient(0, h * 0.60, 0, h * 0.92);
-    topFade.addColorStop(0, "rgba(0,0,0,0)");
-    topFade.addColorStop(1, "rgba(0,0,0,0.28)");
-    ctx.fillStyle = topFade;
-    ctx.fillRect(0, h * 0.60, w, h * 0.40);
-  }
+  // Füllen der Silhouette
+  ctx.fill();
 }
+
 
 
 function setupInteractions() {
