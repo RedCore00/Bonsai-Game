@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v13.7 (Clean UI)</title>
+<title>Bonsai Master v13.9 (Mountains & Clouds Fix)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -76,7 +76,6 @@
     gap: 10px; 
   }
   
-  /* --- RADIAL BARS CSS --- */
   .radial-group { 
     display: flex; gap: 8px; align-items: center; flex: 1; 
   }
@@ -238,7 +237,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Ziele
     </button>
     <button class="nav-item tab-btn" onclick="openPanel('panel_settings')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> System
     </button>
   </div>
 </div>
@@ -288,7 +287,17 @@ const ITEMS = {
 
 let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[], pebbles: [] };
+let ENV = { 
+  dayTime: 0.3, 
+  clouds: [
+    {x: 100, y: 80, s: 1.0, v: 0.10, type: 0},
+    {x: 450, y: 140, s: 0.7, v: 0.07, type: 1},
+    {x: 800, y: 100, s: 1.2, v: 0.12, type: 2},
+    {x: 1200, y: 160, s: 0.8, v: 0.08, type: 1}
+  ], 
+  stars: Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), 
+  particles: [], fallingParts: [], swipeTrail: [], pebbles: [] 
+};
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
@@ -343,7 +352,7 @@ function loadGame() {
   for (let i = 0; i < localStorage.length; i++) {
       let key = localStorage.key(i);
       if (key && key.startsWith('bonsaiSave')) {
-          if (key === 'bonsaiSave137') {
+          if (key === 'bonsaiSave139') {
               savedData = localStorage.getItem(key);
           } else {
               if (!savedData) savedData = localStorage.getItem(key);
@@ -365,7 +374,7 @@ function loadGame() {
 
 function saveGame() { 
   try {
-    localStorage.setItem('bonsaiSave137', JSON.stringify({ 
+    localStorage.setItem('bonsaiSave139', JSON.stringify({ 
       money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
       stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
     })); 
@@ -686,8 +695,6 @@ function update(dt) {
   
   const growth=(tree.water>10?1:0.1)*spec.growth*soil.boost*pot.bonus*SETTINGS.growMult;
   
-  if(ENV.clouds.length<8&&Math.random()<0.02) ENV.clouds.push({x:-300,y:50+Math.random()*200,s:0.8+Math.random()*1.2,v:0.1+Math.random()*0.2});
-
   if(INPUT==='water'&&MOUSE.down) {
       for(let i=0;i<3;i++) ENV.particles.push({x:MOUSE.worldX+(Math.random()-0.5)*30, y:Math.min(MOUSE.worldY,-50)+(Math.random()-0.5)*10, vx:(Math.random()-0.5)*15, vy:120+Math.random()*80, life:2.0});
   }
@@ -803,8 +810,18 @@ function draw() {
   ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r,cy+Math.cos(ang)*r, t>0.25 && t<0.75 ? 55 : 40,0,6.28); ctx.fill();
   ctx.shadowBlur=0;
   
-  ctx.fillStyle="rgba(255,255,255,0.25)"; 
-  ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+300)c.x=-300; drawCloud(c.x,c.y,c.s);});
+  ctx.fillStyle="rgba(255,255,255,0.12)"; 
+  ENV.clouds.forEach(c => {
+      c.x += c.v;
+      if(c.x > w + 300) { 
+          c.x = -300; 
+          c.y = 50 + Math.random() * 150; 
+          c.type = Math.floor(Math.random() * 3); 
+          c.s = 0.6 + Math.random() * 0.8; 
+          c.v = 0.05 + c.s * 0.05; 
+      }
+      drawCloud(c.x, c.y, c.s, c.type);
+  });
 
   const mountGrd = ctx.createLinearGradient(0, h*0.4, 0, h);
   const mountTop = rgbToStr(mix(hexToRgb(skyCols[si][2]), [40,50,60])); 
@@ -819,7 +836,7 @@ function draw() {
   }
   ctx.lineTo(w, h); 
   ctx.fill();
-
+  
   ctx.save(); 
   const camBaseY = h * 0.6; 
   ctx.translate(w/2+CAM.x, camBaseY+CAM.y); ctx.scale(CAM.zoom,CAM.zoom); 
@@ -828,13 +845,27 @@ function draw() {
   ctx.restore();
 }
 
-function drawCloud(x,y,s){
+function drawCloud(x, y, s, type) {
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.bezierCurveTo(x-40*s, y+20*s, x-40*s, y+70*s, x+60*s, y+70*s);
-    ctx.bezierCurveTo(x+160*s, y+70*s, x+160*s, y+40*s, x+120*s, y+20*s);
-    ctx.bezierCurveTo(x+160*s, y-30*s, x+110*s, y-50*s, x+80*s, y-30*s);
-    ctx.bezierCurveTo(x+50*s, y-60*s, x, y-40*s, x, y);
+    if(type === 0) {
+        ctx.moveTo(x, y);
+        ctx.bezierCurveTo(x-40*s, y+20*s, x-40*s, y+70*s, x+60*s, y+70*s);
+        ctx.bezierCurveTo(x+160*s, y+70*s, x+160*s, y+40*s, x+120*s, y+20*s);
+        ctx.bezierCurveTo(x+160*s, y-30*s, x+110*s, y-50*s, x+80*s, y-30*s);
+        ctx.bezierCurveTo(x+50*s, y-60*s, x, y-40*s, x, y);
+    } else if(type === 1) {
+        ctx.moveTo(x, y);
+        ctx.bezierCurveTo(x-30*s, y+10*s, x-30*s, y+50*s, x+70*s, y+50*s);
+        ctx.bezierCurveTo(x+140*s, y+50*s, x+150*s, y+20*s, x+110*s, y+10*s);
+        ctx.bezierCurveTo(x+130*s, y-20*s, x+80*s, y-30*s, x+60*s, y-10*s);
+        ctx.bezierCurveTo(x+40*s, y-40*s, x, y-20*s, x, y);
+    } else {
+        ctx.moveTo(x, y);
+        ctx.bezierCurveTo(x-20*s, y+10*s, x-20*s, y+40*s, x+40*s, y+40*s);
+        ctx.bezierCurveTo(x+100*s, y+40*s, x+100*s, y+10*s, x+70*s, y);
+        ctx.bezierCurveTo(x+80*s, y-30*s, x+40*s, y-40*s, x+20*s, y-20*s);
+        ctx.bezierCurveTo(x, y-30*s, x-10*s, y-10*s, x, y);
+    }
     ctx.fill();
 }
 
