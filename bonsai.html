@@ -333,7 +333,7 @@ class Tree {
     this.root=new Branch(null,0,0,-Math.PI/2,110,20,0); 
   }
   serialize() { return { key:this.key, name:this.name, days:this.days, water:this.water, hp:this.hp, pot:this.pot, soil:this.soil, root:this.root.serialize() }}
-  static deserialize(d) { let t=new Tree(d.key, d.name); t.days=d.days; t.water=d.water; t.hp=d.hp||100; t.pot=d.pot||'pot_basic'; t.soil=d.soil||'soil_basic'; t.root=Branch.deserialize(d.root,null); return t; }
+  static deserialize(d) { let t=new Tree(d.key, d.name); t.days=d.water=d.water; t.hp=d.hp||100; t.pot=d.pot||'pot_basic'; t.soil=d.soil||'soil_basic'; t.root=Branch.deserialize(d.root,null); return t; }
 }
 
 function loadGame() {
@@ -799,12 +799,36 @@ function draw() {
   ctx.fillStyle="rgba(255,255,255,0.25)"; 
   ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+300)c.x=-300; drawCloud(c.x,c.y,c.s);});
 
-  // HIER SIND DIE SCHWARZEN BERGE WIEDER DRIN!
+  // NEUE BERGE (in 3 Schichten für Tiefe)
+  // Schicht 1: Weit entfernte, hellere Berge
+  ctx.fillStyle = "#111827";
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  for (let x = 0; x <= w; x += 15) {
+      const peak = Math.abs(Math.sin(x * 0.003) + Math.sin(x * 0.007)*0.5) * 100;
+      ctx.lineTo(x, h * 0.65 - peak);
+  }
+  ctx.lineTo(w, h);
+  ctx.fill();
+
+  // Schicht 2: Mittlere, dunklere Berge mit mehr Details
+  ctx.fillStyle = "#09090b";
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  for (let x = 0; x <= w; x += 10) {
+      const peak = Math.abs(Math.sin(x * 0.004) + Math.cos(x * 0.011)*0.7) * 120;
+      const noise = (Math.sin(x*0.1) + Math.cos(x*0.23)) * 5;
+      ctx.lineTo(x, h * 0.75 - peak + noise);
+  }
+  ctx.lineTo(w, h);
+  ctx.fill();
+
+  // Schicht 3: Vordergrund-Basis (die ursprünglichen schwarzen Hügel, aber tiefer)
   ctx.fillStyle="#04060b"; 
   ctx.beginPath(); 
   ctx.moveTo(0,h); 
   for(let x=0;x<=w;x+=20) {
-      ctx.lineTo(x,h*0.65-Math.abs(Math.sin(x*0.002)*100+Math.cos(x*0.008)*30)); 
+      ctx.lineTo(x,h*0.8-Math.abs(Math.sin(x*0.002)*80+Math.cos(x*0.008)*20)); 
   }
   ctx.lineTo(w,h); 
   ctx.fill();
