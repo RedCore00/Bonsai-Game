@@ -430,7 +430,114 @@ function distToSegmentSquared(p, v, w) {
   if (l2 === 0) return (p.x - v.x)**2 + (p.y - v.y)**2;
   let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
   t = Math.max(0, Math.min(1, t));
-  return (p.x - (v.x + t * (w.x - v.x)))**2 + (p.y - (v.y + t * (w.y - v.y)))**2;
+  return (p.x - (v.x + t * (w.x - v.x)))**2 + (p.y - (v.y + t * (w.y - w.y)))**2;
+}
+
+/* --- MOUNTAINS LIKE SCREENSHOT --- */
+function drawMountains(w, h, t) {
+  const clamp01 = v => Math.max(0, Math.min(1, v));
+  const smoothstep = (a,b,x)=>{x=clamp01((x-a)/(b-a)); return x*x*(3-2*x);};
+  const fract = x => x - Math.floor(x);
+
+  // deterministic "noise" (no RNG)
+  const n1 = x => Math.sin(x*0.0017)*0.55 + Math.sin(x*0.0061)*0.28 + Math.sin(x*0.013)*0.17;
+  const ridge = x => {
+    // sharpen to ridge/peaks
+    let v = n1(x);
+    v = Math.abs(v);
+    v = Math.pow(v, 0.55);
+    return v;
+  };
+
+  // hero peaks (big sharp mountain + smaller left), like your screenshot
+  const peakTri = (x, cx, width, height) => {
+    const d = Math.abs(x - cx);
+    const k = Math.max(0, 1 - d/width);
+    return k * height * (0.65 + 0.35*k);
+  };
+
+  // haze on horizon based on dayTime
+  const night = (t < 0.25 || t > 0.75) ? 1 : 0;
+  const hazeAlpha = night ? 0.18 : 0.12;
+
+  // FAR LAYER (bluish)
+  {
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#1f2a44";
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    const baseY = h * 0.64;
+    for (let x = 0; x <= w; x += 18) {
+      let y = baseY
+        - ridge(x) * 85
+        - peakTri(x, w*0.72, w*0.22, 75)
+        - peakTri(x, w*0.23, w*0.18, 45);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // soft horizon fog
+    const fog = ctx.createLinearGradient(0, baseY-120, 0, baseY+90);
+    fog.addColorStop(0, `rgba(255,255,255,0)`);
+    fog.addColorStop(0.55, `rgba(255,255,255,${hazeAlpha})`);
+    fog.addColorStop(1, `rgba(255,255,255,0)`);
+    ctx.fillStyle = fog;
+    ctx.fillRect(0, baseY-140, w, 260);
+    ctx.restore();
+  }
+
+  // MID LAYER (dark slate)
+  {
+    ctx.save();
+    ctx.fillStyle = "#0b1222";
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    const baseY = h * 0.73;
+    for (let x = 0; x <= w; x += 14) {
+      const micro = (Math.sin(x*0.045)+Math.cos(x*0.031))*3.5;
+      let y = baseY
+        - ridge(x+140) * 125
+        - peakTri(x, w*0.70, w*0.19, 150)
+        - peakTri(x, w*0.22, w*0.16, 80)
+        + micro;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // FRONT LAYER (near-black silhouettes)
+  {
+    ctx.save();
+    ctx.fillStyle = "#04060b";
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    const baseY = h * 0.82;
+    for (let x = 0; x <= w; x += 12) {
+      const jag = Math.abs(Math.sin(x*0.010) + Math.sin(x*0.023)*0.6);
+      let y = baseY
+        - jag * 95
+        - peakTri(x, w*0.74, w*0.20, 105) * 0.55
+        - peakTri(x, w*0.18, w*0.14, 70) * 0.35;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // subtle atmospheric edge fade at top of near layer
+    const topFade = ctx.createLinearGradient(0, h*0.60, 0, h*0.88);
+    topFade.addColorStop(0, `rgba(0,0,0,0)`);
+    topFade.addColorStop(1, `rgba(0,0,0,0.25)`);
+    ctx.fillStyle = topFade;
+    ctx.fillRect(0, h*0.58, w, h*0.35);
+    ctx.restore();
+  }
 }
 
 function setupInteractions() {
@@ -799,39 +906,8 @@ function draw() {
   ctx.fillStyle="rgba(255,255,255,0.25)"; 
   ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+300)c.x=-300; drawCloud(c.x,c.y,c.s);});
 
-  // NEUE BERGE (in 3 Schichten für Tiefe)
-  // Schicht 1: Weit entfernte, hellere Berge
-  ctx.fillStyle = "#111827";
-  ctx.beginPath();
-  ctx.moveTo(0, h);
-  for (let x = 0; x <= w; x += 15) {
-      const peak = Math.abs(Math.sin(x * 0.003) + Math.sin(x * 0.007)*0.5) * 100;
-      ctx.lineTo(x, h * 0.65 - peak);
-  }
-  ctx.lineTo(w, h);
-  ctx.fill();
-
-  // Schicht 2: Mittlere, dunklere Berge mit mehr Details
-  ctx.fillStyle = "#09090b";
-  ctx.beginPath();
-  ctx.moveTo(0, h);
-  for (let x = 0; x <= w; x += 10) {
-      const peak = Math.abs(Math.sin(x * 0.004) + Math.cos(x * 0.011)*0.7) * 120;
-      const noise = (Math.sin(x*0.1) + Math.cos(x*0.23)) * 5;
-      ctx.lineTo(x, h * 0.75 - peak + noise);
-  }
-  ctx.lineTo(w, h);
-  ctx.fill();
-
-  // Schicht 3: Vordergrund-Basis (die ursprünglichen schwarzen Hügel, aber tiefer)
-  ctx.fillStyle="#04060b"; 
-  ctx.beginPath(); 
-  ctx.moveTo(0,h); 
-  for(let x=0;x<=w;x+=20) {
-      ctx.lineTo(x,h*0.8-Math.abs(Math.sin(x*0.002)*80+Math.cos(x*0.008)*20)); 
-  }
-  ctx.lineTo(w,h); 
-  ctx.fill();
+  // BERG-HINTERGRUND wie Screenshot
+  drawMountains(w, h, t);
   
   ctx.save(); 
   const camBaseY = h * 0.6; 
@@ -856,7 +932,6 @@ function drawWorld() {
   
   const groundY = 150;
 
-  // Der schöne, echte Erdboden in der 3D-Welt
   const groundGrd = ctx.createLinearGradient(0, groundY, 0, 5000);
   groundGrd.addColorStop(0, "#1c1917");
   groundGrd.addColorStop(0.02, "#292524");
@@ -982,7 +1057,6 @@ function notify(m){ const t=$('toast'); t.innerText=m; t.classList.add('show'); 
 function openPanel(id){ $('overlayBg').classList.add('open'); $(id).classList.add('open'); updateListUI(); }
 window.closeAllPanels=()=>{ $('overlayBg').classList.remove('open'); document.querySelectorAll('.overlay-sheet').forEach(s=>s.classList.remove('open')); }
 
-// Baum Umbenennen via Liste
 window.renameTree = function(idx) {
   const tree = STATE.trees[idx];
   if(!tree) return;
