@@ -443,36 +443,41 @@ function distToSegmentSquared(p, v, w) {
 
 
 function drawMountains(w, h, t) {
-  // Die Farbe der Silhouette (sehr dunkles, flaches Blau-Grau, fast schwarz)
-  const silhouetteColor = "#0f1420";
-
-  // Die Basislinie des Gebirges (Horizont), etwas tiefer gesetzt
-  const groundY = h * 0.78;
+  // Die dunkle Farbe der Gebirgs-Silhouette aus dem 1. Screenshot
+  const silhouetteColor = "#191d2b"; 
+  const groundY = h * 0.75;
 
   ctx.fillStyle = silhouetteColor;
   ctx.beginPath();
-
-  // Startpunkt links unten am Horizont
-  ctx.moveTo(0, groundY);
-
-  // Der kleinere, linke Gipfel
-  ctx.lineTo(w * 0.2, groundY - h * 0.25);
   
-  // Das Tal zwischen den Gipfeln
-  ctx.lineTo(w * 0.35, groundY - h * 0.12);
-  
-  // Der hohe, spitze Hauptgipfel (genau wie im Screenshot)
-  ctx.lineTo(w * 0.55, groundY - h * 0.55);
-  
-  // Der lange Abstieg zum rechten Rand
-  ctx.lineTo(w, groundY);
+  // Startpunkt unten links
+  ctx.moveTo(0, h);
+  ctx.lineTo(0, groundY - h * 0.15); 
 
-  // Abschluss des Pfades (unterer Rand, um die Form zu schließen)
+  // Linke Bergkette
+  ctx.lineTo(w * 0.15, groundY - h * 0.26); // 1. Peak links
+  ctx.lineTo(w * 0.22, groundY - h * 0.18); // Senke
+  ctx.lineTo(w * 0.32, groundY - h * 0.30); // 2. Peak links
+  ctx.lineTo(w * 0.40, groundY - h * 0.20); // Senke
+
+  // Übergang zum Hauptgipfel
+  ctx.lineTo(w * 0.48, groundY - h * 0.25); // Kleiner Zwischenpeak
+  ctx.lineTo(w * 0.54, groundY - h * 0.19); // Senke vor dem Hauptanstieg
+
+  // Der große Hauptgipfel (wie auf dem Bild etwas rechts der Mitte)
+  ctx.lineTo(w * 0.62, groundY - h * 0.45); // HAUPTGIPFEL
+  
+  // Rechte Bergkette (steilerer Abfall mit Schulter)
+  ctx.lineTo(w * 0.68, groundY - h * 0.32); // Erster Abfall
+  ctx.lineTo(w * 0.75, groundY - h * 0.36); // Rechter Nebengipfel (Schulter)
+  ctx.lineTo(w * 0.85, groundY - h * 0.18); // Tiefe Senke
+  ctx.lineTo(w * 0.95, groundY - h * 0.23); // Letzter kleiner Hügel rechts
+  
+  // Endpunkt am rechten Bildschirmrand
+  ctx.lineTo(w, groundY - h * 0.12);
   ctx.lineTo(w, h);
-  ctx.lineTo(0, h);
-  ctx.closePath();
 
-  // Füllen der Silhouette
+  ctx.closePath();
   ctx.fill();
 }
 
