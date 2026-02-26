@@ -443,53 +443,38 @@ function distToSegmentSquared(p, v, w) {
 
 
 function drawMountains(w, h, t) {
-  const groundY = h * 0.85; // Die Basislinie, wo die Berge im Boden "versinken"
-  const peakTopY = h * 0.45; // Die ungefähre Höhe der höchsten Spitze
+  // Flache, einheitliche Farbe (absolut kein Verlauf!)
+  ctx.fillStyle = "#161b26"; // Dunkles Nachtblau/Grau, passend zum Screenshot
 
-  // WICHTIG: Farbverlauf statt flacher Farbe, wie im Original-Screenshot
-  // Verläuft von unten (dunkel) nach oben (heller)
-  const mtnGrad = ctx.createLinearGradient(0, groundY, 0, peakTopY);
-  mtnGrad.addColorStop(0, "#0a0e17"); // Unten: Sehr dunkles Schwarz-Blau
-  mtnGrad.addColorStop(1, "#2e3a59"); // Oben: Muted Schieferblau/Lila-Grau
+  // Horizont-Linie
+  const groundY = h * 0.85;
 
-  ctx.fillStyle = mtnGrad;
   ctx.beginPath();
+  ctx.moveTo(0, groundY);
 
-  // Startpunkt unten links (außerhalb des Sichtbereichs, um sauber zu füllen)
-  ctx.moveTo(0, h);
-  ctx.lineTo(0, groundY - h * 0.05);
-
-  // --- Die Silhouette basierend auf Bild 1 (09:01) ---
-
-  // Linke, ansteigende Hügelkette (weichere Anstiege)
-  // Kleiner Hügel links
-  ctx.lineTo(w * 0.15, groundY - h * 0.15);
-  // Senke
-  ctx.lineTo(w * 0.25, groundY - h * 0.12);
-  // Mittlerer Anstieg vor dem Hauptgipfel
-  ctx.lineTo(w * 0.40, groundY - h * 0.25);
+  // Scharfe, kantige Spitzen exakt wie im 09:01 Screenshot
+  ctx.lineTo(w * 0.12, groundY - h * 0.22); // 1. Peak links
+  ctx.lineTo(w * 0.22, groundY - h * 0.12); // Erstes Tal
+  ctx.lineTo(w * 0.35, groundY - h * 0.28); // 2. Peak links
+  ctx.lineTo(w * 0.45, groundY - h * 0.18); // Tal vor dem Hauptgipfel
   
-  // DER HAUPTGIPFEL (Höchster Punkt, leicht rechts der Mitte)
-  // Wir nutzen eine leichte Kurve für die Spitze, damit es nicht so extrem zackig wirkt
-  ctx.quadraticCurveTo(w * 0.58, peakTopY - 20, w * 0.60, peakTopY);
-
-  // Der Abstieg zur rechten "Schulter"
-  // Senke nach dem Hauptgipfel
-  ctx.lineTo(w * 0.70, groundY - h * 0.35);
+  // HAUPTGIPFEL (extrem spitz und hoch)
+  ctx.lineTo(w * 0.62, groundY - h * 0.50); 
   
-  // Der sekundäre Gipfel (die "Schulter" rechts)
-  ctx.lineTo(w * 0.80, groundY - h * 0.42);
+  // Abstieg und rechte Seite
+  ctx.lineTo(w * 0.72, groundY - h * 0.28); // Steiler Abfall
+  ctx.lineTo(w * 0.82, groundY - h * 0.35); // Rechte Schulter (Nebengipfel)
+  ctx.lineTo(w * 0.95, groundY - h * 0.15); // Letztes Tal
+  ctx.lineTo(w, groundY - h * 0.20);        // Auslauf am rechten Rand
 
-  // Auslauf zum rechten Bildschirmrand
-  ctx.lineTo(w * 1.00, groundY - h * 0.20);
-
-  // --- Abschluss der Form nach unten ---
-  ctx.lineTo(w, h);
+  // Form nach unten abschließen
+  ctx.lineTo(w, h); 
+  ctx.lineTo(0, h); 
   ctx.closePath();
-
-  // Füllen mit dem Farbverlauf
+  
   ctx.fill();
 }
+
 
 
 
