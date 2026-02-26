@@ -443,11 +443,11 @@ function distToSegmentSquared(p, v, w) {
 
 
 function drawMountains(w, h, t) {
-  // Die Farbe der Silhouette (dunkles, flaches Blau-Grau wie im Screenshot)
-  const silhouetteColor = "#1a233a";
+  // Die Farbe der Silhouette (sehr dunkles, flaches Blau-Grau, fast schwarz)
+  const silhouetteColor = "#0f1420";
 
-  // Die Basislinie des Gebirges (Horizont)
-  const groundY = h * 0.75;
+  // Die Basislinie des Gebirges (Horizont), etwas tiefer gesetzt
+  const groundY = h * 0.78;
 
   ctx.fillStyle = silhouetteColor;
   ctx.beginPath();
@@ -455,19 +455,16 @@ function drawMountains(w, h, t) {
   // Startpunkt links unten am Horizont
   ctx.moveTo(0, groundY);
 
-  // Definition der Bergspitzen und Täler (angepasst an die Form im Screenshot)
-  // Linker, niedrigerer Teil
-  ctx.lineTo(w * 0.15, groundY - h * 0.18);
-  ctx.lineTo(w * 0.30, groundY - h * 0.12);
+  // Der kleinere, linke Gipfel
+  ctx.lineTo(w * 0.2, groundY - h * 0.25);
   
-  // Der hohe, spitze Hauptgipfel rechts der Mitte
-  ctx.lineTo(w * 0.55, groundY - h * 0.40);
+  // Das Tal zwischen den Gipfeln
+  ctx.lineTo(w * 0.35, groundY - h * 0.12);
   
-  // Rechter Teil, abfallend
-  ctx.lineTo(w * 0.75, groundY - h * 0.22);
-  ctx.lineTo(w * 0.90, groundY - h * 0.10);
-
-  // Endpunkt rechts unten am Horizont
+  // Der hohe, spitze Hauptgipfel (genau wie im Screenshot)
+  ctx.lineTo(w * 0.55, groundY - h * 0.55);
+  
+  // Der lange Abstieg zum rechten Rand
   ctx.lineTo(w, groundY);
 
   // Abschluss des Pfades (unterer Rand, um die Form zu schließen)
