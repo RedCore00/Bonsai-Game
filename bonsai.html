@@ -443,43 +443,42 @@ function distToSegmentSquared(p, v, w) {
 
 
 function drawMountains(w, h, t) {
-  // Die dunkle Farbe der Gebirgs-Silhouette aus dem 1. Screenshot
-  const silhouetteColor = "#191d2b"; 
-  const groundY = h * 0.75;
+  // Schönes, dunkles Blau-Grau wie auf dem Original-Screenshot
+  const silhouetteColor = "#171c28"; 
+  const groundY = h * 0.75; 
 
   ctx.fillStyle = silhouetteColor;
   ctx.beginPath();
   
-  // Startpunkt unten links
+  // Start unten links
   ctx.moveTo(0, h);
   ctx.lineTo(0, groundY - h * 0.15); 
 
-  // Linke Bergkette
-  ctx.lineTo(w * 0.15, groundY - h * 0.26); // 1. Peak links
-  ctx.lineTo(w * 0.22, groundY - h * 0.18); // Senke
-  ctx.lineTo(w * 0.32, groundY - h * 0.30); // 2. Peak links
-  ctx.lineTo(w * 0.40, groundY - h * 0.20); // Senke
-
-  // Übergang zum Hauptgipfel
-  ctx.lineTo(w * 0.48, groundY - h * 0.25); // Kleiner Zwischenpeak
-  ctx.lineTo(w * 0.54, groundY - h * 0.19); // Senke vor dem Hauptanstieg
-
-  // Der große Hauptgipfel (wie auf dem Bild etwas rechts der Mitte)
-  ctx.lineTo(w * 0.62, groundY - h * 0.45); // HAUPTGIPFEL
+  // Linke Seite
+  ctx.lineTo(w * 0.20, groundY - h * 0.26); // 1. Peak
+  ctx.lineTo(w * 0.30, groundY - h * 0.18); // Tal
+  ctx.lineTo(w * 0.40, groundY - h * 0.22); // 2. Peak (etwas kleiner)
+  ctx.lineTo(w * 0.48, groundY - h * 0.15); // Senke vor dem Hauptgipfel
   
-  // Rechte Bergkette (steilerer Abfall mit Schulter)
-  ctx.lineTo(w * 0.68, groundY - h * 0.32); // Erster Abfall
-  ctx.lineTo(w * 0.75, groundY - h * 0.36); // Rechter Nebengipfel (Schulter)
-  ctx.lineTo(w * 0.85, groundY - h * 0.18); // Tiefe Senke
-  ctx.lineTo(w * 0.95, groundY - h * 0.23); // Letzter kleiner Hügel rechts
+  // Der markante Hauptgipfel
+  ctx.lineTo(w * 0.62, groundY - h * 0.38); 
+  
+  // Rechte Seite mit der typischen Schulter aus deinem Bild
+  ctx.lineTo(w * 0.72, groundY - h * 0.25); // Steiler Abfall
+  ctx.lineTo(w * 0.76, groundY - h * 0.28); // Kurze Schulter
+  ctx.lineTo(w * 0.88, groundY - h * 0.18); // Tiefes Tal
+  ctx.lineTo(w * 0.95, groundY - h * 0.21); // Letzter kleiner Ausläufer
   
   // Endpunkt am rechten Bildschirmrand
-  ctx.lineTo(w, groundY - h * 0.12);
+  ctx.lineTo(w, groundY - h * 0.16);
+  
+  // Form nach unten abschließen
   ctx.lineTo(w, h);
-
   ctx.closePath();
+  
   ctx.fill();
 }
+
 
 
 
