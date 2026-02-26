@@ -443,37 +443,47 @@ function distToSegmentSquared(p, v, w) {
 
 
 function drawMountains(w, h, t) {
-  // Flache, einheitliche Farbe (absolut kein Verlauf!)
-  ctx.fillStyle = "#161b26"; // Dunkles Nachtblau/Grau, passend zum Screenshot
+  // Hilfsfunktion, um einen Pfad zu zeichnen und zu füllen
+  const drawLayer = (fillStyle, pathCmds) => {
+      ctx.fillStyle = fillStyle;
+      ctx.beginPath();
+      pathCmds();
+      // Pfad unten schließen
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+  };
 
-  // Horizont-Linie
-  const groundY = h * 0.85;
+  // --- Hintergrund-Hügel (Etwas heller, weiter weg, weicher) ---
+  // Ein weicher Verlauf für den "gemütlichen Vibe"
+  const bgGrad = ctx.createLinearGradient(0, h * 0.5, 0, h);
+  bgGrad.addColorStop(0, "#2c3e50"); // Gedecktes, weiches Nachtblau oben
+  bgGrad.addColorStop(1, "#151b26"); // Dunkler werdend nach unten
 
-  ctx.beginPath();
-  ctx.moveTo(0, groundY);
+  drawLayer(bgGrad, () => {
+      ctx.moveTo(0, h * 0.75); // Startpunkt links
+      // Zwei große, sanfte Wellen über den Bildschirm
+      // quadraticCurveTo(KontrollpunktX, KontrollpunktY, EndpunktX, EndpunktY)
+      ctx.quadraticCurveTo(w * 0.3, h * 0.6, w * 0.6, h * 0.7); 
+      ctx.quadraticCurveTo(w * 0.85, h * 0.75, w, h * 0.65);
+  });
 
-  // Scharfe, kantige Spitzen exakt wie im 09:01 Screenshot
-  ctx.lineTo(w * 0.12, groundY - h * 0.22); // 1. Peak links
-  ctx.lineTo(w * 0.22, groundY - h * 0.12); // Erstes Tal
-  ctx.lineTo(w * 0.35, groundY - h * 0.28); // 2. Peak links
-  ctx.lineTo(w * 0.45, groundY - h * 0.18); // Tal vor dem Hauptgipfel
-  
-  // HAUPTGIPFEL (extrem spitz und hoch)
-  ctx.lineTo(w * 0.62, groundY - h * 0.50); 
-  
-  // Abstieg und rechte Seite
-  ctx.lineTo(w * 0.72, groundY - h * 0.28); // Steiler Abfall
-  ctx.lineTo(w * 0.82, groundY - h * 0.35); // Rechte Schulter (Nebengipfel)
-  ctx.lineTo(w * 0.95, groundY - h * 0.15); // Letztes Tal
-  ctx.lineTo(w, groundY - h * 0.20);        // Auslauf am rechten Rand
 
-  // Form nach unten abschließen
-  ctx.lineTo(w, h); 
-  ctx.lineTo(0, h); 
-  ctx.closePath();
-  
-  ctx.fill();
+  // --- Vordergrund-Hügel (Dunkler, näher, etwas flacher) ---
+  // Ein dunklerer Verlauf, der den Boden berührt
+  const fgGrad = ctx.createLinearGradient(0, h * 0.65, 0, h);
+  fgGrad.addColorStop(0, "#192330"); // Dunkles Blau-Grau
+  fgGrad.addColorStop(1, "#0c0a09"); // Fast Schwarz, passend zum Erdboden
+
+  drawLayer(fgGrad, () => {
+      ctx.moveTo(0, h * 0.82); // Startet tiefer
+      // Eine breitere, flachere Welle im Vordergrund
+      ctx.quadraticCurveTo(w * 0.4, h * 0.72, w * 0.8, h * 0.8);
+      ctx.quadraticCurveTo(w * 0.95, h * 0.82, w, h * 0.78);
+  });
 }
+
 
 
 
