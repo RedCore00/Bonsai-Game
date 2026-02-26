@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#090a0f">
-<title>Bonsai Master v13.6 (Crash Fix & Radial UI)</title>
+<title>Bonsai Master v13.7 (Clean UI)</title>
 <style>
   :root {
     --accent: #38bdf8; 
@@ -66,26 +66,6 @@
     pointer-events: auto;
   }
 
-  /* --- HEADER OBEN LINKS --- */
-  .top-header {
-    position: absolute;
-    top: env(safe-area-inset-top, 20px);
-    left: 20px;
-    padding: 10px 16px;
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    pointer-events: auto;
-    cursor: pointer;
-    z-index: 20;
-    transition: transform 0.2s;
-  }
-  .top-header:active { transform: scale(0.95); }
-  .top-name { font-size: 16px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; }
-  .top-species { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-
-  /* --- UNTERE WERKZEUG LEISTE --- */
   .smart-bar {
     border-radius: 22px;
     padding: 10px 15px;
@@ -96,21 +76,43 @@
     gap: 10px; 
   }
   
-  .radial-group { display: flex; gap: 8px; align-items: center; flex: 1; }
-  .radial-wrapper { position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; }
-  .circular-chart { display: block; width: 100%; height: 100%; }
-  .circle-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3.5; }
-  .circle { fill: none; stroke-width: 3.5; stroke-linecap: round; transition: stroke-dashoffset 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  /* --- RADIAL BARS CSS --- */
+  .radial-group { 
+    display: flex; gap: 8px; align-items: center; flex: 1; 
+  }
+  .radial-wrapper { 
+    position: relative; width: 38px; height: 38px; 
+    display: flex; align-items: center; justify-content: center; 
+  }
+  .circular-chart { 
+    display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; 
+  }
+  .circle-bg { 
+    fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3.5; 
+  }
+  .circle { 
+    fill: none; stroke-width: 3.5; stroke-linecap: round; 
+    transition: stroke-dashoffset 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); 
+  }
   .circular-chart.water .circle { stroke: var(--accent); }
   .circular-chart.hp .circle { stroke: var(--success); }
   .danger-stroke { stroke: var(--danger) !important; }
-  .inner-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; opacity: 0.9; transition: stroke 0.3s; }
+  
+  .inner-icon { 
+    position: relative; z-index: 2; width: 16px; height: 16px; opacity: 0.9; transition: stroke 0.3s;
+  }
 
-  .day-season-group { display: flex; flex-direction: column; justify-content: center; padding-left: 5px; flex-shrink: 0;}
+  .day-season-group { 
+    display: flex; flex-direction: column; justify-content: center; padding-left: 5px; flex-shrink: 0;
+  }
   #uiDayText { font-size: 13px; font-weight: 700; color: #fff; }
   #uiSeasonText { font-size: 10px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
-  .smart-tools { display: flex; gap: 6px; flex-shrink: 0; }
+  .smart-tools { 
+    display: flex; gap: 6px; 
+    flex-shrink: 0; 
+  }
+  
   .tool-btn-mini {
     width: 38px; height: 38px; 
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text);
@@ -184,12 +186,7 @@
 </div>
 
 <div class="ui-layer">
-
-  <div class="top-header glass" onclick="renameActiveTree()" title="Klicken zum Umbenennen">
-    <div class="top-name" id="uiTreeName">Baum</div>
-    <div class="top-species" id="uiSpeciesName">Spezies</div>
-  </div>
-
+  
   <div class="bottom-area">
     <div class="smart-bar glass">
       <div class="radial-group">
@@ -212,7 +209,7 @@
           <span id="uiSeasonText">FRÜHLING</span>
         </div>
       </div>
-      
+
       <div class="smart-tools">
         <button class="tool-btn-mini" id="toolWater" onclick="setTool('water')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
@@ -291,11 +288,12 @@ const ITEMS = {
 
 let SETTINGS = { secPerDay: 60, growMult: 1.0, thickMult: 1.0, sproutChance: 0.03, maxLeaves: 50, leafRate: 0.2, leafSizeMult: 1.0, waterDrain: 5.0, windSpeed: 0.5, timeWarp: 1.0 };
 let STATE = { money: 500, trees: [], activeIdx: 0, inventory: { pots:['pot_basic'], soils:['soil_basic'], species:['ficus'] }, stats: { totalWaters:0, totalPrunes:0, totalDays:0, itemsBought:0 }, quests: [] };
-let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:150},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[], pebbles: [] };
+let ENV = { dayTime:0.3, clouds:[], stars:Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.5})), particles:[], fallingParts:[], swipeTrail:[] };
 let CAM = { x:0, y:0, zoom:1.0 };
 let MOUSE = { drag:false, x:0, y:0, worldX:0, worldY:0, down:false };
 let INPUT = "none", HOVER = null, BEND_TARGET = null;
 let lastT = 0, lastUiT = 0;
+let lastTouchDist = 0;
 const previewCache = {};
 
 class Branch {
@@ -345,7 +343,7 @@ function loadGame() {
   for (let i = 0; i < localStorage.length; i++) {
       let key = localStorage.key(i);
       if (key && key.startsWith('bonsaiSave')) {
-          if (key === 'bonsaiSave136') {
+          if (key === 'bonsaiSave137') {
               savedData = localStorage.getItem(key);
           } else {
               if (!savedData) savedData = localStorage.getItem(key);
@@ -367,25 +365,11 @@ function loadGame() {
 
 function saveGame() { 
   try {
-    localStorage.setItem('bonsaiSave136', JSON.stringify({ 
+    localStorage.setItem('bonsaiSave137', JSON.stringify({ 
       money:STATE.money, activeIdx:STATE.activeIdx, inventory:STATE.inventory, 
       stats:STATE.stats, quests:STATE.quests, trees:STATE.trees.map(t=>t.serialize()) 
     })); 
   } catch(e) {}
-}
-
-function generatePebbles() {
-    ENV.pebbles = [];
-    for(let i=-400; i<400; i+=12) {
-        if(Math.abs(i) < 85) continue; 
-        ENV.pebbles.push({
-            x: i + (Math.random()-0.5)*10,
-            y: 150 + (Math.random())*15, 
-            rx: 3 + Math.random()*3,
-            ry: 2 + Math.random()*2,
-            rot: Math.random()*3.14
-        });
-    }
 }
 
 function init() {
@@ -393,7 +377,6 @@ function init() {
   loadGame(); bindSettingsUI(); setupInteractions();
   if(!STATE.trees.length) STATE.trees.push(new Tree('ficus', "Erster Bonsai"));
   if(!STATE.quests||STATE.quests.length===0) generateQuests();
-  generatePebbles();
   new ResizeObserver(e=>{for(let E of e){if(E.contentRect.width>0){cv.width=E.contentRect.width;cv.height=E.contentRect.height;}}}).observe($('viewport'));
   updateListUI(); updateRealtimeUI(); requestAnimationFrame(loop); setInterval(saveGame, 5000);
 }
@@ -560,7 +543,8 @@ function setupInteractions() {
               CAM.y = camStartPos.y + (py - dragStartScreen.y);
               MOUSE.x = px; MOUSE.y = py;
           } else {
-              MOUSE.x = px; MOUSE.y = py;
+              MOUSE.x = px;
+              MOUSE.y = py;
               let camBaseY = cv.height * 0.6;
               MOUSE.worldX = (px - (cv.width / 2 + CAM.x)) / CAM.zoom;
               MOUSE.worldY = (py - (camBaseY + CAM.y)) / CAM.zoom;
@@ -625,10 +609,17 @@ function setupInteractions() {
 
   function handlePointerUp(e) {
       activePointers.delete(e.pointerId);
-      if (activePointers.size < 2) initialPinchDist = null;
+      if (activePointers.size < 2) {
+          initialPinchDist = null;
+      }
       if (activePointers.size === 0) {
-          MOUSE.down = false; MOUSE.drag = false; BEND_TARGET = null;
-          dragStartScreen = null; camStartPos = null; lastWorldX = null; lastWorldY = null;
+          MOUSE.down = false;
+          MOUSE.drag = false;
+          BEND_TARGET = null;
+          dragStartScreen = null;
+          camStartPos = null;
+          lastWorldX = null;
+          lastWorldY = null;
       }
   }
 
@@ -671,8 +662,6 @@ function update(dt) {
   
   const growth=(tree.water>10?1:0.1)*spec.growth*soil.boost*pot.bonus*SETTINGS.growMult;
   
-  if(ENV.clouds.length<8&&Math.random()<0.02) ENV.clouds.push({x:-300,y:50+Math.random()*200,s:0.8+Math.random()*1.2,v:0.1+Math.random()*0.2});
-
   if(INPUT==='water'&&MOUSE.down) {
       for(let i=0;i<3;i++) ENV.particles.push({x:MOUSE.worldX+(Math.random()-0.5)*30, y:Math.min(MOUSE.worldY,-50)+(Math.random()-0.5)*10, vx:(Math.random()-0.5)*15, vy:120+Math.random()*80, life:2.0});
   }
@@ -695,12 +684,6 @@ function update(dt) {
           p.vy += gravity*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.a += p.vr*dt;
           
           let groundYAtX = 150;
-          if(p.x > -80 && p.x < 80) {
-             groundYAtX = 90 - 2 + (Math.random() * 4); 
-          } else {
-             groundYAtX = 150 + (Math.random() * 5); 
-          }
-
           if(p.y > groundYAtX) {
              p.y = groundYAtX; 
              p.onGround = true; 
@@ -756,7 +739,6 @@ function update(dt) {
   sim(tree.root,0,0); checkQuests();
 }
 
-// ---------------- RENDER ----------------
 function draw() {
   const w=cv.width, h=cv.height, t=ENV.dayTime; if(isNaN(t)||w===0||h===0)return;
   
@@ -795,23 +777,6 @@ function draw() {
   ctx.beginPath(); ctx.arc(cx+Math.sin(ang)*r,cy+Math.cos(ang)*r, t>0.25 && t<0.75 ? 55 : 40,0,6.28); ctx.fill();
   ctx.shadowBlur=0;
   
-  ctx.fillStyle="rgba(255,255,255,0.25)"; 
-  ENV.clouds.forEach(c=>{c.x+=c.v;if(c.x>w+300)c.x=-300; drawCloud(c.x,c.y,c.s);});
-  
-  const mountGrd = ctx.createLinearGradient(0, h*0.4, 0, h);
-  const mountTop = rgbToStr(mix(hexToRgb(skyCols[si][2]), [40,50,60])); 
-  mountGrd.addColorStop(0, mountTop); 
-  mountGrd.addColorStop(1, "rgba(10, 15, 20, 1)");
-
-  ctx.fillStyle = mountGrd;
-  ctx.beginPath();
-  ctx.moveTo(0, h); 
-  for(let i=0; i<=w; i+=20) {
-      ctx.lineTo(i, h*0.7 - Math.sin(i*0.005)*50 - Math.cos(i*0.02)*30 - Math.sin(i*0.08)*10);
-  }
-  ctx.lineTo(w, h); 
-  ctx.fill();
-
   ctx.save(); 
   const camBaseY = h * 0.6; 
   ctx.translate(w/2+CAM.x, camBaseY+CAM.y); ctx.scale(CAM.zoom,CAM.zoom); 
@@ -819,25 +784,13 @@ function draw() {
   ctx.fillStyle = "#04060b";
   ctx.beginPath();
   ctx.moveTo(-5000, 55);
-  for(let px = -5000; px <= 5000; px += 100) {
-      ctx.lineTo(px, 55 + Math.sin(px * 0.01) * 15 + Math.cos(px * 0.005) * 10);
-  }
+  ctx.lineTo(5000, 55);
   ctx.lineTo(5000, 5000);
   ctx.lineTo(-5000, 5000);
   ctx.fill();
 
   drawWorld(); 
   ctx.restore();
-}
-
-function drawCloud(x,y,s){
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.bezierCurveTo(x-40*s, y+20*s, x-40*s, y+70*s, x+60*s, y+70*s);
-    ctx.bezierCurveTo(x+160*s, y+70*s, x+160*s, y+40*s, x+120*s, y+20*s);
-    ctx.bezierCurveTo(x+160*s, y-30*s, x+110*s, y-50*s, x+80*s, y-30*s);
-    ctx.bezierCurveTo(x+50*s, y-60*s, x, y-40*s, x, y);
-    ctx.fill();
 }
 
 function drawWorld() {
@@ -856,13 +809,6 @@ function drawWorld() {
   ctx.lineTo(5000, 5000);
   ctx.lineTo(-5000, 5000);
   ctx.fill();
-  
-  ctx.fillStyle = "rgba(60, 50, 40, 0.6)";
-  ENV.pebbles.forEach(p => {
-      ctx.beginPath();
-      ctx.ellipse(p.x, p.y, p.rx, p.ry, p.rot, 0, 6.28);
-      ctx.fill();
-  });
 
   ctx.lineCap="round"; ctx.lineJoin="round";
   
@@ -970,64 +916,42 @@ function notify(m){ const t=$('toast'); t.innerText=m; t.classList.add('show'); 
 function openPanel(id){ $('overlayBg').classList.add('open'); $(id).classList.add('open'); updateListUI(); }
 window.closeAllPanels=()=>{ $('overlayBg').classList.remove('open'); document.querySelectorAll('.overlay-sheet').forEach(s=>s.classList.remove('open')); }
 
-// Baum Umbenennen via Liste
 window.renameTree = function(idx) {
   const tree = STATE.trees[idx];
   if(!tree) return;
   const newName = prompt("Gib deinem Bonsai einen neuen Namen:", tree.name);
   if(newName && newName.trim() !== "") {
     tree.name = newName.trim();
-    updateRealtimeUI();
     updateListUI();
     notify("Baum erfolgreich umbenannt!");
   }
-}
-
-// Baum Umbenennen via Top-Header
-window.renameActiveTree = function() {
-  renameTree(STATE.activeIdx);
 }
 
 window.cheatMoney = function() {
   STATE.money += 1000;
   notify("+1000 💰 (Cheat aktiviert)");
   updateListUI();
-  updateRealtimeUI();
 };
 
-function updateRealtimeUI() {
-  const t = STATE.trees[STATE.activeIdx];
-  if(!t) return;
-
-  const elTreeName = $('uiTreeName');
-  if(elTreeName) {
-    elTreeName.innerHTML = `${t.name} <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5; margin-left:6px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-  }
-
-  const elSpeciesName = $('uiSpeciesName');
-  if(elSpeciesName) elSpeciesName.innerText = SPECIES[t.key].name;
-
-  const elDayText = $('uiDayText');
-  if(elDayText) elDayText.innerText = `Tag ${Math.floor(t.days)}`;
-
-  const elSeasonText = $('uiSeasonText');
-  if(elSeasonText) {
-    const seasons = ["Frühling","Sommer","Herbst","Winter"];
-    elSeasonText.innerText = seasons[Math.floor(t.days/30)%4];
-  }
-
-  const wPct = Math.max(0, Math.min(100, t.water));
-  const hPct = Math.max(0, Math.min(100, t.hp));
-
-  const circ = 100.53;
-  const wOff = circ - (wPct / 100) * circ;
-  const hOff = circ - (hPct / 100) * circ;
-
+function updateRealtimeUI(){ 
+  const t=STATE.trees[STATE.activeIdx]; if(!t)return; 
+  
+  const seasons = ["Frühling","Sommer","Herbst","Winter"];
+  $('uiDayText').innerText = `Tag ${Math.floor(t.days)}`;
+  $('uiSeasonText').innerText = seasons[Math.floor(t.days/30)%4];
+  
+  let wPct = Math.max(0, Math.min(100, t.water));
+  let hPct = Math.max(0, Math.min(100, t.hp));
+  
+  let circ = 100.53;
+  let wOff = circ - (wPct / 100) * circ;
+  let hOff = circ - (hPct / 100) * circ;
+  
   const cW = $('circWater');
   const cHp = $('circHp');
   if(cW) cW.style.strokeDashoffset = wOff;
   if(cHp) cHp.style.strokeDashoffset = hOff;
-
+  
   const iW = $('iconWater');
   const iHp = $('iconHp');
 
@@ -1036,7 +960,7 @@ function updateRealtimeUI() {
       if(iW) iW.style.stroke = "var(--danger)";
   } else {
       if(cW) cW.classList.remove('danger-stroke');
-      if(iW) iW.style.stroke = "var(--accent)";
+      if(iW) iW.style.stroke = "#38bdf8"; 
   }
 
   if(t.hp < 20) {
@@ -1044,7 +968,7 @@ function updateRealtimeUI() {
       if(iHp) iHp.style.stroke = "var(--danger)";
   } else {
       if(cHp) cHp.classList.remove('danger-stroke');
-      if(iHp) iHp.style.stroke = "var(--success)";
+      if(iHp) iHp.style.stroke = "#34d399"; 
   }
 }
 
@@ -1191,7 +1115,6 @@ function bindSettingsUI(){
   const binds=[{id:'inpWind',key:'windSpeed',min:0,max:2,step:0.1}, {id:'inpSec',key:'secPerDay',min:5,max:120,step:1}, {id:'inpGrow',key:'growMult',min:0.1,max:5,step:0.1}, {id:'inpWarp',key:'timeWarp',min:0.1,max:10,step:0.1}, {id:'inpLeaves',key:'maxLeaves',min:10,max:200,step:5}];
   let h=''; binds.forEach(b=>{ h+=`<div class="set-row"><div class="set-header"><span class="s-label">${labels[b.key]||b.key}</span><span class="s-val" id="v_${b.id}">${SETTINGS[b.key]}</span></div><input type="range" id="${b.id}" min="${b.min}" max="${b.max}" step="${b.step}" value="${SETTINGS[b.key]}"></div>`; }); $('settingsGrid').innerHTML=h; binds.forEach(b=>{ let el=$(b.id); if(el)el.oninput=e=>{ let v=parseFloat(e.target.value); SETTINGS[b.key]=v; $(`v_${b.id}`).innerText=v; }; });
 }
-
 window.toggleFullScreen=()=>{ if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>{console.log(e);});}else{if(document.exitFullscreen){document.exitFullscreen();}} };
 
 window.hardReset=()=>{ 
