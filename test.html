@@ -3,17 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bonsai Prefab - 10x Detail Render</title>
+    <title>Procedural Math Bonsai - 3x Scale & High Detail</title>
     <style>
         body {
             margin: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            height: 100vh; background-color: #e6e3dd; /* Heller HG wie in deinem Bild */
-            font-family: sans-serif;
+            min-height: 100vh; background-color: #2c3e50;
+            font-family: sans-serif; overflow: hidden;
         }
-        canvas { background-color: transparent; }
+        /* Der Canvas skaliert sich auf die Bildschirmgröße, behält aber intern die riesige 1200x1000 Auflösung */
+        canvas { 
+            background-color: transparent; 
+            max-width: 100%; max-height: 85vh; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
         button {
-            margin-top: 20px; padding: 12px 24px; font-size: 16px;
+            margin-top: 15px; padding: 12px 24px; font-size: 16px;
             background-color: #5ab59f; color: white; border: none;
             border-radius: 8px; cursor: pointer; font-weight: bold;
             box-shadow: 0 4px 0 #3b8774; transition: all 0.1s;
@@ -23,170 +29,155 @@
 </head>
 <body>
 
-    <canvas id="bonsaiCanvas" width="700" height="700"></canvas>
-    <button onclick="growPrefab()">🌱 Kaskaden-Bonsai wachsen lassen</button>
+    <canvas id="bonsaiCanvas" width="1200" height="1000"></canvas>
+    <button onclick="generateMathTree()">🌱 Neuen Mathe-Bonsai berechnen</button>
 
     <script>
         const canvas = document.getElementById('bonsaiCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Farben aus deinem 1. Bild
         const C = {
-            outline: '#1e1a17',
-            woodBase: '#9b8d7d',
-            woodShadow: '#6e5e50',
-            leafDark: '#395438',
-            leafMid: '#527c4d',
-            leafLight: '#6d9f64'
+            outline: '#151515',
+            woodBase: '#8c7a6b',
+            woodShadow: '#5c4e42',
+            leafDark: '#2c4a32',
+            leafMid: '#46754b',
+            leafLight: '#659c6b'
         };
 
-        // Das SVG für das flache, detaillierte Nadelpolster
         const leafPathString = "M -40,10 C -50,0 -40,-20 -20,-20 C -15,-35 10,-40 25,-25 C 40,-35 60,-15 50,10 C 55,25 40,30 20,30 L -15,30 C -30,30 -40,25 -40,10 Z";
         const leafSVG = new Path2D(leafPathString);
 
-        // --- DAS SKELETT-PREFAB (Basierend auf deinem Bild 1) ---
-        // Jeder Knoten: [Start-X, Start-Y, Start-Winkel, Länge, Start-Dicke, Krümmung, ID, Parent-ID]
-        const CASCADE_PREFAB = [
-            // Hauptstamm: Geht hoch, biegt scharf nach rechts ab
-            { id: 0, parent: -1, x: 0, y: 0, a: -Math.PI*0.45, len: 120, thick: 30, curve: 0.015 },
-            { id: 1, parent: 0, pos: 1.0, a: -Math.PI*0.1, len: 80, thick: 18, curve: 0.02 }, // Knorrige Biegung nach rechts
-            { id: 2, parent: 1, pos: 1.0, a: Math.PI*0.1, len: 60, thick: 12, curve: 0.01 },  // Spitze hängt runter
-            
-            // Linke Kaskaden-Äste (Hängen tief nach unten links)
-            { id: 3, parent: 0, pos: 0.5, a: -Math.PI*0.8, len: 70, thick: 12, curve: -0.02 },
-            { id: 4, parent: 3, pos: 1.0, a: -Math.PI*0.6, len: 60, thick: 8, curve: 0.01 },
-            { id: 5, parent: 4, pos: 1.0, a: -Math.PI*0.4, len: 50, thick: 5, curve: 0 },
-            
-            // Mittlere hängende Äste
-            { id: 6, parent: 0, pos: 0.8, a: -Math.PI*0.9, len: 60, thick: 10, curve: 0.01 },
-            { id: 7, parent: 1, pos: 0.4, a: Math.PI*0.7, len: 50, thick: 8, curve: -0.01 },
-            
-            // Apex (Krone oben)
-            { id: 8, parent: 0, pos: 0.9, a: -Math.PI*0.6, len: 50, thick: 14, curve: -0.02 },
-            { id: 9, parent: 8, pos: 1.0, a: -Math.PI*0.7, len: 40, thick: 8, curve: 0 },
-            
-            // Kleine Totholz-Spitze (Jin) rechts oben
-            { id: 10, parent: 1, pos: 0.8, a: -Math.PI*0.3, len: 30, thick: 5, curve: 0.05, dead: true }
-        ];
-
-        let nodes = [];
-        let renderProgress = 0; 
+        let branches = [];
+        let currentTick = 0;
+        let maxTick = 0;
         let isGrowing = false;
+        let branchIdCounter = 0;
 
-        // --- DIE 10x LOGIK: Knorrige Polygone generieren ---
-        function buildTree() {
-            nodes = [];
+        // --- 1. DIE MATHE-GENERIERUNG (Fraktal mit Tropismus) ---
+        function calculateBranch(startX, startY, angle, length, thickness, depth, startTick) {
+            let id = branchIdCounter++;
+            let nodes = [];
             
-            CASCADE_PREFAB.forEach(data => {
-                let startX, startY;
-                if (data.parent === -1) {
-                    startX = canvas.width / 2 + 50; // Start leicht rechts versetzt
-                    startY = canvas.height - 180;
-                } else {
-                    let parentNodes = nodes.filter(n => n.branchId === data.parent);
-                    let targetIndex = Math.floor(parentNodes.length * data.pos);
-                    if(targetIndex >= parentNodes.length) targetIndex = parentNodes.length - 1;
-                    startX = parentNodes[targetIndex].x;
-                    startY = parentNodes[targetIndex].y;
-                }
+            let currentX = startX;
+            let currentY = startY;
+            let currentAngle = angle;
+            let currentThick = thickness;
+            let tick = startTick;
 
-                let currentX = startX;
-                let currentY = startY;
-                let currentAngle = data.a;
-                let currentThick = data.thick;
+            // Tropismus: Bonsais hängen oft durch Schwerkraft leicht nach unten
+            // Wir definieren einen zufälligen "Wind/Schwerkraft"-Bias für diesen speziellen Baum
+            let gravityBias = (Math.random() - 0.4) * 0.03; 
 
-                // 10x kleinere Schritte (0.5 Pixel statt 5 Pixel)
-                let steps = data.len * 2; 
+            // 10x Segmentation für die knorrige Rinde
+            let steps = Math.floor(length * 1.5); 
+            
+            for (let i = 0; i < steps; i++) {
+                currentX += Math.cos(currentAngle) * 0.6; // Kleine Schritte
+                currentY += Math.sin(currentAngle) * 0.6;
                 
-                for (let i = 0; i < steps; i++) {
-                    currentX += Math.cos(currentAngle) * 0.5;
-                    currentY += Math.sin(currentAngle) * 0.5;
-                    currentAngle += data.curve;
-                    currentThick *= 0.995; // Starke, weiche Verjüngung
+                // Mathematik der Krümmung
+                currentAngle += gravityBias + (Math.random() - 0.5) * 0.02;
+                currentThick *= 0.992; // Organische Verjüngung
+                tick++;
 
-                    // Zufällige Rinden-Knubbel (Jitter) an den Rändern
-                    let jitterLeft = (Math.random() - 0.2) * (currentThick * 0.15);
-                    let jitterRight = (Math.random() - 0.2) * (currentThick * 0.15);
+                // Der "Jitter" (Knubbel in der Rinde) skaliert mit der Dicke
+                let jl = (Math.random() - 0.2) * (currentThick * 0.12);
+                let jr = (Math.random() - 0.2) * (currentThick * 0.12);
 
-                    nodes.push({
-                        branchId: data.id,
-                        x: currentX, y: currentY, 
-                        angle: currentAngle, 
-                        r: currentThick / 2,
-                        jl: jitterLeft, jr: jitterRight,
-                        dead: data.dead,
-                        isEnd: i === steps - 1
-                    });
-                }
+                nodes.push({
+                    x: currentX, y: currentY, 
+                    angle: currentAngle, 
+                    r: currentThick / 2,
+                    jl: jl, jr: jr,
+                    tick: tick,
+                    isEnd: i === steps - 1
+                });
+            }
+
+            branches.push({
+                id: id,
+                depth: depth,
+                nodes: nodes,
+                dead: (Math.random() > 0.9 && depth > 2) // 10% Chance auf Totholz
             });
+
+            if (tick > maxTick) maxTick = tick;
+
+            // --- REKURSION (Neue Äste abspalten) ---
+            if (depth < 5) {
+                // 1 bis 3 neue Äste
+                let numChildren = Math.random() > 0.3 ? 2 : (Math.random() > 0.8 ? 3 : 1);
+                
+                for (let i = 0; i < numChildren; i++) {
+                    // Mathematische Streuung der Äste
+                    let spread = (Math.random() - 0.5) * 1.5;
+                    let newAngle = currentAngle + spread;
+                    
+                    // Nächster Ast wird kürzer und dünner
+                    let newLength = length * (0.6 + Math.random() * 0.25);
+                    let newThick = thickness * (0.55 + Math.random() * 0.2);
+
+                    calculateBranch(currentX, currentY, newAngle, newLength, newThick, depth + 1, tick);
+                }
+            }
         }
 
-        // --- RENDER LOOP ---
+        // --- 2. RENDER ENGINE (Polygon & SVG) ---
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Tisch und Topf
-            drawTable();
+            drawPot();
 
             if (!isGrowing) return;
 
-            // Wachstums-Fortschritt
-            if (renderProgress < nodes.length) {
-                renderProgress += 15; // Geschwindigkeit des Wachsens
-            } else {
-                renderProgress = nodes.length;
-            }
+            // Wachstumsgeschwindigkeit
+            currentTick += 6; 
 
-            let visibleNodes = nodes.slice(0, renderProgress);
+            // Durch alle berechneten Äste iterieren
+            branches.forEach(branch => {
+                // Filtere nur die Knoten, die im aktuellen Zeit-Tick schon gewachsen sind
+                let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
+                if (visibleNodes.length < 2) return;
 
-            // 1. STAMM ZEICHNEN (Knorriges Polygon)
-            CASCADE_PREFAB.forEach(prefab => {
-                let branchNodes = visibleNodes.filter(n => n.branchId === prefab.id);
-                if (branchNodes.length < 2) return;
+                // Polygon-Rinde zeichnen
+                drawIrregularBranch(visibleNodes, C.outline, 5); // Dicke schwarze Outline
+                drawIrregularBranch(visibleNodes, branch.dead ? '#b5aca3' : C.woodBase, 0); // Füllung
+                drawBarkShadow(visibleNodes); // Rinden-Struktur
 
-                // Outline & Holzfarbe
-                drawIrregularBranch(branchNodes, C.outline, 4); // Dicke schwarze Umrandung
-                drawIrregularBranch(branchNodes, prefab.dead ? '#c2b8ad' : C.woodBase, 0); // Füllung
-                
-                // Schattenlinie (Rindentextur innen)
-                drawBarkShadow(branchNodes);
-            });
-
-            // 2. BLÄTTER ZEICHNEN (An den Enden der lebenden Äste)
-            visibleNodes.forEach(n => {
-                if (n.isEnd && !n.dead) {
-                    // Skalierung basierend darauf, wie lange der Ast schon "fertig" ist
-                    let age = (renderProgress - nodes.indexOf(n)) / 100;
+                // Blätter am Ende des Astes zeichnen
+                let lastNode = visibleNodes[visibleNodes.length - 1];
+                if (lastNode.isEnd && !branch.dead && branch.depth >= 3) {
+                    // Blatt wächst auf, sobald der Ast fertig ist
+                    let age = (currentTick - lastNode.tick) / 100;
                     if (age > 1) age = 1;
-                    if (age > 0) drawLeafPad(n.x, n.y, age);
+                    if (age > 0) drawLeafPad(lastNode.x, lastNode.y, age);
                 }
             });
 
-            if (renderProgress < nodes.length) {
+            if (currentTick < maxTick + 150) {
                 requestAnimationFrame(render);
             }
         }
 
-        // Die Magie: Kein "ctx.stroke()" mehr. Wir berechnen die Ränder als Polygon.
         function drawIrregularBranch(bNodes, color, expand) {
             ctx.fillStyle = color;
             ctx.beginPath();
             
-            // Linke Kante hochwandern
+            // Linke Kante hoch
             for (let i = 0; i < bNodes.length; i++) {
                 let n = bNodes[i];
                 let nx = Math.cos(n.angle - Math.PI/2);
                 let ny = Math.sin(n.angle - Math.PI/2);
-                let radius = n.r + n.jl + expand;
+                let radius = Math.max(0, n.r + n.jl + expand); // Math.max verhindert Glitches
                 ctx.lineTo(n.x + nx * radius, n.y + ny * radius);
             }
             
-            // Rechte Kante hinunterwandern
+            // Rechte Kante runter
             for (let i = bNodes.length - 1; i >= 0; i--) {
                 let n = bNodes[i];
                 let nx = Math.cos(n.angle + Math.PI/2);
                 let ny = Math.sin(n.angle + Math.PI/2);
-                let radius = n.r + n.jr + expand;
+                let radius = Math.max(0, n.r + n.jr + expand);
                 ctx.lineTo(n.x + nx * radius, n.y + ny * radius);
             }
             
@@ -196,14 +187,13 @@
 
         function drawBarkShadow(bNodes) {
             ctx.strokeStyle = C.woodShadow;
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2.5;
             ctx.beginPath();
-            // Zeichne eine unregelmäßige Linie leicht versetzt von der Mitte
-            for (let i = 0; i < bNodes.length; i+=5) { // Nur jeden 5. Punkt für rauen Look
+            for (let i = 0; i < bNodes.length; i+=6) { 
                 let n = bNodes[i];
                 let nx = Math.cos(n.angle + Math.PI/2);
                 let ny = Math.sin(n.angle + Math.PI/2);
-                let offset = n.r * 0.4; // Position des Schattens
+                let offset = n.r * 0.3; 
                 if (i===0) ctx.moveTo(n.x + nx * offset, n.y + ny * offset);
                 else ctx.lineTo(n.x + nx * offset, n.y + ny * offset);
             }
@@ -213,66 +203,68 @@
         function drawLeafPad(x, y, scale) {
             ctx.save();
             ctx.translate(x, y);
-            ctx.scale(scale * 0.8, scale * 0.8);
+            
+            // 3x SCALIERUNG: Die Blätter werden massiv vergrößert, passend zum Riesenbaum
+            let finalScale = scale * 2.5; 
+            ctx.scale(finalScale, finalScale);
 
-            // Outline
             ctx.lineWidth = 12;
             ctx.strokeStyle = C.outline;
             ctx.lineJoin = 'round';
             ctx.stroke(leafSVG);
 
-            // Dunkelgrün
             ctx.fillStyle = C.leafDark;
             ctx.fill(leafSVG);
 
-            // Hellgrün (versetzt)
             ctx.save();
-            ctx.translate(-3, -6);
+            ctx.translate(-4, -6);
             ctx.scale(0.85, 0.85);
             ctx.fillStyle = C.leafMid;
             ctx.fill(leafSVG);
             ctx.restore();
 
+            // Zusätzliches Highlight für mehr Tiefe bei großen Blättern
+            ctx.save();
+            ctx.translate(-8, -12);
+            ctx.scale(0.6, 0.6);
+            ctx.fillStyle = C.leafLight;
+            ctx.fill(leafSVG);
+            ctx.restore();
+
             ctx.restore();
         }
 
-        function drawTable() {
-            let px = canvas.width / 2 + 40;
-            let py = canvas.height - 180;
+        function drawPot() {
+            let px = canvas.width / 2;
+            let py = canvas.height - 80;
 
-            // Simple Vektor Topf & Hocker basierend auf deinem Bild
+            // 3x Skalierter Topf
             ctx.fillStyle = C.outline;
-            ctx.fillRect(px - 55, py + 30, 110, 80); // Tischbeine Outline
-            ctx.fillStyle = '#6e5543';
-            ctx.fillRect(px - 50, py + 30, 20, 80); // Bein Links
-            ctx.fillRect(px + 30, py + 30, 20, 80); // Bein Rechts
+            ctx.beginPath(); ctx.ellipse(px, py, 210, 50, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(px - 180, py, 360, 100, 20); ctx.fill();
+
+            ctx.fillStyle = '#3a2d24';
+            ctx.beginPath(); ctx.roundRect(px - 175, py + 5, 350, 90, 16); ctx.fill();
             
-            ctx.fillStyle = C.outline;
-            ctx.fillRect(px - 75, py + 15, 150, 25); // Tischplatte Outline
-            ctx.fillStyle = '#8a6e57';
-            ctx.fillRect(px - 70, py + 20, 140, 15); // Tischplatte
-
-            // Topf
-            ctx.fillStyle = C.outline;
-            ctx.beginPath(); ctx.ellipse(px, py - 5, 85, 25, 0, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.roundRect(px - 72, py - 5, 144, 45, 15); ctx.fill();
-
-            ctx.fillStyle = '#4a3d35';
-            ctx.beginPath(); ctx.roundRect(px - 70, py - 3, 140, 40, 12); ctx.fill();
-            
-            // Moos im Topf
-            ctx.fillStyle = '#5c7a36';
-            ctx.beginPath(); ctx.ellipse(px, py - 10, 75, 12, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#4c6628';
+            ctx.beginPath(); ctx.ellipse(px, py - 10, 190, 30, 0, 0, Math.PI*2); ctx.fill();
         }
 
-        function growPrefab() {
-            buildTree();
-            renderProgress = 0;
+        function generateMathTree() {
+            branches = [];
+            currentTick = 0;
+            maxTick = 0;
+            branchIdCounter = 0;
             isGrowing = true;
+            
+            // START-PARAMETER (3x Größer)
+            // Länge: 280, Dicke: 85, Winkel: Nach oben (-Math.PI/2)
+            calculateBranch(canvas.width / 2, canvas.height - 110, -Math.PI / 2, 280, 85, 0, 0);
+            
             render();
         }
 
-        drawTable();
+        drawPot();
 
     </script>
 </body>
