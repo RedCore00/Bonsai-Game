@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Bonsai - Infinite Natural Tapering</title>
+    <title>Math Bonsai - Final Smooth Tapering</title>
     <style>
         body {
             margin: 0; padding: 0; display: flex; flex-direction: column;
@@ -86,24 +86,28 @@
             if (!isGrowing && branches.length > 0) drawInstant();
         }
 
-        // ACHTUNG: Ich übergebe jetzt "alreadyDead", damit Kind-Äste wissen, dass sie tot weiterwachsen!
-        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick, isRoot = false, alreadyDead = false) {
+        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick, isRoot = false) {
             let nodes = [];
             let currentX = startX;
             let currentY = startY;
             let currentAngle = angle;
             let tick = startTick;
 
-            let isDead = alreadyDead || (!isRoot && Math.random() > 0.85 && depth > 2);
+            let isDead = (!isRoot && Math.random() > 0.85 && depth > 2);
             
-            // Verjüngung: normal 1-10%. Wenn es die Krone (depth >= 5) oder Totholz ist, 
-            // verjüngt es sich minimal schneller (15%), damit es elegante Spitzen bildet.
-            let shrinkPercent = isRoot ? 0.5 : 0.01 + Math.min(depth / 6, 1) * 0.09; 
-            if (isDead || depth >= 5) {
-                shrinkPercent = Math.max(shrinkPercent, 0.15); 
-            }
+            // --- DIE NEUE SPITZEN-LOGIK ---
+            // Wir definieren "Terminal-Äste" (die nicht mehr weiter abzweigen)
+            let isTerminal = isRoot || isDead || depth >= 5;
 
+            // Standard-Verjüngung
+            let shrinkPercent = isRoot ? 0.5 : 0.01 + Math.min(depth / 6, 1) * 0.09; 
             let endThickness = startThickness * (1 - shrinkPercent);
+
+            // Wenn es der letzte Ast ist, zwingen wir ihn *innerhalb dieser Schleife* auf fast 0
+            if (isTerminal) {
+                endThickness = 0.5; // Endet hauchdünn
+                length = length * 1.5; // Zieht sich etwas länger, für einen eleganteren Verlauf
+            }
 
             let steps = Math.floor(length * 1.5); 
             let targetAngle = angle + (Math.random() - 0.5) * 1.0; 
@@ -116,6 +120,7 @@
                 let centerPull = (distanceFromCenter / (canvas.width / 2)) * 0.4;
                 currentAngle += (targetAngle - currentAngle - centerPull) * 0.03 + (Math.random() - 0.5) * 0.06;
                 
+                // Weiche Interpolation der Dicke vom Start bis zum Ende
                 let progress = i / steps;
                 let currentThick = startThickness - (startThickness - endThickness) * progress;
                 
@@ -133,41 +138,34 @@
             branches.push({ depth: depth, nodes: nodes, dead: isDead, isRoot: isRoot });
 
             if (!isRoot && !isDead) {
-                let chanceForLeaf = depth === 0 ? 0 : (depth === 1 ? 0.1 : (depth === 2 ? 0.4 : 0.8));
+                let chanceForLeaf = depth === 0 ? 0 : (depth === 1 ? 0.2 : (depth === 2 ? 0.5 : 0.9));
                 if (Math.random() < chanceForLeaf) {
-                    // Blätter ganz oben an den Spitzen werden etwas kleiner
-                    let scaleModifier = depth < 3 ? 0.7 : (depth > 6 ? 0.6 : 1.0); 
+                    let scaleModifier = depth < 3 ? 0.7 : 1.0; 
                     leafSpawns.push({ x: currentX, y: currentY, tick: tick, scaleMod: scaleModifier, depth: depth });
                 }
             }
 
             if (tick > maxTick) maxTick = tick;
 
-            // --- DIE NEUE WACHSTUMS-REGEL ---
-            // Wir stoppen erst, wenn der Ast feiner als 1.2 Pixel ist! Keine abgehackten Stümpfe mehr.
-            if (endThickness > 1.2 && depth < 15) { 
-                
-                // Wenn wir in der Krone sind (depth >= 5) oder der Ast "tot" ist, 
-                // verzweigt er sich nicht mehr in 2-3 Äste, sondern wächst als 1 langer, spitzer Ast weiter aus!
-                let numChildren = (isDead || depth >= 5) ? 1 : (Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1));
+            // Nur weiter verzweigen, wenn wir NICHT terminal sind
+            if (!isTerminal) { 
+                let numChildren = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
                 
                 for (let i = 0; i < numChildren; i++) {
-                    // Wenn er sich nur verlängert (numChildren == 1), wächst er gerader weiter
-                    let spread = (numChildren === 1) ? (Math.random() - 0.5) * 0.5 : (Math.random() - 0.5) * 1.5;
+                    let spread = (Math.random() - 0.5) * 1.5;
                     let newAngle = currentAngle + spread;
-                    
-                    // Verlängerungsäste sind etwas länger (0.8), Abzweigungen variieren mehr (0.6 - 0.8)
-                    let newLength = length * (numChildren === 1 ? 0.8 : (0.6 + Math.random() * 0.2));
+                    let newLength = length * (0.6 + Math.random() * 0.2);
                     let nextStartThickness = (i === 0) ? endThickness : endThickness * (0.5 + Math.random() * 0.2);
 
-                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick, isRoot, isDead);
+                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick, false);
                 }
             }
         }
 
+        // --- DAS ZUVERLÄSSIGE RENDER-SYSTEM ---
         function drawSmoothBranch(bNodes, color, expand) {
             ctx.strokeStyle = color;
-            ctx.lineCap = 'round'; 
+            ctx.lineCap = 'round'; // Verhindert eckige Kanten und Haifischflossen
             ctx.lineJoin = 'round';
             
             ctx.beginPath();
@@ -209,12 +207,15 @@
 
             currentTick += 6; 
 
+            // PASS 1: ALLE OUTLINES (Global, verhindert Risse an Gelenken)
             branches.forEach(branch => {
                 let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
                 if (visibleNodes.length > 1) {
                     drawSmoothBranch(visibleNodes, C.outline, 4);
                 }
             });
+            
+            // PASS 2: ALLE FÜLLUNGEN (Übermalt die Linien der Outlines im Inneren)
             branches.forEach(branch => {
                 let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
                 if (visibleNodes.length > 1) {
@@ -248,7 +249,7 @@
             });
             branches.forEach(branch => {
                 if (branch.nodes.length > 1) {
-                    drawSmoothBranch(visibleNodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
+                    drawSmoothBranch(branch.nodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
                     drawBarkShadow(branch.nodes);
                 }
             });
@@ -334,10 +335,10 @@
                 let rootAngle = (Math.PI / 2) + (Math.random() - 0.5) * 2.5; 
                 let rootLength = 15 + Math.random() * 25;
                 let rootThick = startThick * (0.3 + Math.random() * 0.4); 
-                calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true, false);
+                calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true);
             }
 
-            calculateBranch(startX, startY, -Math.PI / 2, 150, startThick, 0, 0, false, false);
+            calculateBranch(startX, startY, -Math.PI / 2, 150, startThick, 0, 0, false);
             
             renderLoop();
         }
