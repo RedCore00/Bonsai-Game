@@ -3,170 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bonsai Zen Master - Prototyp</title>
+    <title>Math Bonsai - Prototyp Restore</title>
     <style>
-        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; touch-action: none; }
-        canvas { background: #2c3e50; width: 100%; max-width: 500px; height: auto; aspect-ratio: 5/7; border-radius: 12px; margin-top: 10px; }
-        .controls { display: flex; gap: 10px; margin: 15px; flex-wrap: wrap; justify-content: center; }
-        button { padding: 12px 18px; border: none; border-radius: 8px; font-weight: bold; background: #485460; color: white; cursor: pointer; }
-        button.active { background: #e07a5f; box-shadow: 0 0 15px rgba(224, 122, 95, 0.5); }
+        body {
+            margin: 0; padding: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            min-height: 100vh; background-color: #2b3a4a;
+            font-family: 'Segoe UI', sans-serif; overflow: hidden;
+        }
+        canvas { 
+            background-color: transparent; 
+            width: 100%; max-width: 600px; 
+            height: auto; aspect-ratio: 5/6;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+        .ui-container {
+            display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; justify-content: center;
+        }
+        button {
+            padding: 12px 20px; font-size: 15px;
+            color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-weight: bold;
+            transition: all 0.1s;
+        }
+        #btn-grow { background-color: #5ab59f; box-shadow: 0 4px 0 #3b8774; }
+        #btn-grow:active { transform: translateY(4px); box-shadow: 0 0 0 #3b8774; }
+        #btn-toggle { background-color: #e07a5f; box-shadow: 0 4px 0 #b35942; }
     </style>
 </head>
 <body>
 
-<canvas id="bonsaiCanvas" width="800" height="1100"></canvas>
+    <canvas id="bonsaiCanvas" width="1000" height="1200"></canvas>
+    
+    <div class="ui-container">
+        <button id="btn-grow" onclick="generateMathTree()">🌱 Baum wachsen lassen</button>
+        <button id="btn-toggle" onclick="toggleLeaves()">🍂 Blätter ausblenden</button>
+    </div>
 
-<div class="controls">
-    <button id="btn-grow" onclick="setMode('grow')" class="active">🌱 Wachsen</button>
-    <button id="btn-cut" onclick="setMode('cut')">✂️ Schneiden</button>
-    <button id="btn-bend" onclick="setMode('bend')">🦾 Biegen</button>
-    <button onclick="resetTree()" style="background:#576574">♻️ Neu</button>
-</div>
+    <script>
+        const canvas = document.getElementById('bonsaiCanvas');
+        const ctx = canvas.getContext('2d');
 
-<script>
-const canvas = document.getElementById('bonsaiCanvas');
-const ctx = canvas.getContext('2d');
-const leafPath = new Path2D("M 0,-15 L 3,-5 L 12,-8 L 6,0 L 15,6 L 5,6 L 8,15 L 0,8 L -8,15 L -5,6 L -15,6 L -6,0 L -12,-8 L -3,-5 Z");
+        const C = {
+            outline: '#151515',
+            woodBase: '#9c8c7c',
+            woodShadow: '#6e5e50',
+            leafDark: '#7d231a',   
+            leafMid: '#c44536',    
+            leafLight: '#ee8959'   
+        };
 
-let mode = 'grow';
-let branches = [];
-let isDragging = false;
-let selectedBranch = null;
+        const leafPathString = "M 0,-15 L 3,-5 L 12,-8 L 6,0 L 15,6 L 5,6 L 8,15 L 0,8 L -8,15 L -5,6 L -15,6 L -6,0 L -12,-8 L -3,-5 Z";
+        const leafSVG = new Path2D(leafPathString);
 
-const C = { outline: '#151515', wood: '#9c8c7c', shadow: '#6e5e50', leaf: '#c44536' };
+        let branches = [];
+        let leafSpawns = [];
+        let currentTick = 0;
+        let maxTick = 0;
+        let isGrowing = false;
+        let showLeaves = true; 
 
-class Branch {
-    constructor(startX, startY, angle, thickness, length, depth, parent = null) {
-        this.startX = startX;
-        this.startY = startY;
-        this.angle = angle;
-        this.thickness = thickness;
-        this.length = length;
-        this.depth = depth;
-        this.parent = parent;
-        this.children = [];
-        this.segments = [];
-        this.isDead = false;
-        this.generateSegments();
-    }
-
-    generateSegments() {
-        this.segments = [];
-        let currX = this.startX;
-        let currY = this.startY;
-        let currA = this.angle;
-        let steps = Math.floor(this.length / 5);
-        
-        // Verjüngung 1-10% Regel
-        let taper = 0.01 + Math.min(this.depth / 6, 1) * 0.09;
-        let endThick = this.thickness * (1 - taper);
-
-        for (let i = 0; i <= steps; i++) {
-            let p = i / steps;
-            let thick = this.thickness - (this.thickness - endThick) * p;
-            this.segments.push({ x: currX, y: currY, r: thick / 2 });
-            currX += Math.cos(currA) * 5;
-            currY += Math.sin(currA) * 5;
-            currA += (Math.random() - 0.5) * 0.05; // Natürliches Zittern
+        function toggleLeaves() {
+            showLeaves = !showLeaves;
+            const btn = document.getElementById('btn-toggle');
+            btn.innerText = showLeaves ? "🍂 Blätter ausblenden" : "🍃 Blätter einblenden";
+            if (!isGrowing && branches.length > 0) drawInstant();
         }
-        this.endX = currX;
-        this.endY = currY;
-    }
 
-    draw() {
-        // Outline Pass
-        ctx.strokeStyle = C.outline;
-        ctx.lineCap = 'round';
-        ctx.lineWidth = this.thickness + 4;
-        ctx.beginPath();
-        ctx.moveTo(this.segments[0].x, this.segments[0].y);
-        this.segments.forEach(s => ctx.lineTo(s.x, s.y));
-        ctx.stroke();
+        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick, isRoot = false) {
+            let nodes = [];
+            let currentX = startX;
+            let currentY = startY;
+            let currentAngle = angle;
+            let tick = startTick;
 
-        // Wood Pass
-        ctx.strokeStyle = C.wood;
-        ctx.lineWidth = this.thickness;
-        ctx.beginPath();
-        ctx.moveTo(this.segments[0].x, this.segments[0].y);
-        this.segments.forEach(s => ctx.lineTo(s.x, s.y));
-        ctx.stroke();
+            let shrinkPercent = isRoot ? 0.5 : 0.01 + Math.min(depth / 6, 1) * 0.09; 
+            let endThickness = startThickness * (1 - shrinkPercent);
 
-        // Blätter
-        if (this.children.length === 0 && this.depth > 1) {
+            let steps = Math.floor(length * 1.5); 
+            let targetAngle = angle + (Math.random() - 0.5) * 1.0; 
+            
+            for (let i = 0; i <= steps; i++) {
+                currentX += Math.cos(currentAngle) * 0.8; 
+                currentY += Math.sin(currentAngle) * 0.8;
+                
+                let distanceFromCenter = currentX - (canvas.width / 2);
+                let centerPull = (distanceFromCenter / (canvas.width / 2)) * 0.4;
+                currentAngle += (targetAngle - currentAngle - centerPull) * 0.03 + (Math.random() - 0.5) * 0.06;
+                
+                let progress = i / steps;
+                let currentThick = startThickness - (startThickness - endThickness) * progress;
+                
+                tick++;
+
+                nodes.push({
+                    x: currentX, y: currentY, 
+                    angle: currentAngle, 
+                    r: currentThick / 2, 
+                    tick: tick,
+                    isEnd: i === steps
+                });
+            }
+
+            let isDead = (!isRoot && Math.random() > 0.85 && depth > 2);
+            branches.push({ depth: depth, nodes: nodes, dead: isDead, isRoot: isRoot });
+
+            if (!isRoot && !isDead) {
+                let chanceForLeaf = depth === 0 ? 0 : (depth === 1 ? 0.2 : (depth === 2 ? 0.5 : 0.9));
+                if (Math.random() < chanceForLeaf) {
+                    leafSpawns.push({ x: currentX, y: currentY, tick: tick, scaleMod: depth < 3 ? 0.7 : 1.0 });
+                }
+            }
+
+            if (tick > maxTick) maxTick = tick;
+
+            if (!isRoot && depth < 5) { 
+                let numChildren = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
+                for (let i = 0; i < numChildren; i++) {
+                    let spread = (Math.random() - 0.5) * 1.5;
+                    let nextStartThickness = (i === 0) ? endThickness : endThickness * (0.5 + Math.random() * 0.2);
+                    calculateBranch(currentX, currentY, currentAngle + spread, length * 0.7, nextStartThickness, depth + 1, tick, false);
+                }
+            }
+        }
+
+        function drawSmoothBranch(bNodes, color, expand) {
+            ctx.strokeStyle = color;
+            ctx.lineCap = 'round'; 
+            ctx.lineJoin = 'round';
+            for (let i = 0; i < bNodes.length - 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(bNodes[i].x, bNodes[i].y);
+                ctx.lineTo(bNodes[i+1].x, bNodes[i+1].y);
+                ctx.lineWidth = Math.max(0.1, (bNodes[i].r * 2) + expand);
+                ctx.stroke();
+            }
+        }
+
+        function renderLoop() {
+            if (!isGrowing) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPot();
+            currentTick += 6; 
+            branches.forEach(branch => {
+                let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
+                if (visibleNodes.length > 1) {
+                    drawSmoothBranch(visibleNodes, C.outline, 4);
+                    drawSmoothBranch(visibleNodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
+                }
+            });
+            if (showLeaves) {
+                leafSpawns.forEach(leaf => {
+                    if (currentTick >= leaf.tick) {
+                        let age = Math.min((currentTick - leaf.tick) / 60, 1);
+                        drawLeafPad(leaf.x, leaf.y, age * leaf.scaleMod);
+                    }
+                });
+            }
+            drawSoilFront();
+            if (currentTick < maxTick + 100) requestAnimationFrame(renderLoop);
+            else isGrowing = false; 
+        }
+
+        function drawInstant() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPot();
+            branches.forEach(branch => {
+                drawSmoothBranch(branch.nodes, C.outline, 4);
+                drawSmoothBranch(branch.nodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
+            });
+            if (showLeaves) leafSpawns.forEach(leaf => drawLeafPad(leaf.x, leaf.y, 1 * leaf.scaleMod));
+            drawSoilFront();
+        }
+
+        function drawLeafPad(x, y, scale) {
             ctx.save();
-            ctx.translate(this.endX, this.endY);
-            ctx.fillStyle = C.leaf;
-            ctx.fill(leafPath);
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            const maples = [{x:0,y:0,r:0,s:1.2},{x:-12,y:6,r:-0.4,s:0.9},{x:12,y:6,r:0.4,s:0.9}];
+            maples.forEach(m => {
+                ctx.save();
+                ctx.translate(m.x, m.y); ctx.rotate(m.r); ctx.scale(m.s, m.s);
+                ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.stroke(leafSVG);
+                ctx.fillStyle = C.leafDark; ctx.fill(leafSVG);
+                ctx.save(); ctx.translate(-2,-2); ctx.fillStyle = C.leafMid; ctx.fill(leafSVG); ctx.restore();
+                ctx.restore();
+            });
             ctx.restore();
         }
 
-        this.children.forEach(c => c.draw());
-    }
-
-    checkHit(mx, my) {
-        let d = Math.hypot(mx - this.endX, my - this.endY);
-        if (d < 30) return this;
-        for (let c of this.children) {
-            let found = c.checkHit(mx, my);
-            if (found) return found;
+        function drawPot() {
+            let px = canvas.width/2, py = canvas.height-100;
+            ctx.fillStyle = C.outline; ctx.beginPath(); ctx.ellipse(px, py, 140, 35, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(px-120, py, 240, 70, 15); ctx.fill();
+            ctx.fillStyle = '#4a3d35'; ctx.beginPath(); ctx.roundRect(px-116, py+4, 232, 62, 12); ctx.fill();
+            ctx.fillStyle = '#455c28'; ctx.beginPath(); ctx.ellipse(px, py-6, 125, 20, 0, 0, Math.PI*2); ctx.fill();
         }
-        return null;
-    }
-}
 
-function setMode(m) {
-    mode = m;
-    document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-    document.getElementById('btn-' + m).classList.add('active');
-}
+        function drawSoilFront() {
+            let px = canvas.width/2, py = canvas.height-100;
+            ctx.fillStyle = '#5c7a36'; ctx.beginPath(); ctx.ellipse(px, py+2, 130, 12, 0, 0, Math.PI); ctx.fill();
+        }
 
-function resetTree() {
-    branches = [new Branch(400, 1000, -Math.PI/2, 50, 150, 0)];
-    render();
-}
+        function generateMathTree() {
+            branches = []; leafSpawns = []; currentTick = 0; maxTick = 0; isGrowing = true;
+            let startX = canvas.width/2, startY = canvas.height-120, startThick = 45;
+            for(let i=0; i<6; i++) calculateBranch(startX, startY-10, (Math.PI/2)+(Math.random()-0.5)*2.5, 20, startThick*0.4, 0, 0, true);
+            calculateBranch(startX, startY, -Math.PI/2, 160, startThick, 0, 0, false);
+            renderLoop();
+        }
 
-canvas.addEventListener('pointerdown', e => {
-    const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const my = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-    let hit = null;
-    branches.forEach(b => { if(!hit) hit = b.checkHit(mx, my) });
-
-    if (mode === 'grow' && hit && hit.depth < 6) {
-        let a = hit.angle + (Math.random() - 0.5) * 1.5;
-        hit.children.push(new Branch(hit.endX, hit.endY, a, hit.segments[hit.segments.length-1].r*2, hit.length*0.7, hit.depth+1, hit));
-    } else if (mode === 'cut' && hit && hit.parent) {
-        hit.parent.children = hit.parent.children.filter(c => c !== hit);
-    } else if (mode === 'bend' && hit) {
-        selectedBranch = hit;
-        isDragging = true;
-    }
-    render();
-});
-
-canvas.addEventListener('pointermove', e => {
-    if (isDragging && selectedBranch) {
-        const rect = canvas.getBoundingClientRect();
-        const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
-        const my = (e.clientY - rect.top) * (canvas.height / rect.height);
-        selectedBranch.angle = Math.atan2(my - selectedBranch.startY, mx - selectedBranch.startX);
-        selectedBranch.generateSegments();
-        render();
-    }
-});
-
-canvas.addEventListener('pointerup', () => { isDragging = false; selectedBranch = null; });
-
-function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Topf
-    ctx.fillStyle = "#3d3d3d";
-    ctx.fillRect(250, 1000, 300, 50);
-    branches.forEach(b => b.draw());
-}
-
-resetTree();
-</script>
+        drawPot();
+    </script>
 </body>
 </html>
