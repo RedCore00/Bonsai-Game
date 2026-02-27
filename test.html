@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Bonsai - Toggle Leaves</title>
+    <title>Math Bonsai - Smooth Transitions</title>
     <style>
         body {
             margin: 0; padding: 0; display: flex; flex-direction: column;
@@ -12,7 +12,6 @@
             font-family: 'Segoe UI', sans-serif; overflow: hidden;
         }
         
-        /* Optimiert für Mobile-Screens */
         canvas { 
             background-color: transparent; 
             width: 100%; max-width: 600px; 
@@ -61,7 +60,6 @@
             leafLight: '#7ab882'
         };
 
-        // Der flache Vektor-Pfad für das Blattpolster
         const leafPathString = "M -40,10 C -50,0 -40,-20 -20,-20 C -15,-35 10,-40 25,-25 C 40,-35 60,-15 50,10 C 55,25 40,30 20,30 L -15,30 C -30,30 -40,25 -40,10 Z";
         const leafSVG = new Path2D(leafPathString);
 
@@ -69,9 +67,8 @@
         let currentTick = 0;
         let maxTick = 0;
         let isGrowing = false;
-        let showLeaves = true; // STATE FÜR DEN BLÄTTER-TOGGLE
+        let showLeaves = true; 
 
-        // --- TOGGLE FUNKTION ---
         function toggleLeaves() {
             showLeaves = !showLeaves;
             const btn = document.getElementById('btn-toggle');
@@ -84,13 +81,9 @@
                 btn.style.backgroundColor = "#81b29a";
                 btn.style.boxShadow = "0 4px 0 #5f8a74";
             }
-            // Wenn der Baum schon fertig gewachsen ist, sofort neu zeichnen
-            if (!isGrowing && branches.length > 0) {
-                drawInstant();
-            }
+            if (!isGrowing && branches.length > 0) drawInstant();
         }
 
-        // --- MATHE GENERIERUNG ---
         function calculateBranch(startX, startY, angle, length, thickness, depth, startTick) {
             let nodes = [];
             
@@ -100,20 +93,27 @@
             let currentThick = thickness;
             let tick = startTick;
 
-            // Schwerkraft / Wind
-            let gravityBias = (Math.random() - 0.4) * 0.04; 
-            let steps = Math.floor(length * 2); // Mehr Schritte = weichere Kurven
+            let steps = Math.floor(length * 1.5); 
+            
+            // Verhindere das Spaghetti-Aufrollen:
+            // Wir definieren ein Ziel, in das der Ast tendenziell wachsen soll.
+            let targetAngle = angle + (Math.random() - 0.5) * 1.0; 
             
             for (let i = 0; i < steps; i++) {
-                currentX += Math.cos(currentAngle) * 0.5; 
-                currentY += Math.sin(currentAngle) * 0.5;
+                currentX += Math.cos(currentAngle) * 0.8; 
+                currentY += Math.sin(currentAngle) * 0.8;
                 
-                currentAngle += gravityBias + (Math.random() - 0.5) * 0.03;
-                currentThick *= 0.99; // Konstante Verjüngung
+                // Sanfte Kurve in Richtung des Target-Angles, statt wildem Kreiseln
+                currentAngle += (targetAngle - currentAngle) * 0.02 + (Math.random() - 0.5) * 0.05;
+                
+                // Nur GANZ minimale Verjüngung WÄHREND des Wachsens, 
+                // die Haupt-Verjüngung passiert bei der Teilung (Deine 1-10% Regel)
+                currentThick *= 0.998; 
                 tick++;
 
-                let jl = (Math.random() - 0.2) * (currentThick * 0.15);
-                let jr = (Math.random() - 0.2) * (currentThick * 0.15);
+                // Jitter (Knorpel) stark reduziert, damit die Ränder sauberer bleiben
+                let jl = (Math.random() - 0.5) * (currentThick * 0.05);
+                let jr = (Math.random() - 0.5) * (currentThick * 0.05);
 
                 nodes.push({
                     x: currentX, y: currentY, 
@@ -125,80 +125,111 @@
                 });
             }
 
-            let isDead = (Math.random() > 0.85 && depth > 2); // Totholz Chance
-
-            branches.push({
-                depth: depth,
-                nodes: nodes,
-                dead: isDead
-            });
+            let isDead = (Math.random() > 0.85 && depth > 2); 
+            branches.push({ depth: depth, nodes: nodes, dead: isDead });
 
             if (tick > maxTick) maxTick = tick;
 
-            // Neue Äste
+            // --- DEINE 1-10% SCHRUMPF-REGEL FÜR DIE TEILUNG ---
             if (depth < 6) {
-                let numChildren = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
+                // Berechne den Schrumpf-Faktor basierend auf der Tiefe (0 bis 6)
+                // depth 0 -> 1% (0.01) | depth 6 -> 10% (0.10)
+                let depthFactor = Math.min(depth / 6, 1); 
+                let shrinkPercent = 0.01 + depthFactor * 0.09; 
+                
+                // Neue Dicke berechnen (Nimmt nur 1-10% ab!)
+                let newThick = thickness * (1 - shrinkPercent);
+
+                let numChildren = Math.random() > 0.3 ? 2 : (Math.random() > 0.8 ? 3 : 1);
+                
                 for (let i = 0; i < numChildren; i++) {
-                    let spread = (Math.random() - 0.5) * 1.6;
+                    let spread = (Math.random() - 0.5) * 1.4;
                     let newAngle = currentAngle + spread;
                     let newLength = length * (0.6 + Math.random() * 0.2);
-                    let newThick = thickness * (0.55 + Math.random() * 0.2);
+                    
+                    // Manchmal sind Seitenäste etwas dünner, aber der Hauptast folgt streng der Regel
+                    let finalThick = (i === 0) ? newThick : newThick * (0.8 + Math.random() * 0.2);
 
-                    calculateBranch(currentX, currentY, newAngle, newLength, newThick, depth + 1, tick);
+                    calculateBranch(currentX, currentY, newAngle, newLength, finalThick, depth + 1, tick);
                 }
             }
         }
 
-        // --- RENDER ENGINE ---
         function renderLoop() {
             if (!isGrowing) return;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawPot();
 
-            currentTick += 6; // Wachstums-Tempo
+            currentTick += 6; 
 
+            // --- GLOBAL MULTI-PASS RENDERING ---
+            // Dieser Trick verhindert, dass die Äste sich gegenseitig überschneiden und Risse bilden.
+            
+            // PASS 1: ALLE SCHWARZEN OUTLINES ZUERST
             branches.forEach(branch => {
                 let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
-                if (visibleNodes.length < 2) return;
-
-                // Holz zeichnen
-                drawIrregularBranch(visibleNodes, C.outline, 4);
-                drawIrregularBranch(visibleNodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
-                drawBarkShadow(visibleNodes);
-
-                // Blätter zeichnen (NUR WENN TOGGLE AKTIV IST)
-                let lastNode = visibleNodes[visibleNodes.length - 1];
-                if (showLeaves && lastNode.isEnd && !branch.dead && branch.depth >= 3) {
-                    let age = (currentTick - lastNode.tick) / 60;
-                    if (age > 1) age = 1;
-                    if (age > 0) drawLeafPad(lastNode.x, lastNode.y, age);
+                if (visibleNodes.length > 1) {
+                    drawIrregularBranch(visibleNodes, C.outline, 4);
                 }
             });
+
+            // PASS 2: ALLE HOLZFÜLLUNGEN & SCHATTEN DARÜBER
+            branches.forEach(branch => {
+                let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
+                if (visibleNodes.length > 1) {
+                    drawIrregularBranch(visibleNodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
+                    drawBarkShadow(visibleNodes);
+                }
+            });
+
+            // PASS 3: BLÄTTER GANZ ZUM SCHLUSS (Wenn Toggle aktiv)
+            if (showLeaves) {
+                branches.forEach(branch => {
+                    let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
+                    if (visibleNodes.length > 1) {
+                        let lastNode = visibleNodes[visibleNodes.length - 1];
+                        if (lastNode.isEnd && !branch.dead && branch.depth >= 3) {
+                            let age = (currentTick - lastNode.tick) / 60;
+                            if (age > 1) age = 1;
+                            if (age > 0) drawLeafPad(lastNode.x, lastNode.y, age);
+                        }
+                    }
+                });
+            }
 
             if (currentTick < maxTick + 100) {
                 requestAnimationFrame(renderLoop);
             } else {
-                isGrowing = false; // Wachstum beendet
+                isGrowing = false; 
             }
         }
 
-        // Hilfsfunktion zum sofortigen Neuzeichnen (für den Toggle-Button)
+        // Zeichnet sofort alles neu, wenn man den Blätter-Knopf drückt
         function drawInstant() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawPot();
+            
+            // Multi-Pass Pass 1
             branches.forEach(branch => {
-                if (branch.nodes.length < 2) return;
-                
-                drawIrregularBranch(branch.nodes, C.outline, 4);
-                drawIrregularBranch(branch.nodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
-                drawBarkShadow(branch.nodes);
-
-                let lastNode = branch.nodes[branch.nodes.length - 1];
-                if (showLeaves && !branch.dead && branch.depth >= 3) {
-                    drawLeafPad(lastNode.x, lastNode.y, 1);
+                if (branch.nodes.length > 1) drawIrregularBranch(branch.nodes, C.outline, 4);
+            });
+            // Multi-Pass Pass 2
+            branches.forEach(branch => {
+                if (branch.nodes.length > 1) {
+                    drawIrregularBranch(branch.nodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
+                    drawBarkShadow(branch.nodes);
                 }
             });
+            // Multi-Pass Pass 3
+            if (showLeaves) {
+                branches.forEach(branch => {
+                    if (branch.nodes.length > 1 && !branch.dead && branch.depth >= 3) {
+                        let lastNode = branch.nodes[branch.nodes.length - 1];
+                        drawLeafPad(lastNode.x, lastNode.y, 1);
+                    }
+                });
+            }
         }
 
         function drawIrregularBranch(bNodes, color, expand) {
@@ -244,7 +275,6 @@
             ctx.save();
             ctx.translate(x, y);
             
-            // SKALIERUNG ANGEPASST: Blätter sind jetzt feiner und überwuchern nicht den Baum
             let finalScale = scale * 0.9; 
             ctx.scale(finalScale, finalScale);
 
@@ -294,8 +324,7 @@
             maxTick = 0;
             isGrowing = true;
             
-            // START PARAMETER: Etwas feinerer Start-Stamm für bessere Proportionen
-            calculateBranch(canvas.width / 2, canvas.height - 120, -Math.PI / 2, 170, 42, 0, 0);
+            calculateBranch(canvas.width / 2, canvas.height - 120, -Math.PI / 2, 180, 35, 0, 0);
             
             renderLoop();
         }
