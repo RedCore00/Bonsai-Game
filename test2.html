@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zen Bonsai Garden - Procedural Sanctuary</title>
+    <style>
+        :root {
+            --bg: #e0d8c3;
+            --panel: rgba(255, 255, 255, 0.85);
+            --accent: #5d6d4f;
+            --text: #3d3d3d;
+            --ui-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --font: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: var(--font); color: var(--text); }
+
+        #game-container { position: relative; width: 100%; height: 100%; touch-action: none; }
+        canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+
+        /* UI Overlay */
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 15px; }
+        .pointer { pointer-events: auto; }
+
+        /* Top Bar */
+        #top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
+        .stats-panel { background: var(--panel); padding: 10px 20px; border-radius: 30px; box-shadow: var(--ui-shadow); display: flex; gap: 20px; backdrop-filter: blur(5px); }
+        .stat-item { display: flex; flex-direction: column; align-items: center; }
+        .stat-val { font-weight: bold; font-size: 1.1em; color: var(--accent); }
+        .stat-lbl { font-size: 0.7em; text-transform: uppercase; opacity: 0.7; }
+
+        /* Bottom Menu */
+        #bottom-menu { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .tool-btn { 
+            width: 55px; height: 55px; border-radius: 12px; background: var(--panel); border: 2px solid transparent;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: var(--ui-shadow); transition: all 0.2s; backdrop-filter: blur(5px);
+        }
+        .tool-btn.active { border-color: var(--accent); transform: scale(1.1); background: white; }
+        .tool-icon { font-size: 20px; }
+        .tool-name { font-size: 9px; margin-top: 2px; text-transform: uppercase; }
+
+        /* Panels */
+        .side-panel { 
+            position: absolute; right: 15px; top: 100px; width: 220px; max-height: 60%;
+            background: var(--panel); border-radius: 15px; padding: 15px; box-shadow: var(--ui-shadow);
+            overflow-y: auto; backdrop-filter: blur(5px); display: none;
+        }
+        .side-panel.visible { display: block; pointer-events: auto; }
+        .panel-title { font-size: 0.9em; font-weight: bold; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; margin-bottom: 10px; }
+        .shop-item { 
+            display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; 
+            margin-bottom: 5px; cursor: pointer; background: rgba(0,0,0,0.03); transition: 0.2s;
+        }
+        .shop-item:hover { background: rgba(0,0,0,0.08); }
+        .shop-icon { width: 35px; height: 35px; background: #fff; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+        .shop-info { flex: 1; font-size: 0.8em; }
+        .shop-price { font-weight: bold; color: var(--accent); }
+
+        /* Context Menu */
+        #context-menu {
+            position: absolute; background: white; border-radius: 10px; box-shadow: var(--ui-shadow);
+            padding: 5px; display: none; pointer-events: auto; z-index: 100;
+        }
+        .context-btn { padding: 8px 15px; cursor: pointer; border-radius: 5px; font-size: 0.85em; white-space: nowrap; }
+        .context-btn:hover { background: #f0f0f0; }
+
+        /* Start Screen */
+        #overlay-screen {
+            position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.5s;
+        }
+        .logo { font-size: 3em; font-weight: 200; margin-bottom: 30px; letter-spacing: 5px; }
+        .btn-large {
+            padding: 15px 40px; background: var(--accent); color: white; border: none;
+            border-radius: 30px; font-size: 1.1em; cursor: pointer; box-shadow: var(--ui-shadow);
+        }
+
+        /* Notifications */
+        #notif { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); pointer-events: none; opacity: 0; transition: 0.3s; background: rgba(0,0,0,0.7); color: white; padding: 8px 20px; border-radius: 20px; font-size: 0.9em; }
+
+        @media (max-width: 600px) {
+            .side-panel { width: calc(100% - 30px); left: 15px; top: auto; bottom: 80px; max-height: 40%; }
+            .stats-panel { gap: 10px; font-size: 0.8em; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="overlay-screen">
+    <div class="logo">ZEN GARDEN</div>
+    <button class="btn-large pointer" onclick="Game.init()">Eintreten</button>
+</div>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-layer">
+        <div id="top-bar">
+            <div class="stats-panel pointer">
+                <div class="stat-item"><span class="stat-lbl">Münzen</span><span class="stat-val" id="val-coins">500</span></div>
+                <div class="stat-item"><span class="stat-lbl">Harmonie</span><span class="stat-val" id="val-harmony">0</span></div>
+                <div class="stat-item"><span class="stat-lbl">Jahreszeit</span><span class="stat-val" id="val-season">Frühling</span></div>
+            </div>
+            <div class="stats-panel pointer" style="margin-left: auto;">
+                <div class="stat-item" onclick="Game.save()"><span class="stat-lbl">Status</span><span class="stat-val">Speichern</span></div>
+            </div>
+        </div>
+
+        <div id="notif">Hinweis</div>
+
+        <div class="side-panel" id="shop-panel">
+            <div class="panel-title">Laden</div>
+            <div id="shop-list"></div>
+        </div>
+
+        <div class="side-panel" id="diary-panel">
+            <div class="panel-title">Tagebuch</div>
+            <div id="diary-list" style="font-size: 0.75em; line-height: 1.4;"></div>
+        </div>
+
+        <div id="bottom-menu">
+            <div class="tool-btn pointer active" onclick="Game.setTool('move')" id="btn-move">
+                <span class="tool-icon">🖐️</span><span class="tool-name">Hand</span>
+            </div>
+            <div class="tool-btn pointer" onclick="Game.setTool('rake')" id="btn-rake">
+                <span class="tool-icon">🧹</span><span class="tool-name">Rechen</span>
+            </div>
+            <div class="tool-btn pointer" onclick="Game.setTool('prune')" id="btn-prune">
+                <span class="tool-icon">✂️</span><span class="tool-name">Schnitt</span>
+            </div>
+            <div class="tool-btn pointer" onclick="Game.setTool('feed')" id="btn-feed">
+                <span class="tool-icon">🥣</span><span class="tool-name">Futter</span>
+            </div>
+            <div class="tool-btn pointer" onclick="Game.togglePanel('shop')" id="btn-shop">
+                <span class="tool-icon">⛩️</span><span class="tool-name">Shop</span>
+            </div>
+            <div class="tool-btn pointer" onclick="Game.togglePanel('diary')" id="btn-diary">
+                <span class="tool-icon">📜</span><span class="tool-name">Chronik</span>
+            </div>
+            <div class="tool-btn pointer" onclick="Game.screenshot()">
+                <span class="tool-icon">📸</span><span class="tool-name">Foto</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="context-menu"></div>
+
+<script>
+/**
+ * ZEN GARDEN - SINGLE FILE GAME
+ * Procedural Bonsai, Sand Raking, Fish AI, Audio Synth
+ */
+
+const CONFIG = {
+    CELL_SIZE: 40,
+    SAVE_KEY: 'zen_garden_save_v1',
+    SEASONS: ['Frühling', 'Sommer', 'Herbst', 'Winter'],
+    COLORS: {
+        sand: '#dccdb0',
+        sandDark: '#c5b696',
+        grass: '#7a8c5f',
+        water: '#7daeba',
+        stone: '#8e8e8e',
+        wood: '#5d4037',
+        leaf: '#4caf50'
+    }
+};
+
+// --- UTILS & MATH ---
+const LCG = (s) => {
+    let seed = s;
+    return () => {
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        return seed / 4294967296;
+    };
+};
+
+const lerp = (a, b, t) => a + (b - a) * t;
+const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+
+// --- AUDIO ENGINE ---
+const AudioEngine = {
+    ctx: null,
+    init() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    },
+    playPling(freq = 440, type = 'sine') {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 1);
+    },
+    playAmbient() {
+        if (!this.ctx) return;
+        // Simple low wind hum
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(110, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+    }
+};
+
+// --- PROCEDURAL TEXTURES ---
+const Textures = {
+    sand: null,
+    stone: null,
+    grass: null,
+    generate() {
+        this.sand = this.createPattern(256, (ctx) => {
+            ctx.fillStyle = CONFIG.COLORS.sand;
+            ctx.fillRect(0, 0, 256, 256);
+            for(let i=0; i<5000; i++) {
+                ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.05})`;
+                ctx.fillRect(Math.random()*256, Math.random()*256, 1, 1);
+            }
+        });
+        this.grass = this.createPattern(128, (ctx) => {
+            ctx.fillStyle = CONFIG.COLORS.grass;
+            ctx.fillRect(0, 0, 128, 128);
+            for(let i=0; i<400; i++) {
+                ctx.fillStyle = `rgba(0,0,0,0.1)`;
+                ctx.fillRect(Math.random()*128, Math.random()*128, 2, 4);
+            }
+        });
+    },
+    createPattern(size, drawFn) {
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        drawFn(c.getContext('2d'));
+        return c;
+    }
+};
+
+// --- BONSAI LOGIC ---
+class Bonsai {
+    constructor(x, y, seed = Math.random()) {
+        this.x = x;
+        this.y = y;
+        this.seed = seed;
+        this.age = 0;
+        this.health = 100;
+        this.rotation = 0;
+        this.scale = 1.0;
+        this.branches = [];
+        this.generateStructure();
+    }
+
+    generateStructure() {
+        const rng = LCG(this.seed * 10000);
+        this.branches = [];
+        this.createBranch(0, 0, -Math.PI/2, 40, 5, 0, rng);
+    }
+
+    createBranch(x, y, angle, len, thick, depth, rng) {
+        if (depth > 4) return;
+        const x2 = x + Math.cos(angle) * len;
+        const y2 = y + Math.sin(angle) * len;
+        const branch = { x1: x, y1: y, x2, y2, thick, depth, id: Math.random() };
+        this.branches.push(branch);
+
+        const numChildren = rng() > 0.7 ? 2 : 1;
+        for(let i=0; i<numChildren; i++) {
+            const nextAngle = angle + (rng() - 0.5) * 0.8;
+            const nextLen = len * (0.7 + rng() * 0.2);
+            this.createBranch(x2, y2, nextAngle, nextLen, thick * 0.7, depth + 1, rng);
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.scale(this.scale, this.scale);
+
+        // Trunk/Branches
+        this.branches.forEach(b => {
+            ctx.strokeStyle = CONFIG.COLORS.wood;
+            ctx.lineWidth = b.thick;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(b.x1, b.y1);
+            ctx.lineTo(b.x2, b.y2);
+            ctx.stroke();
+
+            // Leaves at tips
+            if (b.depth >= 3) {
+                ctx.fillStyle = CONFIG.COLORS.leaf;
+                ctx.beginPath();
+                ctx.arc(b.x2, b.y2, 5 + Math.sin(Date.now()*0.002 + b.id)*2, 0, Math.PI*2);
+                ctx.fill();
+            }
+        });
+        ctx.restore();
+    }
+
+    prune(mx, my) {
+        // Simple hit detection for branches
+        const hitIdx = this.branches.findIndex(b => {
+            const dx = (b.x1 + b.x2)/2 + this.x - mx;
+            const dy = (b.y1 + b.y2)/2 + this.y - my;
+            return Math.hypot(dx, dy) < 15;
+        });
+        if (hitIdx !== -1) {
+            this.branches.splice(hitIdx, 1);
+            return true;
+        }
+        return false;
+    }
+}
+
+// --- FISH AI ---
+class Fish {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.color = ['#ff9800', '#f44336', '#ffffff'][Math.floor(Math.random()*3)];
+        this.size = 5 + Math.random() * 5;
+    }
+    update(bounds, food) {
+        // Simple wander
+        this.vx += (Math.random() - 0.5) * 0.1;
+        this.vy += (Math.random() - 0.5) * 0.1;
+
+        // Seek food
+        if (food && food.length > 0) {
+            const nearest = food[0];
+            const dx = nearest.x - this.x;
+            const dy = nearest.y - this.y;
+            const d = Math.hypot(dx, dy);
+            if (d < 100) {
+                this.vx += dx * 0.01;
+                this.vy += dy * 0.01;
+                if (d < 5) food.splice(0, 1);
+            }
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        // Limit speed
+        const speed = Math.hypot(this.vx, this.vy);
+        if (speed > 1.5) { this.vx *= 0.9; this.vy *= 0.9; }
+
+        // Bounce
+        if (this.x < bounds.x || this.x > bounds.x + bounds.w) this.vx *= -1;
+        if (this.y < bounds.y || this.y > bounds.y + bounds.h) this.vy *= -1;
+    }
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(Math.atan2(this.vy, this.vx));
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.size, this.size/2.5, 0, 0, Math.PI*2);
+        ctx.fill();
+        // Tail
+        ctx.beginPath();
+        ctx.moveTo(-this.size, 0);
+        ctx.lineTo(-this.size - 4, 3 * Math.sin(Date.now()*0.01));
+        ctx.lineTo(-this.size - 4, -3 * Math.sin(Date.now()*0.01));
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+// --- WORLD ENGINE ---
+const Game = {
+    canvas: null, ctx: null,
+    sandCanvas: null, sandCtx: null,
+    camera: { x: 0, y: 0, zoom: 1, isDragging: false, lastX: 0, lastY: 0 },
+    objects: [],
+    bonsais: [],
+    fishes: [],
+    food: [],
+    coins: 500,
+    harmony: 0,
+    activeTool: 'move',
+    selectedObj: null,
+    rakeActive: false,
+    diary: ["Willkommen im Garten."],
+    
+    init() {
+        document.getElementById('overlay-screen').style.opacity = '0';
+        setTimeout(() => document.getElementById('overlay-screen').style.display = 'none', 500);
+
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+
+        Textures.generate();
+        AudioEngine.init();
+        AudioEngine.playAmbient();
+
+        // Initial setup
+        this.sandCanvas = document.createElement('canvas');
+        this.sandCanvas.width = 2000;
+        this.sandCanvas.height = 2000;
+        this.sandCtx = this.sandCanvas.getContext('2d');
+        this.clearSand();
+
+        this.fishes.push(new Fish(400, 400), new Fish(450, 420));
+        
+        this.setupShop();
+        this.setupInputs();
+        this.load();
+        this.loop();
+    },
+
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+    },
+
+    clearSand() {
+        this.sandCtx.fillStyle = CONFIG.COLORS.sand;
+        this.sandCtx.fillRect(0, 0, 2000, 2000);
+    },
+
+    setupShop() {
+        const items = [
+            { id: 'bonsai', name: 'Bonsai Setzling', price: 150, icon: '🌿' },
+            { id: 'stone', name: 'Zen Stein', price: 50, icon: '🪨' },
+            { id: 'water', name: 'Wasserlauf', price: 300, icon: '🌊' },
+            { id: 'statue', name: 'Laterne', price: 200, icon: '🏮' },
+            { id: 'grass', name: 'Moos Patch', price: 40, icon: '🍏' }
+        ];
+        const list = document.getElementById('shop-list');
+        items.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'shop-item';
+            el.innerHTML = `
+                <div class="shop-icon">${item.icon}</div>
+                <div class="shop-info">
+                    <div>${item.name}</div>
+                    <div class="shop-price">${item.price} 🪙</div>
+                </div>
+            `;
+            el.onclick = () => this.buyItem(item);
+            list.appendChild(el);
+        });
+    },
+
+    buyItem(item) {
+        if (this.coins >= item.price) {
+            this.coins -= item.price;
+            this.notify(`${item.name} gekauft!`);
+            this.addDiary(`Gekauft: ${item.name}`);
+            
+            const worldPos = this.screenToWorld(this.canvas.width/2, this.canvas.height/2);
+            
+            if (item.id === 'bonsai') {
+                this.bonsais.push(new Bonsai(worldPos.x, worldPos.y));
+            } else {
+                this.objects.push({
+                    type: item.id,
+                    x: worldPos.x,
+                    y: worldPos.y,
+                    w: item.id === 'water' ? 200 : 50,
+                    h: item.id === 'water' ? 150 : 50,
+                    rotation: 0
+                });
+            }
+            this.updateStats();
+            AudioEngine.playPling(660);
+        } else {
+            this.notify("Nicht genug Münzen!");
+        }
+    },
+
+    setTool(t) {
+        this.activeTool = t;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + t).classList.add('active');
+    },
+
+    togglePanel(id) {
+        const p = document.getElementById(id + '-panel');
+        const isVisible = p.classList.contains('visible');
+        document.querySelectorAll('.side-panel').forEach(sp => sp.classList.remove('visible'));
+        if (!isVisible) p.classList.add('visible');
+    },
+
+    notify(msg) {
+        const n = document.getElementById('notif');
+        n.innerText = msg;
+        n.style.opacity = '1';
+        setTimeout(() => n.style.opacity = '0', 2000);
+    },
+
+    addDiary(msg) {
+        this.diary.unshift(`[${new Date().toLocaleTimeString()}] ${msg}`);
+        if(this.diary.length > 20) this.diary.pop();
+        document.getElementById('diary-list').innerHTML = this.diary.join('<br>');
+    },
+
+    updateStats() {
+        document.getElementById('val-coins').innerText = Math.floor(this.coins);
+        document.getElementById('val-harmony').innerText = this.objects.length * 10 + this.bonsais.length * 25;
+    },
+
+    setupInputs() {
+        const handleDown = (e) => {
+            const x = e.clientX || (e.touches && e.touches[0].clientX);
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            const world = this.screenToWorld(x, y);
+
+            if (this.activeTool === 'move') {
+                this.selectedObj = this.findObjectAt(world.x, world.y);
+                if (!this.selectedObj) {
+                    this.camera.isDragging = true;
+                }
+            } else if (this.activeTool === 'rake') {
+                this.rakeActive = true;
+                this.rake(world.x, world.y);
+            } else if (this.activeTool === 'prune') {
+                this.bonsais.forEach(b => {
+                    if (b.prune(world.x, world.y)) AudioEngine.playPling(880, 'square');
+                });
+            } else if (this.activeTool === 'feed') {
+                this.food.push({ x: world.x, y: world.y });
+                AudioEngine.playPling(220, 'sine');
+            }
+            this.camera.lastX = x;
+            this.camera.lastY = y;
+        };
+
+        const handleMove = (e) => {
+            const x = e.clientX || (e.touches && e.touches[0].clientX);
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            const world = this.screenToWorld(x, y);
+
+            if (this.camera.isDragging) {
+                this.camera.x += (x - this.camera.lastX) / this.camera.zoom;
+                this.camera.y += (y - this.camera.lastY) / this.camera.zoom;
+            } else if (this.selectedObj) {
+                this.selectedObj.x = Math.round(world.x / 10) * 10;
+                this.selectedObj.y = Math.round(world.y / 10) * 10;
+            } else if (this.rakeActive) {
+                this.rake(world.x, world.y);
+            }
+
+            this.camera.lastX = x;
+            this.camera.lastY = y;
+        };
+
+        const handleUp = () => {
+            this.camera.isDragging = false;
+            this.selectedObj = null;
+            this.rakeActive = false;
+        };
+
+        window.addEventListener('pointerdown', handleDown);
+        window.addEventListener('pointermove', handleMove);
+        window.addEventListener('pointerup', handleUp);
+        window.addEventListener('wheel', (e) => {
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            this.camera.zoom = Math.max(0.2, Math.min(3, this.camera.zoom * delta));
+        });
+    },
+
+    screenToWorld(sx, sy) {
+        return {
+            x: (sx - this.canvas.width / 2) / this.camera.zoom - this.camera.x,
+            y: (sy - this.canvas.height / 2) / this.camera.zoom - this.camera.y
+        };
+    },
+
+    findObjectAt(wx, wy) {
+        return [...this.objects, ...this.bonsais].find(o => dist(wx, wy, o.x, o.y) < 40);
+    },
+
+    rake(wx, wy) {
+        const ctx = this.sandCtx;
+        ctx.strokeStyle = CONFIG.COLORS.sandDark;
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(wx + 1000, wy + 1000, 15, 0, Math.PI * 2);
+        ctx.stroke();
+    },
+
+    save() {
+        const data = {
+            coins: this.coins,
+            objects: this.objects,
+            bonsais: this.bonsais.map(b => ({ x: b.x, y: b.y, seed: b.seed, branches: b.branches })),
+            diary: this.diary,
+            sand: this.sandCanvas.toDataURL()
+        };
+        localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(data));
+        this.notify("Garten gespeichert.");
+    },
+
+    load() {
+        const raw = localStorage.getItem(CONFIG.SAVE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        this.coins = data.coins;
+        this.objects = data.objects;
+        this.diary = data.diary;
+        this.bonsais = data.bonsais.map(d => {
+            const b = new Bonsai(d.x, d.y, d.seed);
+            b.branches = d.branches;
+            return b;
+        });
+        const img = new Image();
+        img.onload = () => this.sandCtx.drawImage(img, 0, 0);
+        img.src = data.sand;
+        this.updateStats();
+    },
+
+    screenshot() {
+        const link = document.createElement('a');
+        link.download = 'zen-garden.png';
+        link.href = this.canvas.toDataURL();
+        link.click();
+    },
+
+    loop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.loop());
+    },
+
+    update() {
+        this.coins += 0.01; // Passive income
+        this.fishes.forEach(f => {
+            const water = this.objects.find(o => o.type === 'water');
+            const bounds = water ? { x: water.x - 80, y: water.y - 60, w: 160, h: 120 } : { x: -1000, y: -1000, w: 2000, h: 2000 };
+            f.update(bounds, this.food);
+        });
+        if(Math.random() < 0.01) this.updateStats();
+    },
+
+    draw() {
+        const { ctx, canvas, camera } = this;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(camera.zoom, camera.zoom);
+        ctx.translate(camera.x, camera.y);
+
+        // 1. Sand Base
+        ctx.drawImage(this.sandCanvas, -1000, -1000);
+
+        // 2. Objects
+        this.objects.forEach(obj => {
+            ctx.save();
+            ctx.translate(obj.x, obj.y);
+            if (obj.type === 'water') {
+                ctx.fillStyle = CONFIG.COLORS.water;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 100, 70, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Ripples
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 80 + Math.sin(Date.now()*0.002)*5, 50 + Math.sin(Date.now()*0.002)*5, 0, 0, Math.PI*2);
+                ctx.stroke();
+            } else if (obj.type === 'stone') {
+                ctx.fillStyle = CONFIG.COLORS.stone;
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.beginPath();
+                ctx.arc(5, 5, 20, 0, Math.PI*2);
+                ctx.fill();
+            } else if (obj.type === 'statue') {
+                ctx.fillStyle = '#666';
+                ctx.fillRect(-10, -10, 20, 20);
+                ctx.fillStyle = '#ffd54f';
+                ctx.fillRect(-5, -5, 10, 10);
+            } else if (obj.type === 'grass') {
+                ctx.fillStyle = CONFIG.COLORS.grass;
+                ctx.beginPath();
+                ctx.moveTo(-30, 0); ctx.quadraticCurveTo(0, -20, 30, 0); ctx.quadraticCurveTo(0, 20, -30, 0);
+                ctx.fill();
+            }
+            ctx.restore();
+        });
+
+        // 3. Fishes
+        this.fishes.forEach(f => f.draw(ctx));
+
+        // 4. Food
+        ctx.fillStyle = '#795548';
+        this.food.forEach(f => ctx.fillRect(f.x, f.y, 3, 3));
+
+        // 5. Bonsais
+        this.bonsais.forEach(b => b.draw(ctx));
+
+        // Selection Highlight
+        if (this.selectedObj) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.arc(this.selectedObj.x, this.selectedObj.y, 40, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        ctx.restore();
+    }
+};
+
+// Global Exposure
+window.Game = Game;
+</script>
+</body>
+</html>
