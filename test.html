@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Bonsai - Flawless Transitions</title>
+    <title>Math Bonsai - Nebari & Roots</title>
     <style>
         body {
             margin: 0; padding: 0; display: flex; flex-direction: column;
@@ -84,29 +84,33 @@
             if (!isGrowing && branches.length > 0) drawInstant();
         }
 
-        // --- 1. DIE PERFEKTE MATHEMATIK (Deine 1-10% Regel) ---
-        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick) {
+        // --- 1. DIE PERFEKTE MATHEMATIK (inkl. Wurzeln) ---
+        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick, isRoot = false) {
             let nodes = [];
             let currentX = startX;
             let currentY = startY;
             let currentAngle = angle;
             let tick = startTick;
 
-            // Deine Regel: Tiefe 0 = 1% Schrumpfen, Tiefe 6 = 10% Schrumpfen
-            let depthFactor = Math.min(depth / 6, 1);
-            let shrinkPercent = 0.01 + depthFactor * 0.09; 
+            // Deine 1-10% Regel (Wurzeln schrumpfen viel stärker, um spitz in der Erde auszulaufen)
+            let shrinkPercent;
+            if (isRoot) {
+                shrinkPercent = 0.5; // Wurzeln verjüngen sich um 50%
+            } else {
+                let depthFactor = Math.min(depth / 6, 1);
+                shrinkPercent = 0.01 + depthFactor * 0.09; // 1% unten, 10% oben
+            }
             
             // Exakte End-Dicke dieses Astes berechnen
             let endThickness = startThickness * (1 - shrinkPercent);
 
             let steps = Math.floor(length * 1.5); 
-            let targetAngle = angle + (Math.random() - 0.5) * 1.2; // Verhindert das Aufrollen!
+            let targetAngle = angle + (Math.random() - 0.5) * 1.2; 
             
             for (let i = 0; i <= steps; i++) {
                 currentX += Math.cos(currentAngle) * 0.8; 
                 currentY += Math.sin(currentAngle) * 0.8;
                 
-                // Sanftes Biegen statt wildem Kreisen
                 currentAngle += (targetAngle - currentAngle) * 0.03 + (Math.random() - 0.5) * 0.06;
                 
                 // Lineare Interpolation der Dicke von Start bis Ende (perfekter weicher Übergang)
@@ -118,19 +122,19 @@
                 nodes.push({
                     x: currentX, y: currentY, 
                     angle: currentAngle, 
-                    r: currentThick / 2, // Radius ist halbe Dicke
+                    r: currentThick / 2, 
                     tick: tick,
                     isEnd: i === steps
                 });
             }
 
-            let isDead = (Math.random() > 0.85 && depth > 2); 
-            branches.push({ depth: depth, nodes: nodes, dead: isDead });
+            let isDead = (!isRoot && Math.random() > 0.85 && depth > 2); 
+            branches.push({ depth: depth, nodes: nodes, dead: isDead, isRoot: isRoot });
 
             if (tick > maxTick) maxTick = tick;
 
-            // --- 2. DAS NAHTLOSE SPAWN-SYSTEM ---
-            if (depth < 6) {
+            // SPAWN SYSTEM (Wurzeln verzweigen nicht, nur Äste)
+            if (!isRoot && depth < 6) {
                 let numChildren = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
                 
                 for (let i = 0; i < numChildren; i++) {
@@ -140,24 +144,22 @@
                     
                     let nextStartThickness;
                     if (i === 0) {
-                        // HAUPT-AST: Die Unterseite ist EXAKT so groß wie das Ende des Stammes darunter!
+                        // HAUPT-AST übernimmt EXAKT 100% der Dicke
                         nextStartThickness = endThickness; 
                     } else {
-                        // SEITEN-ÄSTE: Etwas dünner, wachsen aber nahtlos aus dem runden Gelenk des Hauptstammes.
+                        // SEITEN-ÄSTE sind etwas dünner
                         nextStartThickness = endThickness * (0.5 + Math.random() * 0.2);
                     }
 
-                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick);
+                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick, false);
                 }
             }
         }
 
-        // --- 3. DAS NEUE RENDER-SYSTEM (Runde Vektor-Gelenke) ---
-        // Statt fehlerhafter Polygone zeichnen wir Segment für Segment mit runden Endkappen.
-        // Das garantiert 100% perfekte Kugel-Gelenke an jedem Knick!
+        // --- 2. DAS RENDER-SYSTEM (Runde Vektor-Gelenke) ---
         function drawSmoothBranch(bNodes, color, expand) {
             ctx.strokeStyle = color;
-            ctx.lineCap = 'round'; // Das Geheimnis für lückenlose Übergänge!
+            ctx.lineCap = 'round'; 
             ctx.lineJoin = 'round';
             
             ctx.beginPath();
@@ -168,7 +170,6 @@
                 ctx.beginPath();
                 ctx.moveTo(n1.x, n1.y);
                 ctx.lineTo(n2.x, n2.y);
-                // Dynamische Liniendicke basierend auf dem exakten Radius
                 ctx.lineWidth = Math.max(0.1, (n1.r * 2) + expand);
                 ctx.stroke();
             }
@@ -185,7 +186,7 @@
                 let n = bNodes[i];
                 let nx = Math.cos(n.angle + Math.PI/2);
                 let ny = Math.sin(n.angle + Math.PI/2);
-                let offset = n.r * 0.4; // Schatten versetzt zur Mitte
+                let offset = n.r * 0.4; 
                 if (i===0) ctx.moveTo(n.x + nx * offset, n.y + ny * offset);
                 else ctx.lineTo(n.x + nx * offset, n.y + ny * offset);
             }
@@ -200,7 +201,7 @@
 
             currentTick += 6; 
 
-            // PASS 1: ALLE SCHWARZEN OUTLINES
+            // PASS 1: OUTLINES
             branches.forEach(branch => {
                 let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
                 if (visibleNodes.length > 1) {
@@ -208,7 +209,7 @@
                 }
             });
 
-            // PASS 2: ALLE HOLZFÜLLUNGEN DARÜBER (Versteckt die internen Linien)
+            // PASS 2: HOLZ
             branches.forEach(branch => {
                 let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
                 if (visibleNodes.length > 1) {
@@ -223,7 +224,7 @@
                     let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
                     if (visibleNodes.length > 1) {
                         let lastNode = visibleNodes[visibleNodes.length - 1];
-                        if (lastNode.isEnd && !branch.dead && branch.depth >= 3) {
+                        if (lastNode.isEnd && !branch.dead && !branch.isRoot && branch.depth >= 3) {
                             let age = (currentTick - lastNode.tick) / 60;
                             if (age > 1) age = 1;
                             if (age > 0) drawLeafPad(lastNode.x, lastNode.y, age);
@@ -231,6 +232,9 @@
                     }
                 });
             }
+
+            // Moos über die Wurzeln zeichnen, damit sie teilweise in der Erde verschwinden
+            drawSoilFront();
 
             if (currentTick < maxTick + 100) requestAnimationFrame(renderLoop);
             else isGrowing = false; 
@@ -251,12 +255,14 @@
             });
             if (showLeaves) {
                 branches.forEach(branch => {
-                    if (branch.nodes.length > 1 && !branch.dead && branch.depth >= 3) {
+                    if (branch.nodes.length > 1 && !branch.dead && !branch.isRoot && branch.depth >= 3) {
                         let lastNode = branch.nodes[branch.nodes.length - 1];
                         drawLeafPad(lastNode.x, lastNode.y, 1);
                     }
                 });
             }
+            
+            drawSoilFront();
         }
 
         function drawLeafPad(x, y, scale) {
@@ -291,6 +297,7 @@
             ctx.restore();
         }
 
+        // Topf Hintergrund (Rückwand & Basis)
         function drawPot() {
             let px = canvas.width / 2;
             let py = canvas.height - 100;
@@ -302,8 +309,20 @@
             ctx.fillStyle = '#4a3d35';
             ctx.beginPath(); ctx.roundRect(px - 116, py + 4, 232, 62, 12); ctx.fill();
             
-            ctx.fillStyle = '#5c7a36';
+            // Erde Hinten
+            ctx.fillStyle = '#455c28';
             ctx.beginPath(); ctx.ellipse(px, py - 6, 125, 20, 0, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Erde Vorne (Überlagert die Wurzeln leicht, damit sie "eingegraben" wirken)
+        function drawSoilFront() {
+            let px = canvas.width / 2;
+            let py = canvas.height - 100;
+            
+            ctx.fillStyle = '#5c7a36'; // Helleres Moos vorne
+            ctx.beginPath(); 
+            ctx.ellipse(px, py + 2, 130, 12, 0, 0, Math.PI); // Nur vordere Hälfte
+            ctx.fill();
         }
 
         function generateMathTree() {
@@ -312,8 +331,24 @@
             maxTick = 0;
             isGrowing = true;
             
-            // Start mit einer sauberen Dicke von 45
-            calculateBranch(canvas.width / 2, canvas.height - 120, -Math.PI / 2, 180, 45, 0, 0);
+            let startX = canvas.width / 2;
+            let startY = canvas.height - 120;
+            let startThick = 45;
+
+            // --- NEBARI WURZEL-GENERIERUNG ---
+            let numRoots = 5 + Math.floor(Math.random() * 4);
+            for(let i = 0; i < numRoots; i++) {
+                // Wurzeln streuen nach unten-links und unten-rechts
+                let rootAngle = (Math.PI / 2) + (Math.random() - 0.5) * 2.5; 
+                let rootLength = 15 + Math.random() * 25;
+                let rootThick = startThick * (0.3 + Math.random() * 0.4); // Wurzeln sind etwas dünner als der Stamm
+                
+                // isRoot = true übergeben
+                calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true);
+            }
+
+            // --- HAUPTSTAMM GENERIERUNG ---
+            calculateBranch(startX, startY, -Math.PI / 2, 180, startThick, 0, 0, false);
             
             renderLoop();
         }
