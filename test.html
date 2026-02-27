@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bonsai - SVG Skeleton Engine</title>
+    <title>Bonsai Prefab - 10x Detail Render</title>
     <style>
         body {
             margin: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            height: 100vh; background-color: #2b3a4a;
+            height: 100vh; background-color: #e6e3dd; /* Heller HG wie in deinem Bild */
             font-family: sans-serif;
         }
         canvas { background-color: transparent; }
         button {
             margin-top: 20px; padding: 12px 24px; font-size: 16px;
-            background-color: #5ab59f; color: #1a2634; border: none;
+            background-color: #5ab59f; color: white; border: none;
             border-radius: 8px; cursor: pointer; font-weight: bold;
             box-shadow: 0 4px 0 #3b8774; transition: all 0.1s;
         }
@@ -23,204 +23,257 @@
 </head>
 <body>
 
-    <canvas id="bonsaiCanvas" width="600" height="700"></canvas>
-    <button onclick="plantSeed()">🌱 Skelett wachsen lassen</button>
+    <canvas id="bonsaiCanvas" width="700" height="700"></canvas>
+    <button onclick="growPrefab()">🌱 Kaskaden-Bonsai wachsen lassen</button>
 
     <script>
         const canvas = document.getElementById('bonsaiCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Farbpalette aus deiner Referenz
-        const COLORS = {
-            outline: '#151515',
-            wood: '#9c8c7c',
-            woodDark: '#6e5e50',
-            leafDark: '#365c42',
-            leafMid: '#588b62',
-            leafLight: '#7ab882'
+        // Farben aus deinem 1. Bild
+        const C = {
+            outline: '#1e1a17',
+            woodBase: '#9b8d7d',
+            woodShadow: '#6e5e50',
+            leafDark: '#395438',
+            leafMid: '#527c4d',
+            leafLight: '#6d9f64'
         };
 
-        // 1. DER INLINE-SVG PFAD (Das handgemachte Prefab)
-        // Dies ist ein Vektor-Pfad, der eine flache, wolkige Bonsai-Nadelstruktur abbildet.
+        // Das SVG für das flache, detaillierte Nadelpolster
         const leafPathString = "M -40,10 C -50,0 -40,-20 -20,-20 C -15,-35 10,-40 25,-25 C 40,-35 60,-15 50,10 C 55,25 40,30 20,30 L -15,30 C -30,30 -40,25 -40,10 Z";
         const leafSVG = new Path2D(leafPathString);
 
-        let skeleton = [];
-        let foliage = [];
-        let globalAge = 0;
+        // --- DAS SKELETT-PREFAB (Basierend auf deinem Bild 1) ---
+        // Jeder Knoten: [Start-X, Start-Y, Start-Winkel, Länge, Start-Dicke, Krümmung, ID, Parent-ID]
+        const CASCADE_PREFAB = [
+            // Hauptstamm: Geht hoch, biegt scharf nach rechts ab
+            { id: 0, parent: -1, x: 0, y: 0, a: -Math.PI*0.45, len: 120, thick: 30, curve: 0.015 },
+            { id: 1, parent: 0, pos: 1.0, a: -Math.PI*0.1, len: 80, thick: 18, curve: 0.02 }, // Knorrige Biegung nach rechts
+            { id: 2, parent: 1, pos: 1.0, a: Math.PI*0.1, len: 60, thick: 12, curve: 0.01 },  // Spitze hängt runter
+            
+            // Linke Kaskaden-Äste (Hängen tief nach unten links)
+            { id: 3, parent: 0, pos: 0.5, a: -Math.PI*0.8, len: 70, thick: 12, curve: -0.02 },
+            { id: 4, parent: 3, pos: 1.0, a: -Math.PI*0.6, len: 60, thick: 8, curve: 0.01 },
+            { id: 5, parent: 4, pos: 1.0, a: -Math.PI*0.4, len: 50, thick: 5, curve: 0 },
+            
+            // Mittlere hängende Äste
+            { id: 6, parent: 0, pos: 0.8, a: -Math.PI*0.9, len: 60, thick: 10, curve: 0.01 },
+            { id: 7, parent: 1, pos: 0.4, a: Math.PI*0.7, len: 50, thick: 8, curve: -0.01 },
+            
+            // Apex (Krone oben)
+            { id: 8, parent: 0, pos: 0.9, a: -Math.PI*0.6, len: 50, thick: 14, curve: -0.02 },
+            { id: 9, parent: 8, pos: 1.0, a: -Math.PI*0.7, len: 40, thick: 8, curve: 0 },
+            
+            // Kleine Totholz-Spitze (Jin) rechts oben
+            { id: 10, parent: 1, pos: 0.8, a: -Math.PI*0.3, len: 30, thick: 5, curve: 0.05, dead: true }
+        ];
+
+        let nodes = [];
+        let renderProgress = 0; 
         let isGrowing = false;
 
-        // 2. DAS SKELETT-SYSTEM (Die Knochen)
-        class Bone {
-            constructor(startX, startY, angle, length, thickness, depth) {
-                this.startX = startX;
-                this.startY = startY;
-                this.angle = angle;
-                this.targetLength = length;
-                this.thickness = thickness;
-                this.depth = depth;
+        // --- DIE 10x LOGIK: Knorrige Polygone generieren ---
+        function buildTree() {
+            nodes = [];
+            
+            CASCADE_PREFAB.forEach(data => {
+                let startX, startY;
+                if (data.parent === -1) {
+                    startX = canvas.width / 2 + 50; // Start leicht rechts versetzt
+                    startY = canvas.height - 180;
+                } else {
+                    let parentNodes = nodes.filter(n => n.branchId === data.parent);
+                    let targetIndex = Math.floor(parentNodes.length * data.pos);
+                    if(targetIndex >= parentNodes.length) targetIndex = parentNodes.length - 1;
+                    startX = parentNodes[targetIndex].x;
+                    startY = parentNodes[targetIndex].y;
+                }
+
+                let currentX = startX;
+                let currentY = startY;
+                let currentAngle = data.a;
+                let currentThick = data.thick;
+
+                // 10x kleinere Schritte (0.5 Pixel statt 5 Pixel)
+                let steps = data.len * 2; 
                 
-                // Für die Kaskaden-Form (hängt nach links)
-                let bias = (depth === 0) ? -0.1 : -0.2; 
-                this.curve = bias + (Math.random() - 0.5) * 0.3;
+                for (let i = 0; i < steps; i++) {
+                    currentX += Math.cos(currentAngle) * 0.5;
+                    currentY += Math.sin(currentAngle) * 0.5;
+                    currentAngle += data.curve;
+                    currentThick *= 0.995; // Starke, weiche Verjüngung
 
-                this.currentLength = 0;
-                this.isMature = false;
-                this.endX = startX;
-                this.endY = startY;
-            }
+                    // Zufällige Rinden-Knubbel (Jitter) an den Rändern
+                    let jitterLeft = (Math.random() - 0.2) * (currentThick * 0.15);
+                    let jitterRight = (Math.random() - 0.2) * (currentThick * 0.15);
 
-            grow() {
-                if (this.isMature) return false;
-
-                this.currentLength += 2; // Wachstumsgeschwindigkeit
-                this.angle += this.curve * 0.05; // Organische Krümmung beim Wachsen
-
-                this.endX = this.startX + Math.cos(this.angle) * this.currentLength;
-                this.endY = this.startY + Math.sin(this.angle) * this.currentLength;
-
-                if (this.currentLength >= this.targetLength) {
-                    this.isMature = true;
-                    this.spawnChildren();
+                    nodes.push({
+                        branchId: data.id,
+                        x: currentX, y: currentY, 
+                        angle: currentAngle, 
+                        r: currentThick / 2,
+                        jl: jitterLeft, jr: jitterRight,
+                        dead: data.dead,
+                        isEnd: i === steps - 1
+                    });
                 }
-                return true;
-            }
-
-            spawnChildren() {
-                if (this.depth >= 4) {
-                    // Am Ende der Knochen platzieren wir das SVG-Prefab!
-                    foliage.push(new FoliagePad(this.endX, this.endY));
-                    return;
-                }
-
-                // 1 bis 2 neue Äste
-                let numChildren = Math.random() > 0.3 ? 2 : 1;
-                for (let i = 0; i < numChildren; i++) {
-                    let newAngle = this.angle + (Math.random() - 0.5) * 1.5;
-                    let newLen = this.targetLength * (0.6 + Math.random() * 0.3);
-                    let newThick = this.thickness * 0.7;
-                    skeleton.push(new Bone(this.endX, this.endY, newAngle, newLen, newThick, this.depth + 1));
-                }
-
-                // Manchmal auch ein Blattpolster mittendrin für mehr Volumen
-                if (this.depth >= 2 && Math.random() > 0.5) {
-                    foliage.push(new FoliagePad(this.endX, this.endY));
-                }
-            }
-        }
-
-        // 3. DIE HAUT (Das Rendern der SVGs)
-        class FoliagePad {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.scale = 0;
-                this.targetScale = 0.5 + Math.random() * 0.5; // Leicht unterschiedliche Größen
-                this.rotation = (Math.random() - 0.5) * 0.2; // Leichte Neigung
-            }
-
-            grow() {
-                if (this.scale < this.targetScale) {
-                    this.scale += 0.02; // Plop-In Animation
-                }
-            }
-
-            draw(ctx) {
-                if (this.scale <= 0) return;
-                
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation);
-                ctx.scale(this.scale, this.scale);
-
-                // Multi-Pass innerhalb des SVGs für den sauberen Vector-Look
-                
-                // Outline (Dicker schwarzer Rand)
-                ctx.lineWidth = 12;
-                ctx.strokeStyle = COLORS.outline;
-                ctx.lineJoin = 'round';
-                ctx.stroke(leafSVG);
-
-                // Schatten-Basis (Dunkelgrün)
-                ctx.fillStyle = COLORS.leafDark;
-                ctx.fill(leafSVG);
-
-                // Highlight-Schicht (Hellgrün, leicht nach oben links versetzt)
-                ctx.save();
-                ctx.translate(-3, -6);
-                ctx.scale(0.85, 0.85); // Etwas kleiner
-                ctx.fillStyle = COLORS.leafMid;
-                ctx.fill(leafSVG);
-                ctx.restore();
-
-                ctx.restore();
-            }
+            });
         }
 
         // --- RENDER LOOP ---
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPot();
+            
+            // Tisch und Topf
+            drawTable();
 
             if (!isGrowing) return;
 
-            // Logik
-            skeleton.forEach(bone => bone.grow());
-            foliage.forEach(pad => pad.grow());
+            // Wachstums-Fortschritt
+            if (renderProgress < nodes.length) {
+                renderProgress += 15; // Geschwindigkeit des Wachsens
+            } else {
+                renderProgress = nodes.length;
+            }
 
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+            let visibleNodes = nodes.slice(0, renderProgress);
 
-            // 1. Pass: Holz Outlines (Schwarz)
-            ctx.strokeStyle = COLORS.outline;
-            skeleton.forEach(bone => {
-                if (bone.currentLength > 0) {
-                    ctx.lineWidth = bone.thickness + 6;
-                    ctx.beginPath(); ctx.moveTo(bone.startX, bone.startY); ctx.lineTo(bone.endX, bone.endY); ctx.stroke();
+            // 1. STAMM ZEICHNEN (Knorriges Polygon)
+            CASCADE_PREFAB.forEach(prefab => {
+                let branchNodes = visibleNodes.filter(n => n.branchId === prefab.id);
+                if (branchNodes.length < 2) return;
+
+                // Outline & Holzfarbe
+                drawIrregularBranch(branchNodes, C.outline, 4); // Dicke schwarze Umrandung
+                drawIrregularBranch(branchNodes, prefab.dead ? '#c2b8ad' : C.woodBase, 0); // Füllung
+                
+                // Schattenlinie (Rindentextur innen)
+                drawBarkShadow(branchNodes);
+            });
+
+            // 2. BLÄTTER ZEICHNEN (An den Enden der lebenden Äste)
+            visibleNodes.forEach(n => {
+                if (n.isEnd && !n.dead) {
+                    // Skalierung basierend darauf, wie lange der Ast schon "fertig" ist
+                    let age = (renderProgress - nodes.indexOf(n)) / 100;
+                    if (age > 1) age = 1;
+                    if (age > 0) drawLeafPad(n.x, n.y, age);
                 }
             });
 
-            // 2. Pass: Holz Füllung (Braun)
-            ctx.strokeStyle = COLORS.wood;
-            skeleton.forEach(bone => {
-                if (bone.currentLength > 0) {
-                    ctx.lineWidth = bone.thickness;
-                    ctx.beginPath(); ctx.moveTo(bone.startX, bone.startY); ctx.lineTo(bone.endX, bone.endY); ctx.stroke();
-                }
-            });
-
-            // 3. Pass: Die SVG-Blattpolster
-            foliage.forEach(pad => pad.draw(ctx));
-
-            requestAnimationFrame(render);
+            if (renderProgress < nodes.length) {
+                requestAnimationFrame(render);
+            }
         }
 
-        function drawPot() {
-            let px = canvas.width / 2;
-            let py = canvas.height - 100;
+        // Die Magie: Kein "ctx.stroke()" mehr. Wir berechnen die Ränder als Polygon.
+        function drawIrregularBranch(bNodes, color, expand) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            
+            // Linke Kante hochwandern
+            for (let i = 0; i < bNodes.length; i++) {
+                let n = bNodes[i];
+                let nx = Math.cos(n.angle - Math.PI/2);
+                let ny = Math.sin(n.angle - Math.PI/2);
+                let radius = n.r + n.jl + expand;
+                ctx.lineTo(n.x + nx * radius, n.y + ny * radius);
+            }
+            
+            // Rechte Kante hinunterwandern
+            for (let i = bNodes.length - 1; i >= 0; i--) {
+                let n = bNodes[i];
+                let nx = Math.cos(n.angle + Math.PI/2);
+                let ny = Math.sin(n.angle + Math.PI/2);
+                let radius = n.r + n.jr + expand;
+                ctx.lineTo(n.x + nx * radius, n.y + ny * radius);
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+        }
 
-            ctx.fillStyle = COLORS.outline;
-            ctx.beginPath(); ctx.roundRect(px - 72, py - 2, 144, 24, 5); ctx.fill(); 
-            ctx.beginPath(); ctx.roundRect(px - 62, py + 18, 124, 44, 10); ctx.fill(); 
+        function drawBarkShadow(bNodes) {
+            ctx.strokeStyle = C.woodShadow;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            // Zeichne eine unregelmäßige Linie leicht versetzt von der Mitte
+            for (let i = 0; i < bNodes.length; i+=5) { // Nur jeden 5. Punkt für rauen Look
+                let n = bNodes[i];
+                let nx = Math.cos(n.angle + Math.PI/2);
+                let ny = Math.sin(n.angle + Math.PI/2);
+                let offset = n.r * 0.4; // Position des Schattens
+                if (i===0) ctx.moveTo(n.x + nx * offset, n.y + ny * offset);
+                else ctx.lineTo(n.x + nx * offset, n.y + ny * offset);
+            }
+            ctx.stroke();
+        }
+
+        function drawLeafPad(x, y, scale) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale * 0.8, scale * 0.8);
+
+            // Outline
+            ctx.lineWidth = 12;
+            ctx.strokeStyle = C.outline;
+            ctx.lineJoin = 'round';
+            ctx.stroke(leafSVG);
+
+            // Dunkelgrün
+            ctx.fillStyle = C.leafDark;
+            ctx.fill(leafSVG);
+
+            // Hellgrün (versetzt)
+            ctx.save();
+            ctx.translate(-3, -6);
+            ctx.scale(0.85, 0.85);
+            ctx.fillStyle = C.leafMid;
+            ctx.fill(leafSVG);
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        function drawTable() {
+            let px = canvas.width / 2 + 40;
+            let py = canvas.height - 180;
+
+            // Simple Vektor Topf & Hocker basierend auf deinem Bild
+            ctx.fillStyle = C.outline;
+            ctx.fillRect(px - 55, py + 30, 110, 80); // Tischbeine Outline
+            ctx.fillStyle = '#6e5543';
+            ctx.fillRect(px - 50, py + 30, 20, 80); // Bein Links
+            ctx.fillRect(px + 30, py + 30, 20, 80); // Bein Rechts
+            
+            ctx.fillStyle = C.outline;
+            ctx.fillRect(px - 75, py + 15, 150, 25); // Tischplatte Outline
+            ctx.fillStyle = '#8a6e57';
+            ctx.fillRect(px - 70, py + 20, 140, 15); // Tischplatte
+
+            // Topf
+            ctx.fillStyle = C.outline;
+            ctx.beginPath(); ctx.ellipse(px, py - 5, 85, 25, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(px - 72, py - 5, 144, 45, 15); ctx.fill();
 
             ctx.fillStyle = '#4a3d35';
-            ctx.beginPath(); ctx.roundRect(px - 70, py, 140, 20, 4); ctx.fill(); 
+            ctx.beginPath(); ctx.roundRect(px - 70, py - 3, 140, 40, 12); ctx.fill();
             
-            ctx.fillStyle = '#5e4b40';
-            ctx.beginPath(); ctx.roundRect(px - 60, py + 20, 120, 40, 8); ctx.fill(); 
+            // Moos im Topf
+            ctx.fillStyle = '#5c7a36';
+            ctx.beginPath(); ctx.ellipse(px, py - 10, 75, 12, 0, 0, Math.PI*2); ctx.fill();
         }
 
-        function plantSeed() {
-            skeleton = [];
-            foliage = [];
+        function growPrefab() {
+            buildTree();
+            renderProgress = 0;
             isGrowing = true;
-            
-            // Start-Knochen (Stamm)
-            skeleton.push(new Bone(canvas.width / 2, canvas.height - 105, -Math.PI / 2, 80, 28, 0));
             render();
         }
 
-        drawPot();
+        drawTable();
+
     </script>
 </body>
 </html>
