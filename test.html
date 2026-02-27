@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Bonsai - Sharp Jin Tapering</title>
+    <title>Math Bonsai - Infinite Natural Tapering</title>
     <style>
         body {
             margin: 0; padding: 0; display: flex; flex-direction: column;
@@ -86,37 +86,32 @@
             if (!isGrowing && branches.length > 0) drawInstant();
         }
 
-        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick, isRoot = false) {
+        // ACHTUNG: Ich übergebe jetzt "alreadyDead", damit Kind-Äste wissen, dass sie tot weiterwachsen!
+        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick, isRoot = false, alreadyDead = false) {
             let nodes = [];
             let currentX = startX;
             let currentY = startY;
             let currentAngle = angle;
             let tick = startTick;
 
-            // Totholz-Entscheidung VORAB treffen
-            let isDead = (!isRoot && Math.random() > 0.85 && depth > 2);
+            let isDead = alreadyDead || (!isRoot && Math.random() > 0.85 && depth > 2);
             
-            // Ist das der absolute Endpunkt in dieser Kette? (Wurzel, Totholz, oder Max-Tiefe erreicht)
-            let isTerminal = isRoot || isDead || depth >= 5;
-
-            // Die Standard-Verjüngung (Deine 1-10% Regel)
+            // Verjüngung: normal 1-10%. Wenn es die Krone (depth >= 5) oder Totholz ist, 
+            // verjüngt es sich minimal schneller (15%), damit es elegante Spitzen bildet.
             let shrinkPercent = isRoot ? 0.5 : 0.01 + Math.min(depth / 6, 1) * 0.09; 
-            let endThickness = startThickness * (1 - shrinkPercent);
-
-            // --- DER FIX FÜR DIE SPITZEN (JIN) ---
-            if (isTerminal) {
-                endThickness = 0.2; // Zwingt den Ast dazu, auf fast 0 auszulaufen!
-                length = length * 1.25; // Terminale Äste wachsen noch etwas länger aus, um eine schöne Spitze zu bilden
+            if (isDead || depth >= 5) {
+                shrinkPercent = Math.max(shrinkPercent, 0.15); 
             }
 
+            let endThickness = startThickness * (1 - shrinkPercent);
+
             let steps = Math.floor(length * 1.5); 
-            let targetAngle = angle + (Math.random() - 0.5) * 1.2; 
+            let targetAngle = angle + (Math.random() - 0.5) * 1.0; 
             
             for (let i = 0; i <= steps; i++) {
                 currentX += Math.cos(currentAngle) * 0.8; 
                 currentY += Math.sin(currentAngle) * 0.8;
                 
-                // Zentrum-Magnet (verhindert das Rauswachsen)
                 let distanceFromCenter = currentX - (canvas.width / 2);
                 let centerPull = (distanceFromCenter / (canvas.width / 2)) * 0.4;
                 currentAngle += (targetAngle - currentAngle - centerPull) * 0.03 + (Math.random() - 0.5) * 0.06;
@@ -137,28 +132,35 @@
 
             branches.push({ depth: depth, nodes: nodes, dead: isDead, isRoot: isRoot });
 
-            // Blätter nur spawnen, wenn es KEIN Totholz und KEINE Wurzel ist
             if (!isRoot && !isDead) {
-                let chanceForLeaf = depth === 0 ? 0 : (depth === 1 ? 0.2 : (depth === 2 ? 0.5 : 0.9));
+                let chanceForLeaf = depth === 0 ? 0 : (depth === 1 ? 0.1 : (depth === 2 ? 0.4 : 0.8));
                 if (Math.random() < chanceForLeaf) {
-                    let scaleModifier = depth < 3 ? 0.7 : 1.0; 
+                    // Blätter ganz oben an den Spitzen werden etwas kleiner
+                    let scaleModifier = depth < 3 ? 0.7 : (depth > 6 ? 0.6 : 1.0); 
                     leafSpawns.push({ x: currentX, y: currentY, tick: tick, scaleMod: scaleModifier, depth: depth });
                 }
             }
 
             if (tick > maxTick) maxTick = tick;
 
-            // Nur weiter abzweigen, wenn wir NICHT terminal sind
-            if (!isTerminal) { 
-                let numChildren = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
+            // --- DIE NEUE WACHSTUMS-REGEL ---
+            // Wir stoppen erst, wenn der Ast feiner als 1.2 Pixel ist! Keine abgehackten Stümpfe mehr.
+            if (endThickness > 1.2 && depth < 15) { 
+                
+                // Wenn wir in der Krone sind (depth >= 5) oder der Ast "tot" ist, 
+                // verzweigt er sich nicht mehr in 2-3 Äste, sondern wächst als 1 langer, spitzer Ast weiter aus!
+                let numChildren = (isDead || depth >= 5) ? 1 : (Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1));
                 
                 for (let i = 0; i < numChildren; i++) {
-                    let spread = (Math.random() - 0.5) * 1.5;
+                    // Wenn er sich nur verlängert (numChildren == 1), wächst er gerader weiter
+                    let spread = (numChildren === 1) ? (Math.random() - 0.5) * 0.5 : (Math.random() - 0.5) * 1.5;
                     let newAngle = currentAngle + spread;
-                    let newLength = length * (0.6 + Math.random() * 0.2);
+                    
+                    // Verlängerungsäste sind etwas länger (0.8), Abzweigungen variieren mehr (0.6 - 0.8)
+                    let newLength = length * (numChildren === 1 ? 0.8 : (0.6 + Math.random() * 0.2));
                     let nextStartThickness = (i === 0) ? endThickness : endThickness * (0.5 + Math.random() * 0.2);
 
-                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick, false);
+                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick, isRoot, isDead);
                 }
             }
         }
@@ -246,7 +248,7 @@
             });
             branches.forEach(branch => {
                 if (branch.nodes.length > 1) {
-                    drawSmoothBranch(branch.nodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
+                    drawSmoothBranch(visibleNodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
                     drawBarkShadow(branch.nodes);
                 }
             });
@@ -327,17 +329,15 @@
             let startY = canvas.height - 120;
             let startThick = 45;
 
-            // Nebari Wurzeln (laufen jetzt auch perfekt spitz aus!)
             let numRoots = 5 + Math.floor(Math.random() * 4);
             for(let i = 0; i < numRoots; i++) {
                 let rootAngle = (Math.PI / 2) + (Math.random() - 0.5) * 2.5; 
                 let rootLength = 15 + Math.random() * 25;
                 let rootThick = startThick * (0.3 + Math.random() * 0.4); 
-                calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true);
+                calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true, false);
             }
 
-            // Hauptstamm
-            calculateBranch(startX, startY, -Math.PI / 2, 150, startThick, 0, 0, false);
+            calculateBranch(startX, startY, -Math.PI / 2, 150, startThick, 0, 0, false, false);
             
             renderLoop();
         }
