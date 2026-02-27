@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Bonsai - Perfect Framing</title>
+    <title>Math Bonsai - Dynamic Tapering & Huge Scale</title>
     <style>
         body {
             margin: 0; padding: 0; display: flex; flex-direction: column;
@@ -16,7 +16,6 @@
             background-color: transparent; 
             width: 100%; max-width: 600px; 
             height: auto; 
-            /* Neues Seitenverhältnis für mehr Kopffreiheit */
             aspect-ratio: 5/6;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             border-radius: 8px;
@@ -45,7 +44,7 @@
     <canvas id="bonsaiCanvas" width="1000" height="1200"></canvas>
     
     <div class="ui-container">
-        <button id="btn-grow" onclick="generateMathTree()">🌱 Neuen Baum generieren</button>
+        <button id="btn-grow" onclick="generateMathTree()">🌱 Gigantischen Baum generieren</button>
         <button id="btn-toggle" onclick="toggleLeaves()">🍂 Blätter ausblenden</button>
     </div>
 
@@ -87,14 +86,21 @@
             if (!isGrowing && branches.length > 0) drawInstant();
         }
 
-        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick, isRoot = false) {
+        // NEU: taperFactor hinzugefügt. Steuert, wie schnell DIESER spezifische Ast schrumpft.
+        function calculateBranch(startX, startY, angle, length, startThickness, depth, startTick, isRoot = false, taperFactor = 0.08) {
             let nodes = [];
             let currentX = startX;
             let currentY = startY;
             let currentAngle = angle;
             let tick = startTick;
 
-            let shrinkPercent = isRoot ? 0.5 : 0.01 + Math.min(depth / 6, 1) * 0.09; 
+            // Dynamisches Schrumpfen: Der taperFactor wird hier multipliziert.
+            // Manche Äste haben einen hohen taperFactor (werden schnell dünn), andere einen niedrigen (bleiben massiv).
+            let shrinkPercent = isRoot ? 0.5 : 0.01 + Math.min(depth / 6, 1) * taperFactor; 
+            
+            // Verhindern, dass Äste um mehr als 80% auf einmal schrumpfen (Glitches vermeiden)
+            shrinkPercent = Math.min(shrinkPercent, 0.8);
+            
             let endThickness = startThickness * (1 - shrinkPercent);
 
             let steps = Math.floor(length * 1.5); 
@@ -104,8 +110,7 @@
                 currentX += Math.cos(currentAngle) * 0.8; 
                 currentY += Math.sin(currentAngle) * 0.8;
                 
-                // --- DER ZENTRUMS-MAGNET ---
-                // Prüft, wie weit der Ast von der Mitte entfernt ist, und zieht ihn sanft zurück
+                // Zentrums-Magnet für das Framing
                 let distanceFromCenter = currentX - (canvas.width / 2);
                 let centerPull = (distanceFromCenter / (canvas.width / 2)) * 0.4;
                 
@@ -131,23 +136,32 @@
             if (!isRoot && !isDead) {
                 let chanceForLeaf = depth === 0 ? 0 : (depth === 1 ? 0.2 : (depth === 2 ? 0.5 : 0.9));
                 if (Math.random() < chanceForLeaf) {
-                    let scaleModifier = depth < 3 ? 0.7 : 1.0; 
+                    let scaleModifier = depth < 3 ? 0.8 : 1.2; // Blätter auch etwas größer skaliert
                     leafSpawns.push({ x: currentX, y: currentY, tick: tick, scaleMod: scaleModifier, depth: depth });
                 }
             }
 
             if (tick > maxTick) maxTick = tick;
 
+            // --- REKURSION UND MUTATION DES SCHRUMPFENS ---
             if (!isRoot && depth < 5) { 
                 let numChildren = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
                 
                 for (let i = 0; i < numChildren; i++) {
                     let spread = (Math.random() - 0.5) * 1.5;
                     let newAngle = currentAngle + spread;
-                    let newLength = length * (0.6 + Math.random() * 0.2);
-                    let nextStartThickness = (i === 0) ? endThickness : endThickness * (0.5 + Math.random() * 0.2);
+                    
+                    // Äste sind proportional etwas länger für den Riesenbaum
+                    let newLength = length * (0.6 + Math.random() * 0.25);
+                    
+                    let nextStartThickness = (i === 0) ? endThickness : endThickness * (0.5 + Math.random() * 0.3);
 
-                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick, false);
+                    // MUTATION DES TAPER-FAKTORS:
+                    // Der nächste Ast kann zwischen 60% und 150% der Schrumpf-Rate seines Elternastes haben.
+                    // Das sorgt dafür, dass sich der Baum in manchen Regionen schnell verdünnt und woanders massiv bleibt.
+                    let nextTaperFactor = taperFactor * (0.6 + Math.random() * 0.9);
+                    
+                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick, false, nextTaperFactor);
                 }
             }
         }
@@ -252,7 +266,7 @@
             ctx.save();
             ctx.translate(x, y);
             
-            let finalScale = scale * 1.1; 
+            let finalScale = scale * 1.15; // Noch ein bisschen voluminösere Blätter für den großen Baum
             ctx.scale(finalScale, finalScale);
 
             ctx.lineWidth = 6;
@@ -282,26 +296,26 @@
 
         function drawPot() {
             let px = canvas.width / 2;
-            let py = canvas.height - 100;
+            let py = canvas.height - 110; // Topf etwas tiefer für mehr Platz
 
             ctx.fillStyle = C.outline;
-            ctx.beginPath(); ctx.ellipse(px, py, 140, 35, 0, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.roundRect(px - 120, py, 240, 70, 15); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(px, py, 160, 40, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(px - 140, py, 280, 80, 15); ctx.fill();
 
             ctx.fillStyle = '#4a3d35';
-            ctx.beginPath(); ctx.roundRect(px - 116, py + 4, 232, 62, 12); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(px - 136, py + 4, 272, 72, 12); ctx.fill();
             
             ctx.fillStyle = '#455c28';
-            ctx.beginPath(); ctx.ellipse(px, py - 6, 125, 20, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(px, py - 6, 145, 25, 0, 0, Math.PI*2); ctx.fill();
         }
 
         function drawSoilFront() {
             let px = canvas.width / 2;
-            let py = canvas.height - 100;
+            let py = canvas.height - 110;
             
             ctx.fillStyle = '#5c7a36'; 
             ctx.beginPath(); 
-            ctx.ellipse(px, py + 2, 130, 12, 0, 0, Math.PI); 
+            ctx.ellipse(px, py + 2, 150, 15, 0, 0, Math.PI); 
             ctx.fill();
         }
 
@@ -312,23 +326,23 @@
             maxTick = 0;
             isGrowing = true;
             
-            // Start ist jetzt exakt in der Mitte der neuen 1000px Breite
             let startX = canvas.width / 2;
-            // Weiter unten platziert für die 1200px Höhe
-            let startY = canvas.height - 120;
-            let startThick = 45;
+            let startY = canvas.height - 140;
+            
+            // MASSIVE GRÖSSENANPASSUNG: Baum ist viel breiter (60) und länger (200)
+            let startThick = 60;
+            let startLength = 200;
 
-            // Nebari Wurzeln
-            let numRoots = 5 + Math.floor(Math.random() * 4);
+            let numRoots = 6 + Math.floor(Math.random() * 4);
             for(let i = 0; i < numRoots; i++) {
                 let rootAngle = (Math.PI / 2) + (Math.random() - 0.5) * 2.5; 
-                let rootLength = 15 + Math.random() * 25;
-                let rootThick = startThick * (0.3 + Math.random() * 0.4); 
-                calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true);
+                let rootLength = 20 + Math.random() * 35;
+                let rootThick = startThick * (0.35 + Math.random() * 0.35); 
+                calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true, 0.08);
             }
 
-            // Hauptstamm - Startlänge minimal angepasst auf 150
-            calculateBranch(startX, startY, -Math.PI / 2, 150, startThick, 0, 0, false);
+            // Hauptstamm (Übergebe Basis-Taper-Factor von 0.08)
+            calculateBranch(startX, startY, -Math.PI / 2, startLength, startThick, 0, 0, false, 0.08);
             
             renderLoop();
         }
