@@ -3,254 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animierter Prozeduraler Bonsai</title>
+    <title>Animierter Bonsai V2 - Vektor Style</title>
     <style>
         body {
             margin: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            height: 100vh; background-color: #2b3a4a; /* Dunkler Hintergrund wie in deinem Bild */
+            height: 100vh; background-color: #2c3e50; /* Dunklerer Hintergrund */
             font-family: sans-serif;
         }
-        canvas {
-            background-color: transparent;
-        }
+        canvas { background-color: transparent; }
         button {
-            margin-top: 20px; padding: 10px 20px; font-size: 16px;
+            margin-top: 20px; padding: 12px 24px; font-size: 16px;
             background-color: #5ab59f; color: #1a2634; border: none;
-            border-radius: 20px; cursor: pointer; font-weight: bold;
+            border-radius: 8px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 4px 0 #3b8774; transition: all 0.1s;
         }
+        button:active { transform: translateY(4px); box-shadow: 0 0 0 #3b8774; }
     </style>
 </head>
 <body>
 
-    <canvas id="bonsaiCanvas" width="600" height="600"></canvas>
-    <button onclick="resetAndGrow()">🌱 Neuen Samen pflanzen</button>
+    <canvas id="bonsaiCanvas" width="600" height="700"></canvas>
+    <button onclick="resetAndGrow()">🌱 Samen pflanzen</button>
 
     <script>
         const canvas = document.getElementById('bonsaiCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Farben aus deinem Referenzbild
+        // Exakte Farbpalette aus deinen Referenzbildern
         const COLORS = {
-            outline: '#151515',
-            wood: '#8c7b6c',
-            leafShadow: '#264e36',
-            leafMid: '#4b7d55',
-            leafHigh: '#6ca66c',
-            potBase: '#3d3430'
+            outline: '#1e1e1e',
+            wood: '#9c8c7c',       // Helleres, totes Holz
+            woodDark: '#6e5e50',   // Schattenseite Holz
+            leafDark: '#365c42',   // Dunkelgrün (Schatten)
+            leafMid: '#588b62',    // Mittelgrün
+            leafLight: '#7ab882',  // Hellgrün (Highlight)
+            potRim: '#4a3d35',
+            potBase: '#5e4b40'
         };
 
-        let branches = [];
-        let leaves = [];
+        let branchSegments = []; // Speichert alle gezeichneten Teilstücke
+        let activeBranches = []; // Äste, die gerade wachsen
+        let leafPads = [];       // Die flachen Nadelpolster
         let isGrowing = false;
 
-        // --- KLASSE FÜR WACHSENDE ÄSTE ---
         class Branch {
-            constructor(startX, startY, angle, targetLength, targetThickness, depth) {
-                this.startX = startX;
-                this.startY = startY;
+            constructor(x, y, angle, thickness, depth) {
+                this.x = x;
+                this.y = y;
                 this.angle = angle;
+                this.thickness = thickness;
+                this.depth = depth;
                 
-                // Animation States
-                this.targetLength = targetLength;
+                // Knorriges Wachstum: Wie lange wächst dieser Ast, bevor er sich teilt?
+                this.maxLength = 20 + Math.random() * 40 * (1 / (depth + 1));
                 this.currentLength = 0;
                 
-                this.targetThickness = targetThickness;
-                this.currentThickness = 0;
-                
-                this.depth = depth;
-                this.maxDepth = 7;
-                this.isFinished = false;
-                this.hasSpawnedChildren = false;
-
-                // Wachstumsgeschwindigkeit (variiert leicht für organischen Look)
-                this.growthRate = 1.5 + Math.random(); 
+                // Biegung (Bend): Bonsais biegen sich oft nach unten oder zur Seite
+                // Wir zwingen den Baum durch einen "Bias" leicht nach rechts/unten
+                this.bend = (Math.random() - 0.3) * 0.1; 
+                if (depth === 0) this.bend = (Math.random() - 0.5) * 0.05; // Stamm bleibt aufrechter
             }
 
             update() {
-                if (this.isFinished) return;
-
-                // Wachsen!
-                if (this.currentLength < this.targetLength) {
-                    this.currentLength += this.growthRate;
-                    // Dicke wächst proportional zur Länge
-                    this.currentThickness = (this.currentLength / this.targetLength) * this.targetThickness;
-                } else {
-                    this.isFinished = true;
-                    this.currentLength = this.targetLength;
-                    this.currentThickness = this.targetThickness;
-                    
-                    // Kinder spawnen, wenn fertig gewachsen
-                    if (!this.hasSpawnedChildren) {
-                        this.spawnChildren();
-                    }
+                if (this.currentLength >= this.maxLength) {
+                    this.branchOut();
+                    return false; // Dieser Ast ist fertig
                 }
 
-                // Aktuellen Endpunkt berechnen
-                this.endX = this.startX + Math.cos(this.angle) * this.currentLength;
-                this.endY = this.startY + Math.sin(this.angle) * this.currentLength;
+                // Ast wächst ein kleines Stück
+                let step = 2;
+                this.currentLength += step;
+                this.angle += this.bend; // Ast biegt sich
+
+                let nextX = this.x + Math.cos(this.angle) * step;
+                let nextY = this.y + Math.sin(this.angle) * step;
+
+                // Verjüngung (Tapering)
+                this.thickness *= 0.98;
+
+                // Segment speichern für das Multi-Pass Rendering
+                branchSegments.push({
+                    x1: this.x, y1: this.y, 
+                    x2: nextX, y2: nextY, 
+                    thick: this.thickness
+                });
+
+                this.x = nextX;
+                this.y = nextY;
+
+                return true; // Ast wächst noch
             }
 
-            spawnChildren() {
-                this.hasSpawnedChildren = true;
-
-                if (this.depth >= this.maxDepth) {
-                    // Am Ende angelangt -> Blätter generieren!
-                    leaves.push(new LeafPad(this.endX, this.endY, 15 + Math.random() * 20));
+            branchOut() {
+                // Maximale Verzweigungstiefe
+                if (this.depth > 5) {
+                    // Am Ende der Äste entstehen die flachen Nadelpolster
+                    leafPads.push(new LeafPad(this.x, this.y));
                     return;
                 }
 
-                // 1 bis 3 neue Äste
-                let numChildren = Math.random() > 0.3 ? 2 : (Math.random() > 0.6 ? 3 : 1);
+                // 1 bis 3 neue Äste spawnen
+                let numBranches = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
                 
-                for (let i = 0; i < numChildren; i++) {
-                    // Bias für den windgepeitschten Bonsai-Look
-                    let angleOffset = (Math.random() - 0.5) * 1.5;
-                    let newAngle = this.angle + angleOffset - 0.1; // Leichter Drall in eine Richtung
-                    
-                    let newLength = this.targetLength * (0.6 + Math.random() * 0.2);
-                    let newThick = this.targetThickness * 0.7;
+                for (let i = 0; i < numBranches; i++) {
+                    let newAngle = this.angle + (Math.random() - 0.5) * 1.2;
+                    // Wenn es ein dicker Ast ist, spalte einen dünneren ab
+                    let newThick = this.thickness * (0.6 + Math.random() * 0.2);
+                    activeBranches.push(new Branch(this.x, this.y, newAngle, newThick, this.depth + 1));
+                }
 
-                    branches.push(new Branch(this.endX, this.endY, newAngle, newLength, newThick, this.depth + 1));
+                // Manchmal spawnen wir auch Polster an den inneren Ästen (für Dichte)
+                if (this.depth > 2 && Math.random() > 0.5) {
+                    leafPads.push(new LeafPad(this.x, this.y));
                 }
             }
         }
 
-        // --- KLASSE FÜR WACHSENDE BLÄTTER ---
         class LeafPad {
-            constructor(x, y, targetRadius) {
+            constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.targetRadius = targetRadius;
-                this.currentRadius = 0;
+                this.scale = 0; // Für die Pop-In Animation
                 
-                // Generiere Offset-Kreise für den Vektor-Look
-                this.circles = [];
-                let count = 4 + Math.floor(Math.random() * 3);
-                for(let i=0; i<count; i++) {
-                    this.circles.push({
-                        ox: (Math.random() - 0.5) * targetRadius * 1.5,
-                        oy: (Math.random() - 0.5) * targetRadius * 0.8,
-                        rMult: 0.6 + Math.random() * 0.5
+                // Wir generieren ein flaches, horizontales Polster aus kleinen Kreisen
+                this.blobs = [];
+                let numBlobs = 6 + Math.floor(Math.random() * 6);
+                for (let i = 0; i < numBlobs; i++) {
+                    this.blobs.push({
+                        // Breite Streuung (horizontal), enge Streuung (vertikal) -> Flache Pads
+                        ox: (Math.random() - 0.5) * 45, 
+                        oy: (Math.random() - 0.5) * 15,
+                        r: 6 + Math.random() * 8
                     });
                 }
             }
 
             update() {
-                if (this.currentRadius < this.targetRadius) {
-                    this.currentRadius += 0.5; // Langsames "Aufploppen" der Blätter
-                }
+                if (this.scale < 1) this.scale += 0.05; // Wachstums-Animation
             }
 
             drawOutline(ctx) {
-                if (this.currentRadius <= 0) return;
+                if (this.scale <= 0) return;
                 ctx.fillStyle = COLORS.outline;
-                this.circles.forEach(c => {
+                this.blobs.forEach(b => {
                     ctx.beginPath();
-                    ctx.arc(this.x + c.ox, this.y + c.oy, (this.currentRadius * c.rMult) + 3, 0, Math.PI * 2);
+                    ctx.arc(this.x + b.ox * this.scale, this.y + b.oy * this.scale, (b.r * this.scale) + 2.5, 0, Math.PI * 2);
                     ctx.fill();
                 });
             }
 
             drawFill(ctx) {
-                if (this.currentRadius <= 0) return;
+                if (this.scale <= 0) return;
                 
-                // Schattenseite
-                ctx.fillStyle = COLORS.leafShadow;
-                this.circles.forEach(c => {
-                    let r = this.currentRadius * c.rMult;
-                    ctx.beginPath(); ctx.arc(this.x + c.ox, this.y + c.oy, r, 0, Math.PI * 2); ctx.fill();
+                // 1. Dunkelgrün (Basis/Schatten)
+                ctx.fillStyle = COLORS.leafDark;
+                this.blobs.forEach(b => {
+                    ctx.beginPath(); 
+                    ctx.arc(this.x + b.ox * this.scale, this.y + b.oy * this.scale, b.r * this.scale, 0, Math.PI * 2); 
+                    ctx.fill();
                 });
 
-                // Mitte (leicht nach oben versetzt)
+                // 2. Mittelgrün (leicht nach oben links versetzt)
                 ctx.fillStyle = COLORS.leafMid;
-                this.circles.forEach(c => {
-                    let r = this.currentRadius * c.rMult;
-                    ctx.beginPath(); ctx.arc(this.x + c.ox, this.y + c.oy - r*0.2, r*0.8, 0, Math.PI * 2); ctx.fill();
+                this.blobs.forEach(b => {
+                    ctx.beginPath(); 
+                    ctx.arc(this.x + (b.ox - 2) * this.scale, this.y + (b.oy - 3) * this.scale, (b.r * 0.8) * this.scale, 0, Math.PI * 2); 
+                    ctx.fill();
                 });
 
-                // Highlight (noch weiter oben)
-                ctx.fillStyle = COLORS.leafHigh;
-                this.circles.forEach(c => {
-                    let r = this.currentRadius * c.rMult;
-                    ctx.beginPath(); ctx.arc(this.x + c.ox, this.y + c.oy - r*0.5, r*0.4, 0, Math.PI * 2); ctx.fill();
+                // 3. Hellgrün Highlight (noch weiter oben)
+                ctx.fillStyle = COLORS.leafLight;
+                this.blobs.forEach(b => {
+                    ctx.beginPath(); 
+                    ctx.arc(this.x + (b.ox - 4) * this.scale, this.y + (b.oy - 5) * this.scale, (b.r * 0.4) * this.scale, 0, Math.PI * 2); 
+                    ctx.fill();
                 });
             }
         }
 
-        // --- RENDER LOOP ---
+        function drawPot() {
+            let px = canvas.width / 2;
+            let py = canvas.height - 100;
+
+            // Einfacher, aber schicker Vektor-Topf
+            ctx.fillStyle = COLORS.outline;
+            ctx.beginPath(); ctx.roundRect(px - 72, py - 2, 144, 24, 5); ctx.fill(); // Rand Outline
+            ctx.beginPath(); ctx.roundRect(px - 62, py + 18, 124, 44, 10); ctx.fill(); // Basis Outline
+
+            ctx.fillStyle = COLORS.potRim;
+            ctx.beginPath(); ctx.roundRect(px - 70, py, 140, 20, 4); ctx.fill(); // Rand Füllung
+            
+            ctx.fillStyle = COLORS.potBase;
+            ctx.beginPath(); ctx.roundRect(px - 60, py + 20, 120, 40, 8); ctx.fill(); // Basis Füllung
+
+            // Erde / Moos
+            ctx.fillStyle = COLORS.leafDark;
+            ctx.beginPath(); ctx.ellipse(px, py, 60, 8, 0, 0, Math.PI * 2); ctx.fill();
+        }
+
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Topf zeichnen
             drawPot();
 
             if (!isGrowing) return;
 
-            // 1. Updates berechnen
-            branches.forEach(b => b.update());
-            leaves.forEach(l => l.update());
+            // Logik Update
+            activeBranches = activeBranches.filter(b => b.update());
+            leafPads.forEach(l => l.update());
 
-            // 2. Multi-Pass Rendering (Für den Vektor-Style)
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
-            // Pass A: Holz Outlines (Schwarz & Dick)
+            // Multi-Pass Rendering: 1. Outlines (Schwarz)
             ctx.strokeStyle = COLORS.outline;
-            branches.forEach(b => {
-                if (b.currentLength > 0) {
-                    ctx.lineWidth = b.currentThickness + 5;
-                    ctx.beginPath(); ctx.moveTo(b.startX, b.startY); ctx.lineTo(b.endX, b.endY); ctx.stroke();
-                }
+            branchSegments.forEach(seg => {
+                ctx.lineWidth = seg.thick + 4; // Dickere Outline
+                ctx.beginPath(); ctx.moveTo(seg.x1, seg.y1); ctx.lineTo(seg.x2, seg.y2); ctx.stroke();
             });
 
-            // Pass B: Holz Füllung (Braun & Dünner)
+            // Multi-Pass Rendering: 2. Holzfüllung
             ctx.strokeStyle = COLORS.wood;
-            branches.forEach(b => {
-                if (b.currentLength > 0) {
-                    ctx.lineWidth = b.currentThickness;
-                    ctx.beginPath(); ctx.moveTo(b.startX, b.startY); ctx.lineTo(b.endX, b.endY); ctx.stroke();
-                }
+            branchSegments.forEach(seg => {
+                ctx.lineWidth = seg.thick;
+                ctx.beginPath(); ctx.moveTo(seg.x1, seg.y1); ctx.lineTo(seg.x2, seg.y2); ctx.stroke();
             });
 
-            // Pass C: Blätter Outlines
-            leaves.forEach(l => l.drawOutline(ctx));
+            // Blätter Outlines (hinter der Füllung)
+            leafPads.forEach(l => l.drawOutline(ctx));
             
-            // Pass D: Blätter Füllungen (Layering)
-            leaves.forEach(l => l.drawFill(ctx));
+            // Blätter Füllung (darüber)
+            leafPads.forEach(l => l.drawFill(ctx));
 
             requestAnimationFrame(render);
         }
 
-        function drawPot() {
-            let px = canvas.width / 2;
-            let py = canvas.height - 80;
-            
-            ctx.fillStyle = COLORS.outline;
-            ctx.fillRect(px - 62, py - 2, 124, 44); // Topf Rand Außen
-            
-            ctx.fillStyle = COLORS.potBase;
-            ctx.fillRect(px - 60, py, 120, 40); // Topf Innen
-            
-            // Simples Moos am Boden
-            ctx.fillStyle = COLORS.leafShadow;
-            ctx.beginPath(); ctx.ellipse(px, py, 55, 8, 0, 0, Math.PI*2); ctx.fill();
-        }
-
         function resetAndGrow() {
-            branches = [];
-            leaves = [];
+            branchSegments = [];
+            activeBranches = [];
+            leafPads = [];
             isGrowing = true;
             
-            // Stamm in der Mitte spawnen (Start-Dicke: 28, Start-Winkel: exakt nach oben)
-            branches.push(new Branch(canvas.width / 2, canvas.height - 80, -Math.PI / 2, 80, 26, 0));
-            
+            // Start-Stamm: Mitte, nach oben, dick
+            activeBranches.push(new Branch(canvas.width / 2, canvas.height - 105, -Math.PI / 2, 28, 0));
             render();
         }
 
-        // Init
         drawPot();
-
     </script>
 </body>
 </html>
