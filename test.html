@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Bonsai - Final Smooth Tapering</title>
+    <title>Math Bonsai - Perfect Framing (Reverted)</title>
     <style>
         body {
             margin: 0; padding: 0; display: flex; flex-direction: column;
@@ -93,24 +93,11 @@
             let currentAngle = angle;
             let tick = startTick;
 
-            let isDead = (!isRoot && Math.random() > 0.85 && depth > 2);
-            
-            // --- DIE NEUE SPITZEN-LOGIK ---
-            // Wir definieren "Terminal-Äste" (die nicht mehr weiter abzweigen)
-            let isTerminal = isRoot || isDead || depth >= 5;
-
-            // Standard-Verjüngung
             let shrinkPercent = isRoot ? 0.5 : 0.01 + Math.min(depth / 6, 1) * 0.09; 
             let endThickness = startThickness * (1 - shrinkPercent);
 
-            // Wenn es der letzte Ast ist, zwingen wir ihn *innerhalb dieser Schleife* auf fast 0
-            if (isTerminal) {
-                endThickness = 0.5; // Endet hauchdünn
-                length = length * 1.5; // Zieht sich etwas länger, für einen eleganteren Verlauf
-            }
-
             let steps = Math.floor(length * 1.5); 
-            let targetAngle = angle + (Math.random() - 0.5) * 1.0; 
+            let targetAngle = angle + (Math.random() - 0.5) * 1.2; 
             
             for (let i = 0; i <= steps; i++) {
                 currentX += Math.cos(currentAngle) * 0.8; 
@@ -118,9 +105,9 @@
                 
                 let distanceFromCenter = currentX - (canvas.width / 2);
                 let centerPull = (distanceFromCenter / (canvas.width / 2)) * 0.4;
+                
                 currentAngle += (targetAngle - currentAngle - centerPull) * 0.03 + (Math.random() - 0.5) * 0.06;
                 
-                // Weiche Interpolation der Dicke vom Start bis zum Ende
                 let progress = i / steps;
                 let currentThick = startThickness - (startThickness - endThickness) * progress;
                 
@@ -135,6 +122,7 @@
                 });
             }
 
+            let isDead = (!isRoot && Math.random() > 0.85 && depth > 2); 
             branches.push({ depth: depth, nodes: nodes, dead: isDead, isRoot: isRoot });
 
             if (!isRoot && !isDead) {
@@ -147,8 +135,7 @@
 
             if (tick > maxTick) maxTick = tick;
 
-            // Nur weiter verzweigen, wenn wir NICHT terminal sind
-            if (!isTerminal) { 
+            if (!isRoot && depth < 5) { 
                 let numChildren = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
                 
                 for (let i = 0; i < numChildren; i++) {
@@ -162,10 +149,9 @@
             }
         }
 
-        // --- DAS ZUVERLÄSSIGE RENDER-SYSTEM ---
         function drawSmoothBranch(bNodes, color, expand) {
             ctx.strokeStyle = color;
-            ctx.lineCap = 'round'; // Verhindert eckige Kanten und Haifischflossen
+            ctx.lineCap = 'round'; 
             ctx.lineJoin = 'round';
             
             ctx.beginPath();
@@ -207,15 +193,12 @@
 
             currentTick += 6; 
 
-            // PASS 1: ALLE OUTLINES (Global, verhindert Risse an Gelenken)
             branches.forEach(branch => {
                 let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
                 if (visibleNodes.length > 1) {
                     drawSmoothBranch(visibleNodes, C.outline, 4);
                 }
             });
-            
-            // PASS 2: ALLE FÜLLUNGEN (Übermalt die Linien der Outlines im Inneren)
             branches.forEach(branch => {
                 let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
                 if (visibleNodes.length > 1) {
@@ -330,6 +313,7 @@
             let startY = canvas.height - 120;
             let startThick = 45;
 
+            // Nebari Wurzeln
             let numRoots = 5 + Math.floor(Math.random() * 4);
             for(let i = 0; i < numRoots; i++) {
                 let rootAngle = (Math.PI / 2) + (Math.random() - 0.5) * 2.5; 
@@ -338,6 +322,7 @@
                 calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true);
             }
 
+            // Hauptstamm
             calculateBranch(startX, startY, -Math.PI / 2, 150, startThick, 0, 0, false);
             
             renderLoop();
