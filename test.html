@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animierter Bonsai V2 - Vektor Style</title>
+    <title>Bonsai - SVG Skeleton Engine</title>
     <style>
         body {
             margin: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            height: 100vh; background-color: #2c3e50; /* Dunklerer Hintergrund */
+            height: 100vh; background-color: #2b3a4a;
             font-family: sans-serif;
         }
         canvas { background-color: transparent; }
@@ -24,228 +24,199 @@
 <body>
 
     <canvas id="bonsaiCanvas" width="600" height="700"></canvas>
-    <button onclick="resetAndGrow()">🌱 Samen pflanzen</button>
+    <button onclick="plantSeed()">🌱 Skelett wachsen lassen</button>
 
     <script>
         const canvas = document.getElementById('bonsaiCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Exakte Farbpalette aus deinen Referenzbildern
+        // Farbpalette aus deiner Referenz
         const COLORS = {
-            outline: '#1e1e1e',
-            wood: '#9c8c7c',       // Helleres, totes Holz
-            woodDark: '#6e5e50',   // Schattenseite Holz
-            leafDark: '#365c42',   // Dunkelgrün (Schatten)
-            leafMid: '#588b62',    // Mittelgrün
-            leafLight: '#7ab882',  // Hellgrün (Highlight)
-            potRim: '#4a3d35',
-            potBase: '#5e4b40'
+            outline: '#151515',
+            wood: '#9c8c7c',
+            woodDark: '#6e5e50',
+            leafDark: '#365c42',
+            leafMid: '#588b62',
+            leafLight: '#7ab882'
         };
 
-        let branchSegments = []; // Speichert alle gezeichneten Teilstücke
-        let activeBranches = []; // Äste, die gerade wachsen
-        let leafPads = [];       // Die flachen Nadelpolster
+        // 1. DER INLINE-SVG PFAD (Das handgemachte Prefab)
+        // Dies ist ein Vektor-Pfad, der eine flache, wolkige Bonsai-Nadelstruktur abbildet.
+        const leafPathString = "M -40,10 C -50,0 -40,-20 -20,-20 C -15,-35 10,-40 25,-25 C 40,-35 60,-15 50,10 C 55,25 40,30 20,30 L -15,30 C -30,30 -40,25 -40,10 Z";
+        const leafSVG = new Path2D(leafPathString);
+
+        let skeleton = [];
+        let foliage = [];
+        let globalAge = 0;
         let isGrowing = false;
 
-        class Branch {
-            constructor(x, y, angle, thickness, depth) {
-                this.x = x;
-                this.y = y;
+        // 2. DAS SKELETT-SYSTEM (Die Knochen)
+        class Bone {
+            constructor(startX, startY, angle, length, thickness, depth) {
+                this.startX = startX;
+                this.startY = startY;
                 this.angle = angle;
+                this.targetLength = length;
                 this.thickness = thickness;
                 this.depth = depth;
                 
-                // Knorriges Wachstum: Wie lange wächst dieser Ast, bevor er sich teilt?
-                this.maxLength = 20 + Math.random() * 40 * (1 / (depth + 1));
+                // Für die Kaskaden-Form (hängt nach links)
+                let bias = (depth === 0) ? -0.1 : -0.2; 
+                this.curve = bias + (Math.random() - 0.5) * 0.3;
+
                 this.currentLength = 0;
-                
-                // Biegung (Bend): Bonsais biegen sich oft nach unten oder zur Seite
-                // Wir zwingen den Baum durch einen "Bias" leicht nach rechts/unten
-                this.bend = (Math.random() - 0.3) * 0.1; 
-                if (depth === 0) this.bend = (Math.random() - 0.5) * 0.05; // Stamm bleibt aufrechter
+                this.isMature = false;
+                this.endX = startX;
+                this.endY = startY;
             }
 
-            update() {
-                if (this.currentLength >= this.maxLength) {
-                    this.branchOut();
-                    return false; // Dieser Ast ist fertig
+            grow() {
+                if (this.isMature) return false;
+
+                this.currentLength += 2; // Wachstumsgeschwindigkeit
+                this.angle += this.curve * 0.05; // Organische Krümmung beim Wachsen
+
+                this.endX = this.startX + Math.cos(this.angle) * this.currentLength;
+                this.endY = this.startY + Math.sin(this.angle) * this.currentLength;
+
+                if (this.currentLength >= this.targetLength) {
+                    this.isMature = true;
+                    this.spawnChildren();
                 }
-
-                // Ast wächst ein kleines Stück
-                let step = 2;
-                this.currentLength += step;
-                this.angle += this.bend; // Ast biegt sich
-
-                let nextX = this.x + Math.cos(this.angle) * step;
-                let nextY = this.y + Math.sin(this.angle) * step;
-
-                // Verjüngung (Tapering)
-                this.thickness *= 0.98;
-
-                // Segment speichern für das Multi-Pass Rendering
-                branchSegments.push({
-                    x1: this.x, y1: this.y, 
-                    x2: nextX, y2: nextY, 
-                    thick: this.thickness
-                });
-
-                this.x = nextX;
-                this.y = nextY;
-
-                return true; // Ast wächst noch
+                return true;
             }
 
-            branchOut() {
-                // Maximale Verzweigungstiefe
-                if (this.depth > 5) {
-                    // Am Ende der Äste entstehen die flachen Nadelpolster
-                    leafPads.push(new LeafPad(this.x, this.y));
+            spawnChildren() {
+                if (this.depth >= 4) {
+                    // Am Ende der Knochen platzieren wir das SVG-Prefab!
+                    foliage.push(new FoliagePad(this.endX, this.endY));
                     return;
                 }
 
-                // 1 bis 3 neue Äste spawnen
-                let numBranches = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
-                
-                for (let i = 0; i < numBranches; i++) {
-                    let newAngle = this.angle + (Math.random() - 0.5) * 1.2;
-                    // Wenn es ein dicker Ast ist, spalte einen dünneren ab
-                    let newThick = this.thickness * (0.6 + Math.random() * 0.2);
-                    activeBranches.push(new Branch(this.x, this.y, newAngle, newThick, this.depth + 1));
+                // 1 bis 2 neue Äste
+                let numChildren = Math.random() > 0.3 ? 2 : 1;
+                for (let i = 0; i < numChildren; i++) {
+                    let newAngle = this.angle + (Math.random() - 0.5) * 1.5;
+                    let newLen = this.targetLength * (0.6 + Math.random() * 0.3);
+                    let newThick = this.thickness * 0.7;
+                    skeleton.push(new Bone(this.endX, this.endY, newAngle, newLen, newThick, this.depth + 1));
                 }
 
-                // Manchmal spawnen wir auch Polster an den inneren Ästen (für Dichte)
-                if (this.depth > 2 && Math.random() > 0.5) {
-                    leafPads.push(new LeafPad(this.x, this.y));
+                // Manchmal auch ein Blattpolster mittendrin für mehr Volumen
+                if (this.depth >= 2 && Math.random() > 0.5) {
+                    foliage.push(new FoliagePad(this.endX, this.endY));
                 }
             }
         }
 
-        class LeafPad {
+        // 3. DIE HAUT (Das Rendern der SVGs)
+        class FoliagePad {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.scale = 0; // Für die Pop-In Animation
-                
-                // Wir generieren ein flaches, horizontales Polster aus kleinen Kreisen
-                this.blobs = [];
-                let numBlobs = 6 + Math.floor(Math.random() * 6);
-                for (let i = 0; i < numBlobs; i++) {
-                    this.blobs.push({
-                        // Breite Streuung (horizontal), enge Streuung (vertikal) -> Flache Pads
-                        ox: (Math.random() - 0.5) * 45, 
-                        oy: (Math.random() - 0.5) * 15,
-                        r: 6 + Math.random() * 8
-                    });
+                this.scale = 0;
+                this.targetScale = 0.5 + Math.random() * 0.5; // Leicht unterschiedliche Größen
+                this.rotation = (Math.random() - 0.5) * 0.2; // Leichte Neigung
+            }
+
+            grow() {
+                if (this.scale < this.targetScale) {
+                    this.scale += 0.02; // Plop-In Animation
                 }
             }
 
-            update() {
-                if (this.scale < 1) this.scale += 0.05; // Wachstums-Animation
-            }
-
-            drawOutline(ctx) {
-                if (this.scale <= 0) return;
-                ctx.fillStyle = COLORS.outline;
-                this.blobs.forEach(b => {
-                    ctx.beginPath();
-                    ctx.arc(this.x + b.ox * this.scale, this.y + b.oy * this.scale, (b.r * this.scale) + 2.5, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-            }
-
-            drawFill(ctx) {
+            draw(ctx) {
                 if (this.scale <= 0) return;
                 
-                // 1. Dunkelgrün (Basis/Schatten)
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.scale(this.scale, this.scale);
+
+                // Multi-Pass innerhalb des SVGs für den sauberen Vector-Look
+                
+                // Outline (Dicker schwarzer Rand)
+                ctx.lineWidth = 12;
+                ctx.strokeStyle = COLORS.outline;
+                ctx.lineJoin = 'round';
+                ctx.stroke(leafSVG);
+
+                // Schatten-Basis (Dunkelgrün)
                 ctx.fillStyle = COLORS.leafDark;
-                this.blobs.forEach(b => {
-                    ctx.beginPath(); 
-                    ctx.arc(this.x + b.ox * this.scale, this.y + b.oy * this.scale, b.r * this.scale, 0, Math.PI * 2); 
-                    ctx.fill();
-                });
+                ctx.fill(leafSVG);
 
-                // 2. Mittelgrün (leicht nach oben links versetzt)
+                // Highlight-Schicht (Hellgrün, leicht nach oben links versetzt)
+                ctx.save();
+                ctx.translate(-3, -6);
+                ctx.scale(0.85, 0.85); // Etwas kleiner
                 ctx.fillStyle = COLORS.leafMid;
-                this.blobs.forEach(b => {
-                    ctx.beginPath(); 
-                    ctx.arc(this.x + (b.ox - 2) * this.scale, this.y + (b.oy - 3) * this.scale, (b.r * 0.8) * this.scale, 0, Math.PI * 2); 
-                    ctx.fill();
-                });
+                ctx.fill(leafSVG);
+                ctx.restore();
 
-                // 3. Hellgrün Highlight (noch weiter oben)
-                ctx.fillStyle = COLORS.leafLight;
-                this.blobs.forEach(b => {
-                    ctx.beginPath(); 
-                    ctx.arc(this.x + (b.ox - 4) * this.scale, this.y + (b.oy - 5) * this.scale, (b.r * 0.4) * this.scale, 0, Math.PI * 2); 
-                    ctx.fill();
-                });
+                ctx.restore();
             }
         }
 
-        function drawPot() {
-            let px = canvas.width / 2;
-            let py = canvas.height - 100;
-
-            // Einfacher, aber schicker Vektor-Topf
-            ctx.fillStyle = COLORS.outline;
-            ctx.beginPath(); ctx.roundRect(px - 72, py - 2, 144, 24, 5); ctx.fill(); // Rand Outline
-            ctx.beginPath(); ctx.roundRect(px - 62, py + 18, 124, 44, 10); ctx.fill(); // Basis Outline
-
-            ctx.fillStyle = COLORS.potRim;
-            ctx.beginPath(); ctx.roundRect(px - 70, py, 140, 20, 4); ctx.fill(); // Rand Füllung
-            
-            ctx.fillStyle = COLORS.potBase;
-            ctx.beginPath(); ctx.roundRect(px - 60, py + 20, 120, 40, 8); ctx.fill(); // Basis Füllung
-
-            // Erde / Moos
-            ctx.fillStyle = COLORS.leafDark;
-            ctx.beginPath(); ctx.ellipse(px, py, 60, 8, 0, 0, Math.PI * 2); ctx.fill();
-        }
-
+        // --- RENDER LOOP ---
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawPot();
 
             if (!isGrowing) return;
 
-            // Logik Update
-            activeBranches = activeBranches.filter(b => b.update());
-            leafPads.forEach(l => l.update());
+            // Logik
+            skeleton.forEach(bone => bone.grow());
+            foliage.forEach(pad => pad.grow());
 
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
-            // Multi-Pass Rendering: 1. Outlines (Schwarz)
+            // 1. Pass: Holz Outlines (Schwarz)
             ctx.strokeStyle = COLORS.outline;
-            branchSegments.forEach(seg => {
-                ctx.lineWidth = seg.thick + 4; // Dickere Outline
-                ctx.beginPath(); ctx.moveTo(seg.x1, seg.y1); ctx.lineTo(seg.x2, seg.y2); ctx.stroke();
+            skeleton.forEach(bone => {
+                if (bone.currentLength > 0) {
+                    ctx.lineWidth = bone.thickness + 6;
+                    ctx.beginPath(); ctx.moveTo(bone.startX, bone.startY); ctx.lineTo(bone.endX, bone.endY); ctx.stroke();
+                }
             });
 
-            // Multi-Pass Rendering: 2. Holzfüllung
+            // 2. Pass: Holz Füllung (Braun)
             ctx.strokeStyle = COLORS.wood;
-            branchSegments.forEach(seg => {
-                ctx.lineWidth = seg.thick;
-                ctx.beginPath(); ctx.moveTo(seg.x1, seg.y1); ctx.lineTo(seg.x2, seg.y2); ctx.stroke();
+            skeleton.forEach(bone => {
+                if (bone.currentLength > 0) {
+                    ctx.lineWidth = bone.thickness;
+                    ctx.beginPath(); ctx.moveTo(bone.startX, bone.startY); ctx.lineTo(bone.endX, bone.endY); ctx.stroke();
+                }
             });
 
-            // Blätter Outlines (hinter der Füllung)
-            leafPads.forEach(l => l.drawOutline(ctx));
-            
-            // Blätter Füllung (darüber)
-            leafPads.forEach(l => l.drawFill(ctx));
+            // 3. Pass: Die SVG-Blattpolster
+            foliage.forEach(pad => pad.draw(ctx));
 
             requestAnimationFrame(render);
         }
 
-        function resetAndGrow() {
-            branchSegments = [];
-            activeBranches = [];
-            leafPads = [];
+        function drawPot() {
+            let px = canvas.width / 2;
+            let py = canvas.height - 100;
+
+            ctx.fillStyle = COLORS.outline;
+            ctx.beginPath(); ctx.roundRect(px - 72, py - 2, 144, 24, 5); ctx.fill(); 
+            ctx.beginPath(); ctx.roundRect(px - 62, py + 18, 124, 44, 10); ctx.fill(); 
+
+            ctx.fillStyle = '#4a3d35';
+            ctx.beginPath(); ctx.roundRect(px - 70, py, 140, 20, 4); ctx.fill(); 
+            
+            ctx.fillStyle = '#5e4b40';
+            ctx.beginPath(); ctx.roundRect(px - 60, py + 20, 120, 40, 8); ctx.fill(); 
+        }
+
+        function plantSeed() {
+            skeleton = [];
+            foliage = [];
             isGrowing = true;
             
-            // Start-Stamm: Mitte, nach oben, dick
-            activeBranches.push(new Branch(canvas.width / 2, canvas.height - 105, -Math.PI / 2, 28, 0));
+            // Start-Knochen (Stamm)
+            skeleton.push(new Bone(canvas.width / 2, canvas.height - 105, -Math.PI / 2, 80, 28, 0));
             render();
         }
 
