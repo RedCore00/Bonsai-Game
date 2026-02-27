@@ -3,187 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bonsai Zen - Cut & Bend</title>
+    <title>Bonsai Zen Master - Prototyp</title>
     <style>
-        body {
-            margin: 0; padding: 0; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            min-height: 100vh; background-color: #1e272e;
-            font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none;
-        }
-        canvas { 
-            background-color: #2c3e50; width: 100%; max-width: 500px; 
-            height: auto; aspect-ratio: 5/7; border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .toolbar {
-            display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;
-        }
-        button {
-            padding: 12px 18px; border: none; border-radius: 8px;
-            font-weight: bold; cursor: pointer; color: white;
-            transition: 0.2s; background: #485460;
-        }
-        button.active { background: #ff5e57; transform: scale(1.1); }
-        .info { color: #d2dae2; margin-top: 10px; font-size: 14px; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; touch-action: none; }
+        canvas { background: #2c3e50; width: 100%; max-width: 500px; height: auto; aspect-ratio: 5/7; border-radius: 12px; margin-top: 10px; }
+        .controls { display: flex; gap: 10px; margin: 15px; flex-wrap: wrap; justify-content: center; }
+        button { padding: 12px 18px; border: none; border-radius: 8px; font-weight: bold; background: #485460; color: white; cursor: pointer; }
+        button.active { background: #e07a5f; box-shadow: 0 0 15px rgba(224, 122, 95, 0.5); }
     </style>
 </head>
 <body>
 
-    <canvas id="bonsaiCanvas" width="800" height="1100"></canvas>
-    
-    <div class="toolbar">
-        <button id="mode-grow" onclick="setMode('grow')">🌱 Wachsen</button>
-        <button id="mode-cut" onclick="setMode('cut')">✂️ Schneiden</button>
-        <button id="mode-bend" onclick="setMode('bend')">🦾 Biegen</button>
-    </div>
-    <div class="info" id="status">Modus: Wachsen - Klicke auf den Topf</div>
+<canvas id="bonsaiCanvas" width="800" height="1100"></canvas>
 
-    <script>
-        const canvas = document.getElementById('bonsaiCanvas');
-        const ctx = canvas.getContext('2d');
-        const status = document.getElementById('status');
+<div class="controls">
+    <button id="btn-grow" onclick="setMode('grow')" class="active">🌱 Wachsen</button>
+    <button id="btn-cut" onclick="setMode('cut')">✂️ Schneiden</button>
+    <button id="btn-bend" onclick="setMode('bend')">🦾 Biegen</button>
+    <button onclick="resetTree()" style="background:#576574">♻️ Neu</button>
+</div>
 
-        let mode = 'grow'; // grow, cut, bend
-        let tree = [];
-        let isDragging = false;
-        let selectedBranch = null;
+<script>
+const canvas = document.getElementById('bonsaiCanvas');
+const ctx = canvas.getContext('2d');
+const leafPath = new Path2D("M 0,-15 L 3,-5 L 12,-8 L 6,0 L 15,6 L 5,6 L 8,15 L 0,8 L -8,15 L -5,6 L -15,6 L -6,0 L -12,-8 L -3,-5 Z");
 
-        const COLORS = { outline: '#151515', wood: '#9c8c7c', leaf: '#c44536' };
+let mode = 'grow';
+let branches = [];
+let isDragging = false;
+let selectedBranch = null;
 
-        class Branch {
-            constructor(parent, x, y, angle, thickness, length, depth) {
-                this.parent = parent;
-                this.startX = x;
-                this.startY = y;
-                this.angle = angle;
-                this.thickness = thickness;
-                this.length = length;
-                this.depth = depth;
-                this.children = [];
-                this.endX = x + Math.cos(angle) * length;
-                this.endY = y + Math.sin(angle) * length;
-            }
+const C = { outline: '#151515', wood: '#9c8c7c', shadow: '#6e5e50', leaf: '#c44536' };
 
-            draw() {
-                // Outline
-                ctx.strokeStyle = COLORS.outline;
-                ctx.lineWidth = this.thickness + 4;
-                ctx.lineCap = 'round';
-                ctx.beginPath();
-                ctx.moveTo(this.startX, this.startY);
-                ctx.lineTo(this.endX, this.endY);
-                ctx.stroke();
+class Branch {
+    constructor(startX, startY, angle, thickness, length, depth, parent = null) {
+        this.startX = startX;
+        this.startY = startY;
+        this.angle = angle;
+        this.thickness = thickness;
+        this.length = length;
+        this.depth = depth;
+        this.parent = parent;
+        this.children = [];
+        this.segments = [];
+        this.isDead = false;
+        this.generateSegments();
+    }
 
-                // Holz
-                ctx.strokeStyle = COLORS.wood;
-                ctx.lineWidth = this.thickness;
-                ctx.beginPath();
-                ctx.moveTo(this.startX, this.startY);
-                ctx.lineTo(this.endX, this.endY);
-                ctx.stroke();
+    generateSegments() {
+        this.segments = [];
+        let currX = this.startX;
+        let currY = this.startY;
+        let currA = this.angle;
+        let steps = Math.floor(this.length / 5);
+        
+        // Verjüngung 1-10% Regel
+        let taper = 0.01 + Math.min(this.depth / 6, 1) * 0.09;
+        let endThick = this.thickness * (1 - taper);
 
-                // Blätter am Ende
-                if (this.children.length === 0 && this.depth > 1) {
-                    ctx.fillStyle = COLORS.leaf;
-                    ctx.beginPath();
-                    ctx.arc(this.endX, this.endY, 15 - this.depth * 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = COLORS.outline;
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
+        for (let i = 0; i <= steps; i++) {
+            let p = i / steps;
+            let thick = this.thickness - (this.thickness - endThick) * p;
+            this.segments.push({ x: currX, y: currY, r: thick / 2 });
+            currX += Math.cos(currA) * 5;
+            currY += Math.sin(currA) * 5;
+            currA += (Math.random() - 0.5) * 0.05; // Natürliches Zittern
+        }
+        this.endX = currX;
+        this.endY = currY;
+    }
 
-                this.children.forEach(c => c.draw());
-            }
+    draw() {
+        // Outline Pass
+        ctx.strokeStyle = C.outline;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = this.thickness + 4;
+        ctx.beginPath();
+        ctx.moveTo(this.segments[0].x, this.segments[0].y);
+        this.segments.forEach(s => ctx.lineTo(s.x, s.y));
+        ctx.stroke();
 
-            checkHit(mx, my) {
-                // Einfache Distanzprüfung zum Endpunkt für Touch-Interaktion
-                const dist = Math.hypot(mx - this.endX, my - this.endY);
-                if (dist < 30) return this;
-                for (let child of this.children) {
-                    let hit = child.checkHit(mx, my);
-                    if (hit) return hit;
-                }
-                return null;
-            }
+        // Wood Pass
+        ctx.strokeStyle = C.wood;
+        ctx.lineWidth = this.thickness;
+        ctx.beginPath();
+        ctx.moveTo(this.segments[0].x, this.segments[0].y);
+        this.segments.forEach(s => ctx.lineTo(s.x, s.y));
+        ctx.stroke();
 
-            updatePos(newX, newY) {
-                this.endX = newX;
-                this.endY = newY;
-                this.angle = Math.atan2(this.endY - this.startY, this.endX - this.startX);
-                this.length = Math.hypot(this.endY - this.startY, this.endX - this.startX);
-                // Kinder mitbewegen
-                this.children.forEach(c => {
-                    c.startX = this.endX;
-                    c.startY = this.endY;
-                    c.updatePos(c.startX + Math.cos(c.angle) * c.length, c.startY + Math.sin(c.angle) * c.length);
-                });
-            }
+        // Blätter
+        if (this.children.length === 0 && this.depth > 1) {
+            ctx.save();
+            ctx.translate(this.endX, this.endY);
+            ctx.fillStyle = C.leaf;
+            ctx.fill(leafPath);
+            ctx.restore();
         }
 
-        function setMode(m) {
-            mode = m;
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            document.getElementById('mode-' + m).classList.add('active');
-            status.innerText = "Modus: " + m.toUpperCase();
+        this.children.forEach(c => c.draw());
+    }
+
+    checkHit(mx, my) {
+        let d = Math.hypot(mx - this.endX, my - this.endY);
+        if (d < 30) return this;
+        for (let c of this.children) {
+            let found = c.checkHit(mx, my);
+            if (found) return found;
         }
+        return null;
+    }
+}
 
-        canvas.addEventListener('pointerdown', e => {
-            const rect = canvas.getBoundingClientRect();
-            const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
-            const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+function setMode(m) {
+    mode = m;
+    document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + m).classList.add('active');
+}
 
-            if (mode === 'grow') {
-                if (tree.length === 0) {
-                    tree.push(new Branch(null, 400, 1000, -Math.PI / 2, 40, 150, 0));
-                } else {
-                    let hit = null;
-                    tree.forEach(b => { if(!hit) hit = b.checkHit(mx, my)});
-                    if (hit && hit.depth < 5) {
-                        let newAngle = hit.angle + (Math.random() - 0.5) * 1.5;
-                        hit.children.push(new Branch(hit, hit.endX, hit.endY, newAngle, hit.thickness * 0.8, hit.length * 0.7, hit.depth + 1));
-                    }
-                }
-            } else if (mode === 'cut') {
-                tree.forEach((b, i) => {
-                    let hit = b.checkHit(mx, my);
-                    if (hit && hit.parent) {
-                        hit.parent.children = hit.parent.children.filter(c => c !== hit);
-                    }
-                });
-            } else if (mode === 'bend') {
-                tree.forEach(b => { if(!selectedBranch) selectedBranch = b.checkHit(mx, my)});
-                if (selectedBranch) isDragging = true;
-            }
-            draw();
-        });
+function resetTree() {
+    branches = [new Branch(400, 1000, -Math.PI/2, 50, 150, 0)];
+    render();
+}
 
-        canvas.addEventListener('pointermove', e => {
-            if (mode === 'bend' && isDragging && selectedBranch) {
-                const rect = canvas.getBoundingClientRect();
-                const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
-                const my = (e.clientY - rect.top) * (canvas.height / rect.height);
-                selectedBranch.updatePos(mx, my);
-                draw();
-            }
-        });
+canvas.addEventListener('pointerdown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const my = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-        canvas.addEventListener('pointerup', () => {
-            isDragging = false;
-            selectedBranch = null;
-        });
+    let hit = null;
+    branches.forEach(b => { if(!hit) hit = b.checkHit(mx, my) });
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Topf
-            ctx.fillStyle = '#3d3d3d';
-            ctx.fillRect(250, 1000, 300, 60);
-            tree.forEach(b => b.draw());
-        }
+    if (mode === 'grow' && hit && hit.depth < 6) {
+        let a = hit.angle + (Math.random() - 0.5) * 1.5;
+        hit.children.push(new Branch(hit.endX, hit.endY, a, hit.segments[hit.segments.length-1].r*2, hit.length*0.7, hit.depth+1, hit));
+    } else if (mode === 'cut' && hit && hit.parent) {
+        hit.parent.children = hit.parent.children.filter(c => c !== hit);
+    } else if (mode === 'bend' && hit) {
+        selectedBranch = hit;
+        isDragging = true;
+    }
+    render();
+});
 
-        setMode('grow');
-        draw();
-    </script>
+canvas.addEventListener('pointermove', e => {
+    if (isDragging && selectedBranch) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+        selectedBranch.angle = Math.atan2(my - selectedBranch.startY, mx - selectedBranch.startX);
+        selectedBranch.generateSegments();
+        render();
+    }
+});
+
+canvas.addEventListener('pointerup', () => { isDragging = false; selectedBranch = null; });
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Topf
+    ctx.fillStyle = "#3d3d3d";
+    ctx.fillRect(250, 1000, 300, 50);
+    branches.forEach(b => b.draw());
+}
+
+resetTree();
+</script>
 </body>
 </html>
