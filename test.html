@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Bonsai - Fine Pine Clusters</title>
+    <title>Math Bonsai - Japanese Maple Style</title>
     <style>
         body {
             margin: 0; padding: 0; display: flex; flex-direction: column;
@@ -11,32 +11,25 @@
             min-height: 100vh; background-color: #2b3a4a;
             font-family: 'Segoe UI', sans-serif; overflow: hidden;
         }
-        
         canvas { 
             background-color: transparent; 
             width: 100%; max-width: 600px; 
-            height: auto; 
-            aspect-ratio: 5/6;
+            height: auto; aspect-ratio: 5/6;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             border-radius: 8px;
         }
-
         .ui-container {
             display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; justify-content: center;
         }
-
         button {
             padding: 12px 20px; font-size: 15px;
             color: white; border: none;
             border-radius: 8px; cursor: pointer; font-weight: bold;
             transition: all 0.1s;
         }
-        
-        #btn-grow { background-color: #5ab59f; box-shadow: 0 4px 0 #3b8774; }
-        #btn-grow:active { transform: translateY(4px); box-shadow: 0 0 0 #3b8774; }
-        
-        #btn-toggle { background-color: #e07a5f; box-shadow: 0 4px 0 #b35942; }
-        #btn-toggle:active { transform: translateY(4px); box-shadow: 0 0 0 #b35942; }
+        #btn-grow { background-color: #e07a5f; box-shadow: 0 4px 0 #b35942; }
+        #btn-grow:active { transform: translateY(4px); box-shadow: 0 0 0 #b35942; }
+        #btn-toggle { background-color: #5ab59f; box-shadow: 0 4px 0 #3b8774; }
     </style>
 </head>
 <body>
@@ -44,26 +37,26 @@
     <canvas id="bonsaiCanvas" width="1000" height="1200"></canvas>
     
     <div class="ui-container">
-        <button id="btn-grow" onclick="generateMathTree()">🌱 Neuen Baum generieren</button>
-        <button id="btn-toggle" onclick="toggleLeaves()">🍂 Blätter ausblenden</button>
+        <button id="btn-grow" onclick="generateMathTree()">🍁 Ahorn pflanzen</button>
+        <button id="btn-toggle" onclick="toggleLeaves()">🍂 Blätter ein/aus</button>
     </div>
 
     <script>
         const canvas = document.getElementById('bonsaiCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Farbpalette angepasst für realistischere Pine-Töne
+        // Herbst-Ahorn Farbpalette
         const C = {
-            outline: '#151515',
-            woodBase: '#9c8c7c',
-            woodShadow: '#6e5e50',
-            leafDark: '#2d4c38',   // Tieferes Schatten-Grün
-            leafMid: '#4a7856',    // Sattes Mittel-Grün
-            leafLight: '#679c72'   // Feines Highlight
+            outline: '#1a100d',
+            woodBase: '#8c7a6b',
+            woodShadow: '#5c4e42',
+            leafDark: '#7d231a',   // Tiefes Weinrot
+            leafMid: '#c44536',    // Klassisches Ahornrot
+            leafLight: '#ee8959'   // Orangefarbenes Highlight
         };
 
-        // Ein deutlich kleineres, feineres Einzel-Polster (Tuft)
-        const leafPathString = "M -20,5 C -25,-5 -15,-12 -10,-5 C -5,-15 5,-15 10,-5 C 15,-10 25,-5 20,5 Z";
+        // Gezackter Ahornblatt-Pfad (sternförmig)
+        const leafPathString = "M 0,-15 L 3,-5 L 12,-8 L 6,0 L 15,6 L 5,6 L 8,15 L 0,8 L -8,15 L -5,6 L -15,6 L -6,0 L -12,-8 L -3,-5 Z";
         const leafSVG = new Path2D(leafPathString);
 
         let branches = [];
@@ -75,16 +68,6 @@
 
         function toggleLeaves() {
             showLeaves = !showLeaves;
-            const btn = document.getElementById('btn-toggle');
-            if (showLeaves) {
-                btn.innerText = "🍂 Blätter ausblenden";
-                btn.style.backgroundColor = "#e07a5f";
-                btn.style.boxShadow = "0 4px 0 #b35942";
-            } else {
-                btn.innerText = "🍃 Blätter einblenden";
-                btn.style.backgroundColor = "#81b29a";
-                btn.style.boxShadow = "0 4px 0 #5f8a74";
-            }
             if (!isGrowing && branches.length > 0) drawInstant();
         }
 
@@ -104,50 +87,31 @@
             for (let i = 0; i <= steps; i++) {
                 currentX += Math.cos(currentAngle) * 0.8; 
                 currentY += Math.sin(currentAngle) * 0.8;
-                
                 let distanceFromCenter = currentX - (canvas.width / 2);
                 let centerPull = (distanceFromCenter / (canvas.width / 2)) * 0.4;
-                
                 currentAngle += (targetAngle - currentAngle - centerPull) * 0.03 + (Math.random() - 0.5) * 0.06;
-                
                 let progress = i / steps;
                 let currentThick = startThickness - (startThickness - endThickness) * progress;
-                
                 tick++;
-
-                nodes.push({
-                    x: currentX, y: currentY, 
-                    angle: currentAngle, 
-                    r: currentThick / 2, 
-                    tick: tick,
-                    isEnd: i === steps
-                });
+                nodes.push({ x: currentX, y: currentY, angle: currentAngle, r: currentThick / 2, tick: tick, isEnd: i === steps });
             }
 
-            let isDead = (!isRoot && Math.random() > 0.85 && depth > 2); 
-            branches.push({ depth: depth, nodes: nodes, dead: isDead, isRoot: isRoot });
+            branches.push({ depth: depth, nodes: nodes, dead: (!isRoot && Math.random() > 0.9 && depth > 2), isRoot: isRoot });
 
-            // Mehr Blätter spawnen, damit der Baum dichter und geschichteter wirkt
-            if (!isRoot && !isDead) {
-                let chanceForLeaf = depth === 0 ? 0 : (depth === 1 ? 0.3 : (depth === 2 ? 0.6 : 0.95));
-                if (Math.random() < chanceForLeaf) {
-                    let scaleModifier = depth < 3 ? 0.8 : 1.1; 
-                    leafSpawns.push({ x: currentX, y: currentY, tick: tick, scaleMod: scaleModifier, depth: depth });
+            if (!isRoot && !branches[branches.length-1].dead) {
+                let chance = depth === 0 ? 0 : (depth === 1 ? 0.2 : 0.8);
+                if (Math.random() < chance) {
+                    leafSpawns.push({ x: currentX, y: currentY, tick: tick, scaleMod: depth < 3 ? 0.6 : 1.0 });
                 }
             }
 
             if (tick > maxTick) maxTick = tick;
 
             if (!isRoot && depth < 5) { 
-                let numChildren = Math.random() > 0.4 ? 2 : (Math.random() > 0.8 ? 3 : 1);
-                
+                let numChildren = Math.random() > 0.4 ? 2 : 1;
                 for (let i = 0; i < numChildren; i++) {
                     let spread = (Math.random() - 0.5) * 1.5;
-                    let newAngle = currentAngle + spread;
-                    let newLength = length * (0.6 + Math.random() * 0.2);
-                    let nextStartThickness = (i === 0) ? endThickness : endThickness * (0.5 + Math.random() * 0.2);
-
-                    calculateBranch(currentX, currentY, newAngle, newLength, nextStartThickness, depth + 1, tick, false);
+                    calculateBranch(currentX, currentY, currentAngle + spread, length * 0.7, endThickness * (i===0?1:0.7), depth + 1, tick);
                 }
             }
         }
@@ -156,208 +120,116 @@
             ctx.strokeStyle = color;
             ctx.lineCap = 'round'; 
             ctx.lineJoin = 'round';
-            
-            ctx.beginPath();
             for (let i = 0; i < bNodes.length - 1; i++) {
-                let n1 = bNodes[i];
-                let n2 = bNodes[i+1];
-                
                 ctx.beginPath();
-                ctx.moveTo(n1.x, n1.y);
-                ctx.lineTo(n2.x, n2.y);
-                ctx.lineWidth = Math.max(0.1, (n1.r * 2) + expand);
+                ctx.moveTo(bNodes[i].x, bNodes[i].y);
+                ctx.lineTo(bNodes[i+1].x, bNodes[i+1].y);
+                ctx.lineWidth = Math.max(0.1, (bNodes[i].r * 2) + expand);
                 ctx.stroke();
             }
         }
 
-        function drawBarkShadow(bNodes) {
-            ctx.strokeStyle = C.woodShadow;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.lineWidth = 2.5;
+        function drawLeafPad(x, y, scale) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale * 1.2, scale * 1.2);
             
-            ctx.beginPath();
-            for (let i = 0; i < bNodes.length; i+=4) { 
-                let n = bNodes[i];
-                let nx = Math.cos(n.angle + Math.PI/2);
-                let ny = Math.sin(n.angle + Math.PI/2);
-                let offset = n.r * 0.4; 
-                if (i===0) ctx.moveTo(n.x + nx * offset, n.y + ny * offset);
-                else ctx.lineTo(n.x + nx * offset, n.y + ny * offset);
-            }
-            ctx.stroke();
+            // Cluster aus 5 Ahornblättern
+            const maples = [
+                {x: 0, y: 0, r: 0, s: 1},
+                {x: -10, y: 5, r: -0.5, s: 0.8},
+                {x: 10, y: 5, r: 0.5, s: 0.8},
+                {x: -5, y: -8, r: -0.2, s: 0.7},
+                {x: 5, y: -8, r: 0.2, s: 0.7}
+            ];
+
+            maples.forEach(m => {
+                ctx.save();
+                ctx.translate(m.x, m.y);
+                ctx.rotate(m.r);
+                ctx.scale(m.s, m.s);
+                
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = C.outline;
+                ctx.stroke(leafSVG);
+                ctx.fillStyle = C.leafDark;
+                ctx.fill(leafSVG);
+                
+                ctx.save();
+                ctx.translate(-2, -2);
+                ctx.fillStyle = C.leafMid;
+                ctx.fill(leafSVG);
+                ctx.restore();
+                
+                ctx.restore();
+            });
+            ctx.restore();
         }
 
         function renderLoop() {
             if (!isGrowing) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawPot();
-
-            currentTick += 6; 
-
-            branches.forEach(branch => {
-                let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
-                if (visibleNodes.length > 1) {
-                    drawSmoothBranch(visibleNodes, C.outline, 4);
+            currentTick += 8; 
+            branches.forEach(b => {
+                let vis = b.nodes.filter(n => n.tick <= currentTick);
+                if (vis.length > 1) {
+                    drawSmoothBranch(vis, C.outline, 4);
+                    drawSmoothBranch(vis, b.dead ? '#c2b8ad' : C.woodBase, 0);
                 }
             });
-            branches.forEach(branch => {
-                let visibleNodes = branch.nodes.filter(n => n.tick <= currentTick);
-                if (visibleNodes.length > 1) {
-                    drawSmoothBranch(visibleNodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
-                    drawBarkShadow(visibleNodes);
-                }
-            });
-
             if (showLeaves) {
-                leafSpawns.forEach(leaf => {
-                    if (currentTick >= leaf.tick) {
-                        let age = (currentTick - leaf.tick) / 60;
-                        if (age > 1) age = 1;
-                        if (age > 0) drawLeafPad(leaf.x, leaf.y, age * leaf.scaleMod);
+                leafSpawns.forEach(l => {
+                    if (currentTick >= l.tick) {
+                        let age = Math.min((currentTick - l.tick) / 60, 1);
+                        drawLeafPad(l.x, l.y, age * l.scaleMod);
                     }
                 });
             }
-
             drawSoilFront();
-
             if (currentTick < maxTick + 100) requestAnimationFrame(renderLoop);
-            else isGrowing = false; 
+            else isGrowing = false;
         }
 
         function drawInstant() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawPot();
-            
-            branches.forEach(branch => {
-                if (branch.nodes.length > 1) drawSmoothBranch(branch.nodes, C.outline, 4);
+            branches.forEach(b => {
+                drawSmoothBranch(b.nodes, C.outline, 4);
+                drawSmoothBranch(b.nodes, b.dead ? '#c2b8ad' : C.woodBase, 0);
             });
-            branches.forEach(branch => {
-                if (branch.nodes.length > 1) {
-                    drawSmoothBranch(branch.nodes, branch.dead ? '#c2b8ad' : C.woodBase, 0);
-                    drawBarkShadow(branch.nodes);
-                }
-            });
-            if (showLeaves) {
-                leafSpawns.forEach(leaf => {
-                    drawLeafPad(leaf.x, leaf.y, 1 * leaf.scaleMod);
-                });
-            }
-            
+            if (showLeaves) leafSpawns.forEach(l => drawLeafPad(l.x, l.y, 1 * l.scaleMod));
             drawSoilFront();
         }
 
-        // --- DIE NEUE CLUSTER-TECHNIK FÜR FEINERE BLÄTTER ---
-        function drawLeafPad(x, y, scale) {
-            ctx.save();
-            ctx.translate(x, y);
-            
-            let finalScale = scale * 1.3; 
-            ctx.scale(finalScale, finalScale);
-
-            // Wir definieren 4 kleine Teil-Polster, die zusammen eine fein strukturierte Etage bilden
-            const tufts = [
-                {x: -12, y: 4, s: 0.8},   // Links unten
-                {x: 12, y: 4, s: 0.8},    // Rechts unten
-                {x: 0, y: -4, s: 1.1},    // Mitte Oben (größer)
-                {x: -2, y: 8, s: 0.6}     // Kleines Detail in der Mitte unten
-            ];
-
-            // Wir iterieren durch jedes Teil-Polster.
-            // Weil jedes Polster komplett gezeichnet wird (inkl. Rand), überlappen die Ränder 
-            // und erzeugen die detaillierten schwarzen "Schuppen"-Linien im Inneren des Gesamt-Pads.
-            tufts.forEach(t => {
-                ctx.save(); 
-                ctx.translate(t.x, t.y); 
-                ctx.scale(t.s, t.s);
-                
-                // Outline
-                ctx.lineWidth = 5.5;
-                ctx.strokeStyle = C.outline;
-                ctx.lineJoin = 'round';
-                ctx.stroke(leafSVG);
-
-                // Basis-Farbe
-                ctx.fillStyle = C.leafDark;
-                ctx.fill(leafSVG);
-
-                // Mittel-Highlight
-                ctx.save();
-                ctx.translate(-2, -3);
-                ctx.scale(0.85, 0.85);
-                ctx.fillStyle = C.leafMid;
-                ctx.fill(leafSVG);
-                ctx.restore();
-
-                // Helles Highlight (Spitzen)
-                ctx.save();
-                ctx.translate(-4, -6);
-                ctx.scale(0.6, 0.6);
-                ctx.fillStyle = C.leafLight;
-                ctx.fill(leafSVG);
-                ctx.restore();
-
-                ctx.restore();
-            });
-
-            ctx.restore();
-        }
-
         function drawPot() {
-            let px = canvas.width / 2;
-            let py = canvas.height - 100;
-
+            let px = canvas.width / 2, py = canvas.height - 100;
             ctx.fillStyle = C.outline;
             ctx.beginPath(); ctx.ellipse(px, py, 140, 35, 0, 0, Math.PI*2); ctx.fill();
             ctx.beginPath(); ctx.roundRect(px - 120, py, 240, 70, 15); ctx.fill();
-
             ctx.fillStyle = '#4a3d35';
             ctx.beginPath(); ctx.roundRect(px - 116, py + 4, 232, 62, 12); ctx.fill();
-            
             ctx.fillStyle = '#455c28';
             ctx.beginPath(); ctx.ellipse(px, py - 6, 125, 20, 0, 0, Math.PI*2); ctx.fill();
         }
 
         function drawSoilFront() {
-            let px = canvas.width / 2;
-            let py = canvas.height - 100;
-            
+            let px = canvas.width / 2, py = canvas.height - 100;
             ctx.fillStyle = '#5c7a36'; 
-            ctx.beginPath(); 
-            ctx.ellipse(px, py + 2, 130, 12, 0, 0, Math.PI); 
-            ctx.fill();
+            ctx.beginPath(); ctx.ellipse(px, py + 2, 130, 12, 0, 0, Math.PI); ctx.fill();
         }
 
         function generateMathTree() {
-            branches = [];
-            leafSpawns = []; 
-            currentTick = 0;
-            maxTick = 0;
-            isGrowing = true;
-            
-            let startX = canvas.width / 2;
-            let startY = canvas.height - 120;
-            let startThick = 45;
-
-            // Nebari Wurzeln
-            let numRoots = 5 + Math.floor(Math.random() * 4);
-            for(let i = 0; i < numRoots; i++) {
-                let rootAngle = (Math.PI / 2) + (Math.random() - 0.5) * 2.5; 
-                let rootLength = 15 + Math.random() * 25;
-                let rootThick = startThick * (0.3 + Math.random() * 0.4); 
-                calculateBranch(startX, startY - 10, rootAngle, rootLength, rootThick, 0, 0, true);
+            branches = []; leafSpawns = []; currentTick = 0; maxTick = 0; isGrowing = true;
+            let startX = canvas.width / 2, startY = canvas.height - 120, startThick = 45;
+            for(let i = 0; i < 6; i++) {
+                calculateBranch(startX, startY - 10, (Math.PI / 2) + (Math.random() - 0.5) * 2.5, 20, startThick * 0.4, 0, 0, true);
             }
-
-            // Hauptstamm
-            calculateBranch(startX, startY, -Math.PI / 2, 150, startThick, 0, 0, false);
-            
+            calculateBranch(startX, startY, -Math.PI / 2, 160, startThick, 0, 0, false);
             renderLoop();
         }
 
-        // Init
         drawPot();
-
     </script>
 </body>
 </html>
